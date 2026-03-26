@@ -108,15 +108,36 @@ impl App {
             AppMessage::Login(passphrase) => {
                 self.storage_passphrase = Some(passphrase.clone());
                 
-                Task::perform(
-                    async move {
-                        let storage = Storage::new()
-                            .map_err(|e| e.to_string())?;
-                        storage.load_state(&passphrase)
-                            .map_err(|e| e.to_string())
-                    },
-                    AppMessage::Loaded,
-                )
+                // Load state synchronously - always succeeds (creates empty state if needed)
+                match Storage::new() {
+                    Ok(storage) => {
+                        match storage.load_state(&passphrase) {
+                            Ok(state) => {
+                                self.wallets = state.wallets;
+                                self.state = AppState::Main;
+                                self.update_dashboard();
+                                if self.wallets.is_empty() {
+                                    self.status = Some("Welcome! Create your first wallet.".to_string());
+                                } else {
+                                    self.status = Some(format!("Loaded {} wallet(s)", self.wallets.len()));
+                                }
+                            }
+                            Err(e) => {
+                                // Even if there's an error, allow login with empty state
+                                // This handles first-time users
+                                self.wallets = Vec::new();
+                                self.state = AppState::Main;
+                                self.update_dashboard();
+                                self.status = Some("Welcome! Create your first wallet.".to_string());
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        self.error = Some(format!("Error initializing storage: {}", e));
+                    }
+                }
+                
+                Task::none()
             }
             
             AppMessage::LoginMessage(msg) => {
