@@ -3,12 +3,15 @@ use std::{fs, path::Path};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::i18n::AppLanguage;
 use crate::wallet::WalletEntry;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UserProfile {
     #[serde(default)]
     pub nickname: Option<String>,
+    #[serde(default)]
+    pub language: AppLanguage,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

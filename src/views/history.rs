@@ -1,3 +1,4 @@
+use crate::i18n::t;
 use crate::theme::{card_style, primary_button_style, secondary_button_style, text_color, Colors};
 use crate::wallet::{TxDirection, TxRecord, WalletEntry};
 use iced::{
@@ -50,7 +51,7 @@ impl HistoryView {
     }
 
     pub fn view(&self, wallet: Option<&WalletEntry>) -> Element<'_, HistoryMessage> {
-        let title = text("Transaction History")
+        let title = text(t("Lịch sử giao dịch", "Transaction History"))
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
 
@@ -58,7 +59,7 @@ impl HistoryView {
 
         // Filter buttons
         let filter_row = row![
-            button(text("All").size(12))
+            button(text(t("Tất cả", "All")).size(12))
                 .on_press(HistoryMessage::FilterAll)
                 .padding(8)
                 .style(if self.filter == Filter::All {
@@ -67,7 +68,7 @@ impl HistoryView {
                     secondary_button_style()
                 }),
             Space::with_width(8),
-            button(text("Incoming").size(12))
+            button(text(t("Nhận", "Incoming")).size(12))
                 .on_press(HistoryMessage::FilterIncoming)
                 .padding(8)
                 .style(if self.filter == Filter::Incoming {
@@ -76,7 +77,7 @@ impl HistoryView {
                     secondary_button_style()
                 }),
             Space::with_width(8),
-            button(text("Outgoing").size(12))
+            button(text(t("Gửi", "Outgoing")).size(12))
                 .on_press(HistoryMessage::FilterOutgoing)
                 .padding(8)
                 .style(if self.filter == Filter::Outgoing {
@@ -85,7 +86,7 @@ impl HistoryView {
                     secondary_button_style()
                 }),
             Space::with_width(Length::Fill),
-            button(text("🔄 Refresh").size(12))
+            button(text(format!("🔄 {}", t("Làm mới", "Refresh"))).size(12))
                 .on_press(HistoryMessage::Refresh)
                 .padding(8)
                 .style(secondary_button_style()),
@@ -108,7 +109,7 @@ impl HistoryView {
                 content = content.push(Space::with_height(40));
                 content = content.push(
                     container(
-                        text("No transactions found")
+                        text(t("Không có giao dịch", "No transactions found"))
                             .size(16)
                             .style(text_color(Colors::TEXT_MUTED)),
                     )
@@ -118,9 +119,13 @@ impl HistoryView {
             } else {
                 content = content.push(Space::with_height(16));
                 content = content.push(
-                    text(format!("{} transactions", filtered_txs.len()))
-                        .size(14)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                    text(format!(
+                        "{} {}",
+                        filtered_txs.len(),
+                        t("giao dịch", "transactions")
+                    ))
+                    .size(14)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
                 );
                 content = content.push(Space::with_height(8));
 
@@ -160,9 +165,9 @@ impl HistoryView {
                             Space::with_height(4),
                             row![
                                 text(if tx.confirmed {
-                                    "✓ Confirmed"
+                                    t("✓ Đã xác nhận", "✓ Confirmed")
                                 } else {
-                                    "⏳ Pending"
+                                    t("⏳ Chờ xác nhận", "⏳ Pending")
                                 })
                                 .size(10)
                                 .style(text_color(
@@ -174,7 +179,7 @@ impl HistoryView {
                                 )),
                                 Space::with_width(16),
                                 if let Some(fee) = tx.fee_sat {
-                                    text(format!("Fee: {} sat", fee))
+                                    text(format!("{}: {} sat", t("Phí", "Fee"), fee))
                                         .size(10)
                                         .style(text_color(Colors::TEXT_MUTED))
                                 } else {
@@ -205,7 +210,7 @@ impl HistoryView {
             content = content.push(Space::with_height(40));
             content = content.push(
                 container(
-                    text("Please select a wallet first")
+                    text(t("Vui lòng chọn ví trước", "Please select a wallet first"))
                         .size(18)
                         .style(text_color(Colors::ERROR)),
                 )

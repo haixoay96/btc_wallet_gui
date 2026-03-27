@@ -1,3 +1,4 @@
+use crate::i18n::t;
 use crate::theme::{card_style, primary_button_style, text_color, Colors};
 use iced::{
     widget::{button, column, container, row, text, Space},
@@ -31,7 +32,7 @@ impl DashboardView {
     }
 
     pub fn view(&self) -> Element<'_, DashboardMessage> {
-        let title = text("Dashboard")
+        let title = text(t("Tổng quan", "Dashboard"))
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
 
@@ -40,7 +41,7 @@ impl DashboardView {
 
         let balance_card = container(
             column![
-                text("Total Balance")
+                text(t("Tổng số dư", "Total Balance"))
                     .size(14)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(8),
@@ -59,7 +60,7 @@ impl DashboardView {
 
         let confirmed_card = container(
             column![
-                text("Confirmed Balance")
+                text(t("Số dư đã xác nhận", "Confirmed Balance"))
                     .size(14)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(8),
@@ -78,7 +79,7 @@ impl DashboardView {
 
         let wallets_card = container(
             column![
-                text("Total Wallets")
+                text(t("Tổng số ví", "Total Wallets"))
                     .size(14)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(8),
@@ -91,7 +92,7 @@ impl DashboardView {
         .style(card_style())
         .width(Length::Fill);
 
-        let refresh_button = button(text("🔄 Refresh").size(16))
+        let refresh_button = button(text(format!("🔄 {}", t("Làm mới", "Refresh"))).size(16))
             .on_press(DashboardMessage::Refresh)
             .padding(12)
             .style(primary_button_style());

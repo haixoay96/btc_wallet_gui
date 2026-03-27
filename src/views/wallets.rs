@@ -3,6 +3,7 @@ use iced::{
     Alignment, Element, Length,
 };
 
+use crate::i18n::t;
 use crate::theme::{
     card_style, danger_button_style, primary_button_style, secondary_button_style, text_color,
     Colors,
@@ -121,7 +122,11 @@ impl WalletsView {
         self.mnemonic_passphrase.clear();
         self.notice_wallet_index = Some(wallet_index);
         self.info = Some(
-            "Mnemonic đã hiển thị. Hãy backup an toàn và hoàn thành bài test xác nhận.".to_string(),
+            t(
+                "Mnemonic đã hiển thị. Hãy backup an toàn và hoàn thành bài test xác nhận.",
+                "Mnemonic revealed. Please back it up safely and complete the verification test.",
+            )
+            .to_string(),
         );
         self.error = None;
     }
@@ -131,7 +136,13 @@ impl WalletsView {
         self.backup_test_wallet_index = None;
         self.backup_test_positions.clear();
         self.backup_test_answers.clear();
-        self.info = Some("Backup mnemonic đã được xác nhận thành công.".to_string());
+        self.info = Some(
+            t(
+                "Backup mnemonic đã được xác nhận thành công.",
+                "Mnemonic backup has been verified successfully.",
+            )
+            .to_string(),
+        );
         self.error = None;
         self.revealed_wallet_index = Some(wallet_index);
     }
@@ -207,7 +218,13 @@ impl WalletsView {
             }
             WalletsMessage::AddImportSlip39Share => {
                 if self.import_slip39_shares.len() >= 16 {
-                    self.error = Some("Tối đa 16 SLIP-0039 share".to_string());
+                    self.error = Some(
+                        t(
+                            "Tối đa 16 SLIP-0039 share",
+                            "Maximum 16 SLIP-0039 shares are supported",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
                 self.import_slip39_shares.push(String::new());
@@ -223,11 +240,23 @@ impl WalletsView {
             }
             WalletsMessage::ImportWalletFromMnemonic => {
                 if self.import_name.trim().is_empty() {
-                    self.error = Some("Vui lòng nhập tên ví import".to_string());
+                    self.error = Some(
+                        t(
+                            "Vui lòng nhập tên ví import",
+                            "Please enter a wallet name for import",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
                 if self.import_mnemonic.trim().is_empty() {
-                    self.error = Some("Vui lòng nhập mnemonic để import".to_string());
+                    self.error = Some(
+                        t(
+                            "Vui lòng nhập mnemonic để import",
+                            "Please enter a mnemonic to import",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -248,7 +277,13 @@ impl WalletsView {
             }
             WalletsMessage::ImportWalletFromSlip39 => {
                 if self.import_name.trim().is_empty() {
-                    self.error = Some("Vui lòng nhập tên ví import".to_string());
+                    self.error = Some(
+                        t(
+                            "Vui lòng nhập tên ví import",
+                            "Please enter a wallet name for import",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -261,7 +296,13 @@ impl WalletsView {
                     .collect::<Vec<_>>();
 
                 if shares.len() < 2 {
-                    self.error = Some("Vui lòng nhập ít nhất 2 SLIP-0039 share".to_string());
+                    self.error = Some(
+                        t(
+                            "Vui lòng nhập ít nhất 2 SLIP-0039 share",
+                            "Please enter at least 2 SLIP-0039 shares",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -309,8 +350,11 @@ impl WalletsView {
             WalletsMessage::ShowBackupWarning(index) => {
                 self.notice_wallet_index = Some(index);
                 self.info = Some(
-                    "Ví này chưa backup mnemonic. Hãy mở mnemonic và hoàn thành bài test."
-                        .to_string(),
+                    t(
+                        "Ví này chưa backup mnemonic. Hãy mở mnemonic và hoàn thành bài test.",
+                        "This wallet has not backed up its mnemonic yet. Reveal it and complete the backup test.",
+                    )
+                    .to_string(),
                 );
                 None
             }
@@ -321,7 +365,13 @@ impl WalletsView {
             }
             WalletsMessage::RevealMnemonic(wallet_index) => {
                 if self.mnemonic_passphrase.trim().is_empty() {
-                    self.error = Some("Vui lòng nhập passphrase để hiện mnemonic".to_string());
+                    self.error = Some(
+                        t(
+                            "Vui lòng nhập passphrase để hiện mnemonic",
+                            "Please enter passphrase to reveal mnemonic",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -351,12 +401,23 @@ impl WalletsView {
             }
             WalletsMessage::ExportMnemonicPdf(wallet_index) => {
                 if self.revealed_wallet_index != Some(wallet_index) {
-                    self.error = Some("Hãy mở mnemonic trước khi export PDF".to_string());
+                    self.error = Some(
+                        t(
+                            "Hãy mở mnemonic trước khi export PDF",
+                            "Please reveal mnemonic before exporting PDF",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
                 if self.backup_test_wallet_index == Some(wallet_index) {
-                    self.error =
-                        Some("Không thể export PDF khi đang làm bài test backup".to_string());
+                    self.error = Some(
+                        t(
+                            "Không thể export PDF khi đang làm bài test backup",
+                            "Cannot export PDF while backup test is in progress",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
                 self.error = None;
@@ -379,41 +440,75 @@ impl WalletsView {
             }
             WalletsMessage::ExportSlip39Shares(wallet_index) => {
                 if self.revealed_wallet_index != Some(wallet_index) {
-                    self.error = Some("Hãy mở mnemonic trước khi export SLIP-0039".to_string());
+                    self.error = Some(
+                        t(
+                            "Hãy mở mnemonic trước khi export SLIP-0039",
+                            "Please reveal mnemonic before exporting SLIP-0039",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
                 if self.backup_test_wallet_index == Some(wallet_index) {
-                    self.error =
-                        Some("Không thể export SLIP-0039 khi đang làm bài test backup".to_string());
+                    self.error = Some(
+                        t(
+                            "Không thể export SLIP-0039 khi đang làm bài test backup",
+                            "Cannot export SLIP-0039 while backup test is in progress",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
-                let threshold = match parse_u8_field(&self.slip39_export_threshold, "Ngưỡng K") {
-                    Ok(value) => value,
-                    Err(message) => {
-                        self.error = Some(message);
-                        return None;
-                    }
-                };
-                let share_count =
-                    match parse_u8_field(&self.slip39_export_share_count, "Số lượng share N") {
+                let threshold =
+                    match parse_u8_field(&self.slip39_export_threshold, "Ngưỡng K", "Threshold K")
+                    {
                         Ok(value) => value,
                         Err(message) => {
                             self.error = Some(message);
                             return None;
                         }
                     };
+                let share_count = match parse_u8_field(
+                    &self.slip39_export_share_count,
+                    "Số lượng share N",
+                    "Total share count N",
+                ) {
+                    Ok(value) => value,
+                    Err(message) => {
+                        self.error = Some(message);
+                        return None;
+                    }
+                };
 
                 if threshold < 2 {
-                    self.error = Some("Ngưỡng K nên từ 2 trở lên".to_string());
+                    self.error = Some(
+                        t(
+                            "Ngưỡng K nên từ 2 trở lên",
+                            "Threshold K must be at least 2",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
                 if share_count < threshold {
-                    self.error = Some("Số lượng share N phải >= ngưỡng K".to_string());
+                    self.error = Some(
+                        t(
+                            "Số lượng share N phải >= ngưỡng K",
+                            "Total share count N must be >= threshold K",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
                 if share_count > 16 {
-                    self.error = Some("SLIP-0039 hiện hỗ trợ tối đa 16 share".to_string());
+                    self.error = Some(
+                        t(
+                            "SLIP-0039 hiện hỗ trợ tối đa 16 share",
+                            "SLIP-0039 currently supports at most 16 shares",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -434,7 +529,13 @@ impl WalletsView {
             }
             WalletsMessage::SubmitBackupTest(wallet_index) => {
                 if self.backup_test_wallet_index != Some(wallet_index) {
-                    self.error = Some("Bạn chưa bắt đầu bài test backup cho ví này".to_string());
+                    self.error = Some(
+                        t(
+                            "Bạn chưa bắt đầu bài test backup cho ví này",
+                            "You have not started the backup test for this wallet",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -443,7 +544,13 @@ impl WalletsView {
                     .iter()
                     .any(|word| word.trim().is_empty())
                 {
-                    self.error = Some("Vui lòng điền đầy đủ các từ trong bài test".to_string());
+                    self.error = Some(
+                        t(
+                            "Vui lòng điền đầy đủ các từ trong bài test",
+                            "Please fill in all words in the backup test",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -473,15 +580,15 @@ impl WalletsView {
         wallets: &'a [WalletEntry],
         selected: usize,
     ) -> Element<'a, WalletsMessage> {
-        let title = text("Wallets")
+        let title = text(t("Ví", "Wallets"))
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
 
         let create_toggle_btn = button(
             text(if self.show_create_form {
-                "Cancel Create"
+                t("Hủy tạo", "Cancel Create")
             } else {
-                "+ Create Wallet"
+                t("+ Tạo ví", "+ Create Wallet")
             })
             .size(14),
         )
@@ -495,9 +602,9 @@ impl WalletsView {
 
         let import_toggle_btn = button(
             text(if self.show_import_mnemonic_form {
-                "Cancel Import"
+                t("Hủy import", "Cancel Import")
             } else {
-                "+ Import Wallet"
+                t("+ Import ví", "+ Import Wallet")
             })
             .size(14),
         )
@@ -526,7 +633,7 @@ impl WalletsView {
                             .size(13)
                             .style(text_color(Colors::WARNING)),
                         Space::with_width(Length::Fill),
-                        button(text("x").size(12))
+                        button(text(t("Đóng", "Close")).size(12))
                             .on_press(WalletsMessage::DismissWalletNotice)
                             .padding(4)
                             .style(secondary_button_style()),
@@ -553,12 +660,12 @@ impl WalletsView {
         }
 
         if self.show_create_form {
-            let name_input = text_input("Wallet name...", &self.create_name)
+            let name_input = text_input(t("Tên ví...", "Wallet name..."), &self.create_name)
                 .on_input(WalletsMessage::NameChanged)
                 .padding(12)
                 .size(16);
 
-            let network_testnet = button(text("Testnet").size(14))
+            let network_testnet = button(text(t("Testnet", "Testnet")).size(14))
                 .on_press(WalletsMessage::NetworkChanged(WalletNetwork::Testnet))
                 .padding(8)
                 .style(if self.create_network == WalletNetwork::Testnet {
@@ -567,7 +674,7 @@ impl WalletsView {
                     secondary_button_style()
                 });
 
-            let network_mainnet = button(text("Mainnet").size(14))
+            let network_mainnet = button(text(t("Mainnet", "Mainnet")).size(14))
                 .on_press(WalletsMessage::NetworkChanged(WalletNetwork::Mainnet))
                 .padding(8)
                 .style(if self.create_network == WalletNetwork::Mainnet {
@@ -576,14 +683,14 @@ impl WalletsView {
                     secondary_button_style()
                 });
 
-            let create_btn = button(text("Create").size(14))
+            let create_btn = button(text(t("Tạo ví", "Create")).size(14))
                 .on_press(WalletsMessage::CreateWallet)
                 .padding(10)
                 .style(primary_button_style());
 
             let form = container(
                 column![
-                    text("Create New Wallet")
+                    text(t("Tạo ví mới", "Create New Wallet"))
                         .size(18)
                         .style(text_color(Colors::TEXT_PRIMARY)),
                     Space::with_height(12),
@@ -603,12 +710,12 @@ impl WalletsView {
         }
 
         if self.show_import_mnemonic_form {
-            let import_name_input = text_input("Wallet name...", &self.import_name)
+            let import_name_input = text_input(t("Tên ví...", "Wallet name..."), &self.import_name)
                 .on_input(WalletsMessage::ImportNameChanged)
                 .padding(12)
                 .size(16);
 
-            let network_testnet = button(text("Testnet").size(14))
+            let network_testnet = button(text(t("Testnet", "Testnet")).size(14))
                 .on_press(WalletsMessage::ImportNetworkChanged(WalletNetwork::Testnet))
                 .padding(8)
                 .style(if self.import_network == WalletNetwork::Testnet {
@@ -617,7 +724,7 @@ impl WalletsView {
                     secondary_button_style()
                 });
 
-            let network_mainnet = button(text("Mainnet").size(14))
+            let network_mainnet = button(text(t("Mainnet", "Mainnet")).size(14))
                 .on_press(WalletsMessage::ImportNetworkChanged(WalletNetwork::Mainnet))
                 .padding(8)
                 .style(if self.import_network == WalletNetwork::Mainnet {
@@ -645,13 +752,16 @@ impl WalletsView {
                 });
 
             let mut form_content = column![
-                text("Import Wallet")
+                text(t("Import ví", "Import Wallet"))
                     .size(18)
                     .style(text_color(Colors::TEXT_PRIMARY)),
                 Space::with_height(8),
-                text("Ví import sẽ được đánh dấu đã backup.")
-                    .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                text(t(
+                    "Ví import sẽ được đánh dấu đã backup.",
+                    "Imported wallet will be marked as backed up."
+                ))
+                .size(12)
+                .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(12),
                 import_name_input,
                 Space::with_height(8),
@@ -664,17 +774,21 @@ impl WalletsView {
             match self.import_mode {
                 ImportMode::Bip39 => {
                     let import_mnemonic_input = text_input(
-                        "Mnemonic (12 words, cách nhau bởi dấu cách)...",
+                        t(
+                            "Mnemonic (12 từ, cách nhau bởi dấu cách)...",
+                            "Mnemonic (12 words, separated by spaces)...",
+                        ),
                         &self.import_mnemonic,
                     )
                     .on_input(WalletsMessage::ImportMnemonicChanged)
                     .padding(12)
                     .size(14);
 
-                    let import_btn = button(text("Import from Mnemonic").size(14))
-                        .on_press(WalletsMessage::ImportWalletFromMnemonic)
-                        .padding(10)
-                        .style(primary_button_style());
+                    let import_btn =
+                        button(text(t("Import từ mnemonic", "Import from Mnemonic")).size(14))
+                            .on_press(WalletsMessage::ImportWalletFromMnemonic)
+                            .padding(10)
+                            .style(primary_button_style());
 
                     form_content = form_content
                         .push(Space::with_height(8))
@@ -684,7 +798,10 @@ impl WalletsView {
                 }
                 ImportMode::Slip39 => {
                     let passphrase_input = text_input(
-                        "SLIP-0039 passphrase (optional)...",
+                        t(
+                            "SLIP-0039 passphrase (không bắt buộc)...",
+                            "SLIP-0039 passphrase (optional)...",
+                        ),
                         &self.import_slip39_passphrase,
                     )
                     .on_input(WalletsMessage::ImportSlip39PassphraseChanged)
@@ -692,43 +809,50 @@ impl WalletsView {
                     .padding(12)
                     .size(14);
 
-                    let mut shares_form =
-                        column![text("Nhập tối thiểu K share, mỗi ô là 1 cụm từ SLIP-0039")
-                            .size(12)
-                            .style(text_color(Colors::TEXT_SECONDARY))]
-                        .spacing(8);
+                    let mut shares_form = column![text(t(
+                        "Nhập tối thiểu K share, mỗi ô là 1 cụm từ SLIP-0039",
+                        "Enter at least K shares, each field is one SLIP-0039 phrase",
+                    ))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_SECONDARY))]
+                    .spacing(8);
 
                     for (index, share_value) in self.import_slip39_shares.iter().enumerate() {
                         shares_form = shares_form.push(
                             column![
-                                text(format!("Share #{}", index + 1))
+                                text(format!("{} #{}", t("Mảnh", "Share"), index + 1))
                                     .size(12)
                                     .style(text_color(Colors::TEXT_PRIMARY)),
-                                text_input("SLIP-0039 share words...", share_value)
-                                    .on_input(move |input| {
-                                        WalletsMessage::ImportSlip39ShareChanged(index, input)
-                                    })
-                                    .padding(10)
-                                    .size(13),
+                                text_input(
+                                    t("Từ của SLIP-0039 share...", "SLIP-0039 share words..."),
+                                    share_value
+                                )
+                                .on_input(move |input| {
+                                    WalletsMessage::ImportSlip39ShareChanged(index, input)
+                                })
+                                .padding(10)
+                                .size(13),
                             ]
                             .spacing(4),
                         );
                     }
 
-                    let add_share_btn = button(text("+ Add share").size(13))
+                    let add_share_btn = button(text(t("+ Thêm share", "+ Add share")).size(13))
                         .on_press(WalletsMessage::AddImportSlip39Share)
                         .padding(8)
                         .style(secondary_button_style());
 
-                    let remove_share_btn = button(text("- Remove share").size(13))
-                        .on_press(WalletsMessage::RemoveImportSlip39Share)
-                        .padding(8)
-                        .style(secondary_button_style());
+                    let remove_share_btn =
+                        button(text(t("- Bớt share", "- Remove share")).size(13))
+                            .on_press(WalletsMessage::RemoveImportSlip39Share)
+                            .padding(8)
+                            .style(secondary_button_style());
 
-                    let import_btn = button(text("Import from SLIP-0039").size(14))
-                        .on_press(WalletsMessage::ImportWalletFromSlip39)
-                        .padding(10)
-                        .style(primary_button_style());
+                    let import_btn =
+                        button(text(t("Import từ SLIP-0039", "Import from SLIP-0039")).size(14))
+                            .on_press(WalletsMessage::ImportWalletFromSlip39)
+                            .padding(10)
+                            .style(primary_button_style());
 
                     form_content = form_content
                         .push(Space::with_height(8))
@@ -828,7 +952,7 @@ impl WalletsView {
             }
 
             content = content.push(column![
-                text("Your Wallets")
+                text(t("Danh sách ví", "Your Wallets"))
                     .size(18)
                     .style(text_color(Colors::TEXT_PRIMARY)),
                 Space::with_height(12),
@@ -842,9 +966,12 @@ impl WalletsView {
         } else if !self.show_create_form && !self.show_import_mnemonic_form {
             content = content.push(
                 container(
-                    text("No wallets yet. Create your first wallet!")
-                        .size(16)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                    text(t(
+                        "Chưa có ví nào. Hãy tạo ví đầu tiên!",
+                        "No wallets yet. Create your first wallet!",
+                    ))
+                    .size(16)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
                 )
                 .padding(40)
                 .center_x(Length::Fill),
@@ -859,21 +986,21 @@ impl WalletsView {
 
             let dialog = container(
                 column![
-                    text("Confirm Delete")
+                    text(t("Xác nhận xóa", "Confirm Delete"))
                         .size(20)
                         .style(text_color(Colors::ERROR)),
                     Space::with_height(12),
-                    text(format!("Delete wallet '{wallet_name}'?"))
+                    text(format!("{} '{wallet_name}'?", t("Xóa ví", "Delete wallet")))
                         .size(16)
                         .style(text_color(Colors::TEXT_PRIMARY)),
                     Space::with_height(16),
                     row![
-                        button(text("Cancel").size(14))
+                        button(text(t("Hủy", "Cancel")).size(14))
                             .on_press(WalletsMessage::CancelDelete)
                             .padding(10)
                             .style(secondary_button_style()),
                         Space::with_width(12),
-                        button(text("Delete").size(14))
+                        button(text(t("Xóa", "Delete")).size(14))
                             .on_press(WalletsMessage::ConfirmDelete(index))
                             .padding(10)
                             .style(danger_button_style()),
@@ -901,47 +1028,62 @@ impl WalletsView {
     ) -> Element<'a, WalletsMessage> {
         let needs_backup = wallet.mnemonic.is_some() && !wallet.mnemonic_backed_up;
 
-        let mut panel = column![text("Mnemonic Backup")
+        let mut panel = column![text(t("Backup mnemonic", "Mnemonic Backup"))
             .size(18)
             .style(text_color(Colors::TEXT_PRIMARY)),]
         .spacing(8);
 
         if self.notice_wallet_index == Some(selected_index) && needs_backup {
             panel = panel.push(
-                text("! Wallet này chưa backup mnemonic. Vui lòng backup ngay.")
-                    .size(13)
-                    .style(text_color(Colors::WARNING)),
+                text(t(
+                    "! Wallet này chưa backup mnemonic. Vui lòng backup ngay.",
+                    "! This wallet has not backed up its mnemonic yet. Please back it up now.",
+                ))
+                .size(13)
+                .style(text_color(Colors::WARNING)),
             );
         }
 
         match &wallet.mnemonic {
             None => {
                 panel = panel.push(
-                    text("Wallet này không có mnemonic (ví import từ xprv).")
-                        .size(13)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                    text(t(
+                        "Wallet này không có mnemonic (ví import từ xprv).",
+                        "This wallet has no mnemonic (imported from xprv).",
+                    ))
+                    .size(13)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
                 );
             }
             Some(mnemonic) => {
                 if self.revealed_wallet_index != Some(selected_index) {
                     let reveal_button_label = if wallet.mnemonic_backed_up {
-                        "Hiển thị mnemonic"
+                        t("Hiển thị mnemonic", "Show mnemonic")
                     } else {
-                        "Hiện mnemonic và tiếp tục backup"
+                        t(
+                            "Hiện mnemonic và tiếp tục backup",
+                            "Show mnemonic and continue backup",
+                        )
                     };
 
                     panel = panel
                         .push(
-                            text("Nhập passphrase hiện tại để xem mnemonic")
-                                .size(13)
-                                .style(text_color(Colors::TEXT_SECONDARY)),
+                            text(t(
+                                "Nhập passphrase hiện tại để xem mnemonic",
+                                "Enter your current passphrase to view mnemonic",
+                            ))
+                            .size(13)
+                            .style(text_color(Colors::TEXT_SECONDARY)),
                         )
                         .push(
-                            text_input("Passphrase...", &self.mnemonic_passphrase)
-                                .on_input(WalletsMessage::MnemonicPassphraseChanged)
-                                .secure(true)
-                                .padding(10)
-                                .size(13),
+                            text_input(
+                                t("Passphrase...", "Passphrase..."),
+                                &self.mnemonic_passphrase,
+                            )
+                            .on_input(WalletsMessage::MnemonicPassphraseChanged)
+                            .secure(true)
+                            .padding(10)
+                            .size(13),
                         )
                         .push(
                             button(text(reveal_button_label).size(13))
@@ -956,15 +1098,18 @@ impl WalletsView {
 
                     if test_active {
                         panel = panel.push(
-                            text("Mnemonic đang được ẩn khi làm bài test backup.")
-                                .size(12)
-                                .style(text_color(Colors::WARNING)),
+                            text(t(
+                                "Mnemonic đang được ẩn khi làm bài test backup.",
+                                "Mnemonic is hidden while backup test is active.",
+                            ))
+                            .size(12)
+                            .style(text_color(Colors::WARNING)),
                         );
                     } else {
                         panel = panel.push(
                             container(
                                 column![
-                                    text("Mnemonic (12 words):")
+                                    text(t("Mnemonic (12 từ):", "Mnemonic (12 words):"))
                                         .size(12)
                                         .style(text_color(Colors::TEXT_SECONDARY)),
                                     Space::with_height(6),
@@ -980,10 +1125,13 @@ impl WalletsView {
                         );
 
                         panel = panel.push(
-                            button(text("Export mnemonic to PDF").size(13))
-                                .on_press(WalletsMessage::ExportMnemonicPdf(selected_index))
-                                .padding(10)
-                                .style(secondary_button_style()),
+                            button(
+                                text(t("Export mnemonic ra PDF", "Export mnemonic to PDF"))
+                                    .size(13),
+                            )
+                            .on_press(WalletsMessage::ExportMnemonicPdf(selected_index))
+                            .padding(10)
+                            .style(secondary_button_style()),
                         );
 
                         let slip39_threshold_input = text_input("K", &self.slip39_export_threshold)
@@ -1000,7 +1148,10 @@ impl WalletsView {
                                 .width(Length::Fixed(100.0));
 
                         let slip39_passphrase_input = text_input(
-                            "SLIP-0039 passphrase (optional)...",
+                            t(
+                                "SLIP-0039 passphrase (không bắt buộc)...",
+                                "SLIP-0039 passphrase (optional)...",
+                            ),
                             &self.slip39_export_passphrase,
                         )
                         .on_input(WalletsMessage::Slip39ExportPassphraseChanged)
@@ -1011,22 +1162,25 @@ impl WalletsView {
                         panel = panel.push(
                             container(
                                 column![
-                                    text("SLIP-0039 split backup")
+                                    text(t("Backup tách mảnh SLIP-0039", "SLIP-0039 split backup"))
                                         .size(13)
                                         .style(text_color(Colors::TEXT_PRIMARY)),
-                                    text("Cấu hình K/N (ví dụ 2/3) để tách mnemonic thành nhiều share.")
+                                    text(t(
+                                        "Cấu hình K/N (ví dụ 2/3) để tách mnemonic thành nhiều share.",
+                                        "Configure K/N (e.g. 2/3) to split mnemonic into multiple shares.",
+                                    ))
                                         .size(12)
                                         .style(text_color(Colors::TEXT_SECONDARY)),
                                     row![
                                         column![
-                                            text("Ngưỡng K")
+                                            text(t("Ngưỡng K", "Threshold K"))
                                                 .size(12)
                                                 .style(text_color(Colors::TEXT_SECONDARY)),
                                             slip39_threshold_input,
                                         ]
                                         .spacing(4),
                                         column![
-                                            text("Tổng share N")
+                                            text(t("Tổng share N", "Total share N"))
                                                 .size(12)
                                                 .style(text_color(Colors::TEXT_SECONDARY)),
                                             slip39_share_count_input,
@@ -1035,7 +1189,11 @@ impl WalletsView {
                                     ]
                                     .spacing(10),
                                     slip39_passphrase_input,
-                                    button(text("Export SLIP-0039 shares (PDF folder)").size(13))
+                                    button(text(t(
+                                        "Export SLIP-0039 shares (thư mục PDF)",
+                                        "Export SLIP-0039 shares (PDF folder)",
+                                    ))
+                                    .size(13))
                                         .on_press(WalletsMessage::ExportSlip39Shares(selected_index))
                                         .padding(10)
                                         .style(secondary_button_style()),
@@ -1050,17 +1208,20 @@ impl WalletsView {
 
                     if wallet.mnemonic_backed_up {
                         panel = panel.push(
-                            text("Mnemonic backup: Verified")
-                                .size(13)
-                                .style(text_color(Colors::SUCCESS)),
+                            text(t(
+                                "Backup mnemonic: Đã xác minh",
+                                "Mnemonic backup: Verified",
+                            ))
+                            .size(13)
+                            .style(text_color(Colors::SUCCESS)),
                         );
                     } else {
                         panel = panel.push(
                             button(
                                 text(if test_active {
-                                    "Hủy bài test backup"
+                                    t("Hủy bài test backup", "Cancel backup test")
                                 } else {
-                                    "Bắt đầu bài test backup"
+                                    t("Bắt đầu bài test backup", "Start backup test")
                                 })
                                 .size(13),
                             )
@@ -1073,11 +1234,13 @@ impl WalletsView {
                         );
 
                         if test_active {
-                            let mut test_form =
-                                column![text("Nhập đúng các từ theo vị trí để xác nhận backup")
-                                    .size(12)
-                                    .style(text_color(Colors::TEXT_SECONDARY)),]
-                                .spacing(8);
+                            let mut test_form = column![text(t(
+                                "Nhập đúng các từ theo vị trí để xác nhận backup",
+                                "Enter the correct words at positions to verify backup",
+                            ))
+                            .size(12)
+                            .style(text_color(Colors::TEXT_SECONDARY)),]
+                            .spacing(8);
 
                             for (field_index, position) in
                                 self.backup_test_positions.iter().copied().enumerate()
@@ -1090,25 +1253,25 @@ impl WalletsView {
 
                                 test_form = test_form.push(
                                     column![
-                                        text(format!("Word #{}", position))
+                                        text(format!("{} #{}", t("Từ", "Word"), position))
                                             .size(12)
                                             .style(text_color(Colors::TEXT_PRIMARY)),
-                                        text_input("Nhập từ mnemonic...", value)
-                                            .on_input(move |input| {
-                                                WalletsMessage::BackupWordChanged(
-                                                    field_index,
-                                                    input,
-                                                )
-                                            })
-                                            .padding(10)
-                                            .size(13),
+                                        text_input(
+                                            t("Nhập từ mnemonic...", "Enter mnemonic word..."),
+                                            value
+                                        )
+                                        .on_input(move |input| {
+                                            WalletsMessage::BackupWordChanged(field_index, input)
+                                        })
+                                        .padding(10)
+                                        .size(13),
                                     ]
                                     .spacing(4),
                                 );
                             }
 
                             test_form = test_form.push(
-                                button(text("Xác nhận đã backup").size(13))
+                                button(text(t("Xác nhận đã backup", "Confirm backup")).size(13))
                                     .on_press(WalletsMessage::SubmitBackupTest(selected_index))
                                     .padding(10)
                                     .style(primary_button_style()),
@@ -1160,13 +1323,24 @@ fn test_positions(word_count: usize) -> Vec<usize> {
     positions
 }
 
-fn parse_u8_field(raw: &str, field_name: &str) -> Result<u8, String> {
+fn parse_u8_field(raw: &str, field_name_vi: &str, field_name_en: &str) -> Result<u8, String> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
-        return Err(format!("{field_name} không được để trống"));
+        return Err(format!(
+            "{} {}",
+            t("Vui lòng nhập", "Please enter"),
+            t(field_name_vi, field_name_en)
+        ));
     }
 
-    trimmed
-        .parse::<u8>()
-        .map_err(|_| format!("{field_name} phải là số nguyên từ 0 đến 255"))
+    trimmed.parse::<u8>().map_err(|_| {
+        format!(
+            "{} {}",
+            t(field_name_vi, field_name_en),
+            t(
+                "phải là số nguyên từ 0 đến 255",
+                "must be an integer from 0 to 255"
+            )
+        )
+    })
 }

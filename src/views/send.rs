@@ -6,6 +6,7 @@ use iced::{
 };
 use std::fmt;
 
+use crate::i18n::t;
 use crate::theme::{
     card_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, text_color, Colors,
@@ -133,11 +134,17 @@ impl SendView {
             }
             SendMessage::EstimateFee => {
                 if self.use_all_funds {
-                    self.error = Some("Send all funds không cần estimate fee trước".to_string());
+                    self.error = Some(
+                        t(
+                            "Send all funds không cần estimate fee trước",
+                            "Send-all does not require fee estimation",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
-                let amount_sat = match parse_u64_required(&self.amount, "amount") {
+                let amount_sat = match parse_u64_required(&self.amount, "số lượng", "amount") {
                     Ok(value) => value,
                     Err(err) => {
                         self.error = Some(err);
@@ -162,7 +169,13 @@ impl SendView {
             }
             SendMessage::Send => {
                 if self.to_address.trim().is_empty() {
-                    self.error = Some("Vui lòng nhập địa chỉ nhận".to_string());
+                    self.error = Some(
+                        t(
+                            "Vui lòng nhập địa chỉ nhận",
+                            "Please enter recipient address",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -184,19 +197,21 @@ impl SendView {
 
                 let fee_mode = match self.fee_mode {
                     SimpleFeeMode::Auto => FeeMode::Auto,
-                    SimpleFeeMode::Fixed => match parse_u64_required(&self.fee_amount, "fee") {
-                        Ok(value) => FeeMode::FixedSat(value),
-                        Err(err) => {
-                            self.error = Some(err);
-                            return None;
+                    SimpleFeeMode::Fixed => {
+                        match parse_u64_required(&self.fee_amount, "phí", "fee") {
+                            Ok(value) => FeeMode::FixedSat(value),
+                            Err(err) => {
+                                self.error = Some(err);
+                                return None;
+                            }
                         }
-                    },
+                    }
                 };
 
                 let amount_sat = if self.use_all_funds {
                     None
                 } else {
-                    match parse_u64_required(&self.amount, "amount") {
+                    match parse_u64_required(&self.amount, "số lượng", "amount") {
                         Ok(value) => Some(value),
                         Err(err) => {
                             self.error = Some(err);
@@ -245,19 +260,19 @@ impl SendView {
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
         let wallet = wallets.get(selected_wallet);
 
-        let title = text("Send BTC")
+        let title = text(t("Gửi BTC", "Send BTC"))
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
 
         let wallet_selector = column![
-            text("From Wallet")
+            text(t("Từ ví", "From Wallet"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
             pick_list(wallet_options, selected_wallet_option, |choice| {
                 SendMessage::SelectWallet(choice.index)
             })
-            .placeholder("Chọn ví để gửi BTC...")
+            .placeholder(t("Chọn ví để gửi BTC...", "Select wallet to send BTC..."))
             .width(Length::Fill)
             .padding(12)
             .style(pick_list_style())
@@ -268,63 +283,80 @@ impl SendView {
         let balance_text = if let Some(wallet) = wallet {
             let balance: i64 = wallet.history.iter().map(|tx| tx.amount_sat).sum();
             let balance_btc = balance as f64 / 100_000_000.0;
-            text(format!("Available: {:.8} BTC", balance_btc))
-                .size(14)
-                .style(text_color(Colors::TEXT_SECONDARY))
+            text(format!(
+                "{}: {:.8} BTC",
+                t("Sẵn có", "Available"),
+                balance_btc
+            ))
+            .size(14)
+            .style(text_color(Colors::TEXT_SECONDARY))
         } else {
-            text("No wallet selected")
+            text(t("Chưa chọn ví", "No wallet selected"))
                 .size(14)
                 .style(text_color(Colors::ERROR))
         };
 
         let to_input = column![
-            text("To Address")
+            text(t("Địa chỉ nhận", "To Address"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
-            text_input("Enter recipient address...", &self.to_address)
-                .on_input(SendMessage::ToAddressChanged)
-                .padding(12)
-                .size(14)
+            text_input(
+                t("Nhập địa chỉ nhận...", "Enter recipient address..."),
+                &self.to_address
+            )
+            .on_input(SendMessage::ToAddressChanged)
+            .padding(12)
+            .size(14)
         ]
         .spacing(4);
 
         let use_all_toggle = row![
-            text("Send All Funds")
+            text(t("Gửi toàn bộ số dư", "Send All Funds"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_width(Length::Fill),
-            button(text(if self.use_all_funds { "ON" } else { "OFF" }).size(12))
-                .on_press(SendMessage::UseAllFunds(!self.use_all_funds))
-                .padding(6)
-                .style(if self.use_all_funds {
-                    primary_button_style()
+            button(
+                text(if self.use_all_funds {
+                    t("BẬT", "ON")
                 } else {
-                    secondary_button_style()
+                    t("TẮT", "OFF")
                 })
+                .size(12)
+            )
+            .on_press(SendMessage::UseAllFunds(!self.use_all_funds))
+            .padding(6)
+            .style(if self.use_all_funds {
+                primary_button_style()
+            } else {
+                secondary_button_style()
+            })
         ]
         .align_y(Alignment::Center);
 
         let amount_input = column![
-            text("Amount (sat)")
+            text(t("Số lượng (sat)", "Amount (sat)"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
-            text_input("Enter amount in satoshis...", &self.amount)
-                .on_input(SendMessage::AmountChanged)
-                .padding(12)
-                .size(14)
+            text_input(
+                t("Nhập số satoshi...", "Enter amount in satoshis..."),
+                &self.amount
+            )
+            .on_input(SendMessage::AmountChanged)
+            .padding(12)
+            .size(14)
         ]
         .spacing(4);
 
         let fee_mode_section = column![
-            text("Fee Mode")
+            text(t("Chế độ phí", "Fee Mode"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
             row![
                 radio(
-                    "Auto",
+                    t("Tự động", "Auto"),
                     SimpleFeeMode::Auto,
                     Some(self.fee_mode),
                     SendMessage::FeeModeChanged
@@ -332,7 +364,7 @@ impl SendView {
                 .size(14),
                 Space::with_width(16),
                 radio(
-                    "Fixed",
+                    t("Cố định", "Fixed"),
                     SimpleFeeMode::Fixed,
                     Some(self.fee_mode),
                     SendMessage::FeeModeChanged
@@ -345,45 +377,61 @@ impl SendView {
 
         let fee_input: Element<'_, SendMessage> = if self.fee_mode == SimpleFeeMode::Fixed {
             column![
-                text("Fee Amount (sat)")
+                text(t("Phí (sat)", "Fee Amount (sat)"))
                     .size(14)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
-                text_input("Enter fee in satoshis...", &self.fee_amount)
-                    .on_input(SendMessage::FeeAmountChanged)
-                    .padding(12)
-                    .size(14)
+                text_input(
+                    t("Nhập phí satoshi...", "Enter fee in satoshis..."),
+                    &self.fee_amount
+                )
+                .on_input(SendMessage::FeeAmountChanged)
+                .padding(12)
+                .size(14)
             ]
             .spacing(4)
             .into()
         } else if let Some(fee) = self.estimated_fee {
-            text(format!("Estimated fee: {} sat", fee))
-                .size(14)
-                .style(text_color(Colors::SUCCESS))
-                .into()
+            text(format!(
+                "{}: {} sat",
+                t("Ước tính phí", "Estimated fee"),
+                fee
+            ))
+            .size(14)
+            .style(text_color(Colors::SUCCESS))
+            .into()
         } else {
-            text("Click 'Estimate Fee' for auto mode")
-                .size(14)
-                .style(text_color(Colors::TEXT_MUTED))
-                .into()
+            text(t(
+                "Bấm 'Ước tính phí' khi dùng chế độ tự động",
+                "Click 'Estimate Fee' for auto mode",
+            ))
+            .size(14)
+            .style(text_color(Colors::TEXT_MUTED))
+            .into()
         };
 
-        let estimate_btn = button(text("Estimate Fee").size(14))
+        let estimate_btn = button(text(t("Ước tính phí", "Estimate Fee")).size(14))
             .on_press(SendMessage::EstimateFee)
             .padding(10)
             .style(secondary_button_style());
 
         let advanced_section = column![
-            text("Advanced Options (Optional)")
-                .size(16)
-                .style(text_color(Colors::TEXT_PRIMARY)),
+            text(t(
+                "Tùy chọn nâng cao (không bắt buộc)",
+                "Advanced Options (Optional)"
+            ))
+            .size(16)
+            .style(text_color(Colors::TEXT_PRIMARY)),
             Space::with_height(8),
             column![
-                text("From address indexes (comma separated)")
-                    .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                text(t(
+                    "Chỉ số địa chỉ nguồn (phân tách bởi dấu phẩy)",
+                    "From address indexes (comma separated)",
+                ))
+                .size(12)
+                .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
-                text_input("Example: 0,1,4", &self.from_address)
+                text_input(t("Ví dụ: 0,1,4", "Example: 0,1,4"), &self.from_address)
                     .on_input(SendMessage::FromAddressChanged)
                     .padding(10)
                     .size(12)
@@ -391,11 +439,14 @@ impl SendView {
             .spacing(2),
             Space::with_height(8),
             column![
-                text("Change address index (empty = derive new)")
-                    .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                text(t(
+                    "Chỉ số địa chỉ trả lại (để trống = tạo mới)",
+                    "Change address index (empty = derive new)",
+                ))
+                .size(12)
+                .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
-                text_input("Example: 2", &self.change_address)
+                text_input(t("Ví dụ: 2", "Example: 2"), &self.change_address)
                     .on_input(SendMessage::ChangeAddressChanged)
                     .padding(10)
                     .size(12)
@@ -403,18 +454,25 @@ impl SendView {
             .spacing(2),
             Space::with_height(8),
             row![
-                text("Broadcast Immediately")
+                text(t("Broadcast ngay", "Broadcast Immediately"))
                     .size(14)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_width(Length::Fill),
-                button(text(if self.broadcast { "YES" } else { "NO" }).size(12))
-                    .on_press(SendMessage::BroadcastChanged(!self.broadcast))
-                    .padding(6)
-                    .style(if self.broadcast {
-                        primary_button_style()
+                button(
+                    text(if self.broadcast {
+                        t("CÓ", "YES")
                     } else {
-                        secondary_button_style()
+                        t("KHÔNG", "NO")
                     })
+                    .size(12)
+                )
+                .on_press(SendMessage::BroadcastChanged(!self.broadcast))
+                .padding(6)
+                .style(if self.broadcast {
+                    primary_button_style()
+                } else {
+                    secondary_button_style()
+                })
             ]
             .align_y(Alignment::Center)
         ]
@@ -438,13 +496,13 @@ impl SendView {
             Space::with_height(0).into()
         };
 
-        let send_btn = button(text("Send Transaction").size(16))
+        let send_btn = button(text(t("Gửi giao dịch", "Send Transaction")).size(16))
             .on_press(SendMessage::Send)
             .padding(14)
             .width(Length::Fill)
             .style(primary_button_style());
 
-        let clear_btn = button(text("Clear Form").size(14))
+        let clear_btn = button(text(t("Xóa form", "Clear Form")).size(14))
             .on_press(SendMessage::ClearForm)
             .padding(10)
             .style(secondary_button_style());
@@ -515,18 +573,30 @@ fn selected_wallet_choice(wallets: &[WalletEntry], selected_wallet: usize) -> Op
     })
 }
 
-fn parse_u64_required(raw: &str, field: &str) -> Result<u64, String> {
+fn parse_u64_required(raw: &str, field_vi: &str, field_en: &str) -> Result<u64, String> {
     let value = raw.trim();
     if value.is_empty() {
-        return Err(format!("Vui lòng nhập {field}"));
+        return Err(format!(
+            "{} {}",
+            t("Vui lòng nhập", "Please enter"),
+            t(field_vi, field_en)
+        ));
     }
 
-    let parsed = value
-        .parse::<u64>()
-        .map_err(|_| format!("{field} phải là số nguyên dương"))?;
+    let parsed = value.parse::<u64>().map_err(|_| {
+        format!(
+            "{} {}",
+            t(field_vi, field_en),
+            t("phải là số nguyên dương", "must be a positive integer")
+        )
+    })?;
 
     if parsed == 0 {
-        return Err(format!("{field} phải lớn hơn 0"));
+        return Err(format!(
+            "{} {}",
+            t(field_vi, field_en),
+            t("phải lớn hơn 0", "must be greater than 0")
+        ));
     }
 
     Ok(parsed)
@@ -540,14 +610,22 @@ fn parse_input_source(raw: &str) -> Result<InputSource, String> {
 
     let mut indexes = Vec::new();
     for token in trimmed.split(',').map(str::trim).filter(|s| !s.is_empty()) {
-        let index = token
-            .parse::<u32>()
-            .map_err(|_| "from indexes không hợp lệ (ví dụ: 0,1,2)".to_string())?;
+        let index = token.parse::<u32>().map_err(|_| {
+            t(
+                "from indexes không hợp lệ (ví dụ: 0,1,2)",
+                "Invalid from indexes (example: 0,1,2)",
+            )
+            .to_string()
+        })?;
         indexes.push(index);
     }
 
     if indexes.is_empty() {
-        return Err("from indexes không được rỗng".to_string());
+        return Err(t(
+            "from indexes không được rỗng",
+            "from indexes cannot be empty",
+        )
+        .to_string());
     }
 
     Ok(InputSource::AddressIndexes(indexes))
@@ -561,6 +639,6 @@ fn parse_change_strategy(raw: &str) -> Result<ChangeStrategy, String> {
 
     let index = trimmed
         .parse::<u32>()
-        .map_err(|_| "change index không hợp lệ".to_string())?;
+        .map_err(|_| t("change index không hợp lệ", "Invalid change index").to_string())?;
     Ok(ChangeStrategy::ExistingIndex(index))
 }

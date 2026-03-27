@@ -5,6 +5,7 @@ use iced::{
     Alignment, Element, Length,
 };
 
+use crate::i18n::{current_language, t, AppLanguage};
 use crate::theme::{
     card_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, text_color, Colors,
@@ -17,9 +18,11 @@ const BACKUP_LOCATIONS: [BackupLocation; 5] = [
     BackupLocation::Home,
     BackupLocation::CurrentDirectory,
 ];
+const APP_LANGUAGES: [AppLanguage; 2] = AppLanguage::ALL;
 
 #[derive(Debug, Clone)]
 pub enum SettingsMessage {
+    LanguageChanged(AppLanguage),
     ToggleChangePassphrase,
     CurrentPassphraseChanged(String),
     NewPassphraseChanged(String),
@@ -48,11 +51,11 @@ pub enum BackupLocation {
 impl fmt::Display for BackupLocation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let label = match self {
-            BackupLocation::Home => "Home",
-            BackupLocation::Desktop => "Desktop",
-            BackupLocation::Documents => "Documents",
-            BackupLocation::Downloads => "Downloads",
-            BackupLocation::CurrentDirectory => "Current Folder",
+            BackupLocation::Home => t("Thư mục Home", "Home"),
+            BackupLocation::Desktop => t("Desktop", "Desktop"),
+            BackupLocation::Documents => t("Documents", "Documents"),
+            BackupLocation::Downloads => t("Downloads", "Downloads"),
+            BackupLocation::CurrentDirectory => t("Thư mục hiện tại", "Current Folder"),
         };
         f.write_str(label)
     }
@@ -113,6 +116,11 @@ impl SettingsView {
 
     pub fn update(&mut self, message: SettingsMessage) -> Option<crate::app::AppMessage> {
         match message {
+            SettingsMessage::LanguageChanged(language) => {
+                self.error = None;
+                self.success = None;
+                Some(crate::app::AppMessage::ChangeLanguage(language))
+            }
             SettingsMessage::ToggleChangePassphrase => {
                 self.show_change_passphrase = !self.show_change_passphrase;
                 self.error = None;
@@ -136,17 +144,35 @@ impl SettingsView {
             }
             SettingsMessage::SubmitPassphraseChange => {
                 if self.current_passphrase.trim().is_empty() {
-                    self.error = Some("Vui lòng nhập passphrase hiện tại".to_string());
+                    self.error = Some(
+                        t(
+                            "Vui lòng nhập passphrase hiện tại",
+                            "Please enter your current passphrase",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
                 if self.new_passphrase.trim().is_empty() {
-                    self.error = Some("Vui lòng nhập passphrase mới".to_string());
+                    self.error = Some(
+                        t(
+                            "Vui lòng nhập passphrase mới",
+                            "Please enter a new passphrase",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
                 if self.new_passphrase != self.confirm_passphrase {
-                    self.error = Some("Passphrase mới và xác nhận không khớp".to_string());
+                    self.error = Some(
+                        t(
+                            "Passphrase mới và xác nhận không khớp",
+                            "New passphrase and confirmation do not match",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -174,7 +200,9 @@ impl SettingsView {
             SettingsMessage::ExportWallet => {
                 let path = self.export_path.trim();
                 if path.is_empty() {
-                    self.error = Some("Vui lòng nhập đường dẫn export".to_string());
+                    self.error = Some(
+                        t("Vui lòng nhập đường dẫn export", "Please enter export path").to_string(),
+                    );
                     return None;
                 }
 
@@ -202,7 +230,13 @@ impl SettingsView {
             }
             SettingsMessage::ConfirmClearData => {
                 if self.clear_data_passphrase.trim().is_empty() {
-                    self.error = Some("Vui lòng nhập passphrase hiện tại để xác nhận".to_string());
+                    self.error = Some(
+                        t(
+                            "Vui lòng nhập passphrase hiện tại để xác nhận",
+                            "Please enter your current passphrase to confirm",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -222,13 +256,37 @@ impl SettingsView {
     }
 
     pub fn view(&self) -> Element<'_, SettingsMessage> {
-        let title = text("Settings")
+        let title = text(t("Cài đặt", "Settings"))
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
 
         let mut content = column![title].spacing(20).padding(32);
 
-        let change_passphrase_btn = button(text("Change Passphrase").size(16))
+        let language_section = container(
+            column![
+                text(t("Ngôn ngữ", "Language"))
+                    .size(18)
+                    .style(text_color(Colors::TEXT_PRIMARY)),
+                Space::with_height(8),
+                pick_list(
+                    APP_LANGUAGES,
+                    Some(current_language()),
+                    SettingsMessage::LanguageChanged
+                )
+                .width(Length::Fill)
+                .padding(10)
+                .style(pick_list_style())
+                .menu_style(pick_list_menu_style()),
+            ]
+            .spacing(8),
+        )
+        .style(card_style())
+        .padding(16)
+        .width(Length::Fill);
+
+        content = content.push(language_section);
+
+        let change_passphrase_btn = button(text(t("Đổi passphrase", "Change Passphrase")).size(16))
             .on_press(SettingsMessage::ToggleChangePassphrase)
             .padding(12)
             .width(Length::Fill)
@@ -236,7 +294,7 @@ impl SettingsView {
 
         content = content.push(
             container(column![
-                text("Security")
+                text(t("Bảo mật", "Security"))
                     .size(18)
                     .style(text_color(Colors::TEXT_PRIMARY)),
                 Space::with_height(12),
@@ -249,41 +307,50 @@ impl SettingsView {
 
         if self.show_change_passphrase {
             let current_input = column![
-                text("Current Passphrase")
+                text(t("Passphrase hiện tại", "Current Passphrase"))
                     .size(12)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
-                text_input("Enter current passphrase...", &self.current_passphrase)
-                    .on_input(SettingsMessage::CurrentPassphraseChanged)
-                    .secure(true)
-                    .padding(10)
-                    .size(14)
+                text_input(
+                    t("Nhập passphrase hiện tại...", "Enter current passphrase..."),
+                    &self.current_passphrase
+                )
+                .on_input(SettingsMessage::CurrentPassphraseChanged)
+                .secure(true)
+                .padding(10)
+                .size(14)
             ]
             .spacing(2);
 
             let new_input = column![
-                text("New Passphrase")
+                text(t("Passphrase mới", "New Passphrase"))
                     .size(12)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
-                text_input("Enter new passphrase...", &self.new_passphrase)
-                    .on_input(SettingsMessage::NewPassphraseChanged)
-                    .secure(true)
-                    .padding(10)
-                    .size(14)
+                text_input(
+                    t("Nhập passphrase mới...", "Enter new passphrase..."),
+                    &self.new_passphrase
+                )
+                .on_input(SettingsMessage::NewPassphraseChanged)
+                .secure(true)
+                .padding(10)
+                .size(14)
             ]
             .spacing(2);
 
             let confirm_input = column![
-                text("Confirm New Passphrase")
+                text(t("Xác nhận passphrase mới", "Confirm New Passphrase"))
                     .size(12)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
-                text_input("Confirm new passphrase...", &self.confirm_passphrase)
-                    .on_input(SettingsMessage::ConfirmPassphraseChanged)
-                    .secure(true)
-                    .padding(10)
-                    .size(14)
+                text_input(
+                    t("Xác nhận passphrase mới...", "Confirm new passphrase..."),
+                    &self.confirm_passphrase
+                )
+                .on_input(SettingsMessage::ConfirmPassphraseChanged)
+                .secure(true)
+                .padding(10)
+                .size(14)
             ]
             .spacing(2);
 
@@ -295,7 +362,7 @@ impl SettingsView {
                     Space::with_height(12),
                     confirm_input,
                     Space::with_height(12),
-                    button(text("Update Passphrase").size(14))
+                    button(text(t("Cập nhật passphrase", "Update Passphrase")).size(14))
                         .on_press(SettingsMessage::SubmitPassphraseChange)
                         .padding(12)
                         .style(primary_button_style()),
@@ -307,21 +374,30 @@ impl SettingsView {
         }
 
         let export_section = container(column![
-            text("Export Backup")
+            text(t("Xuất backup", "Export Backup"))
                 .size(18)
                 .style(text_color(Colors::TEXT_PRIMARY)),
             Space::with_height(8),
-            text("Backup sẽ được mã hóa bằng passphrase hiện tại")
+            text(t(
+                "Backup sẽ được mã hóa bằng passphrase hiện tại",
+                "Backup will be encrypted with the current passphrase"
+            ))
                 .size(12)
                 .style(text_color(Colors::TEXT_SECONDARY)),
-            text("Khuyến nghị: ưu tiên backup mnemonic cho từng wallet thay vì backup toàn app.")
+            text(t(
+                "Khuyến nghị: ưu tiên backup mnemonic cho từng wallet thay vì backup toàn app.",
+                "Recommended: backup each wallet mnemonic instead of full app backup."
+            ))
                 .size(12)
                 .style(text_color(Colors::WARNING)),
-            text("Import backup chỉ hỗ trợ ở màn hình khởi tạo khi app chưa có passphrase.")
+            text(t(
+                "Import backup chỉ hỗ trợ ở màn hình khởi tạo khi app chưa có passphrase.",
+                "Backup import is only supported on the initial screen when app has no passphrase yet."
+            ))
                 .size(12)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(10),
-            text("Chọn thư mục lưu backup")
+            text(t("Chọn thư mục lưu backup", "Choose backup directory"))
                 .size(12)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
@@ -336,20 +412,23 @@ impl SettingsView {
             .menu_style(pick_list_menu_style()),
             Space::with_height(8),
             row![
-                text_input("Path to backup file...", &self.export_path)
+                text_input(
+                    t("Đường dẫn file backup...", "Path to backup file..."),
+                    &self.export_path
+                )
                     .on_input(SettingsMessage::ExportPathChanged)
                     .padding(10)
                     .size(14)
                     .width(Length::Fill),
                 Space::with_width(8),
-                button(text("Chọn nơi lưu").size(14))
+                button(text(t("Chọn nơi lưu", "Browse")).size(14))
                     .on_press(SettingsMessage::BrowseExportPath)
                     .padding(10)
                     .style(secondary_button_style()),
             ]
             .align_y(Alignment::Center),
             Space::with_height(8),
-            button(text("Export Wallet Backup").size(14))
+            button(text(t("Xuất backup ví", "Export Wallet Backup")).size(14))
                 .on_press(SettingsMessage::ExportWallet)
                 .padding(12)
                 .style(secondary_button_style()),
@@ -360,19 +439,23 @@ impl SettingsView {
 
         content = content.push(export_section);
 
-        let clear_data_button = button(text("Clear All Wallet Data").size(14))
-            .on_press(SettingsMessage::ToggleClearDataConfirm)
-            .padding(12)
-            .style(secondary_button_style());
+        let clear_data_button =
+            button(text(t("Xóa toàn bộ dữ liệu ví", "Clear All Wallet Data")).size(14))
+                .on_press(SettingsMessage::ToggleClearDataConfirm)
+                .padding(12)
+                .style(secondary_button_style());
 
         let mut clear_data_col = column![
-            text("Danger Zone")
+            text(t("Vùng nguy hiểm", "Danger Zone"))
                 .size(18)
                 .style(text_color(Colors::ERROR)),
             Space::with_height(8),
-            text("Xóa toàn bộ ví và dữ liệu đã lưu trong ứng dụng")
-                .size(12)
-                .style(text_color(Colors::WARNING)),
+            text(t(
+                "Xóa toàn bộ ví và dữ liệu đã lưu trong ứng dụng",
+                "Delete all wallets and saved app data"
+            ))
+            .size(12)
+            .style(text_color(Colors::WARNING)),
             Space::with_height(10),
             clear_data_button,
         ]
@@ -381,22 +464,28 @@ impl SettingsView {
         if self.show_clear_data_confirm {
             clear_data_col = clear_data_col.push(
                 column![
-                    text("Xác nhận xóa toàn bộ dữ liệu?")
-                        .size(13)
-                        .style(text_color(Colors::ERROR)),
+                    text(t(
+                        "Xác nhận xóa toàn bộ dữ liệu?",
+                        "Confirm deleting all data?"
+                    ))
+                    .size(13)
+                    .style(text_color(Colors::ERROR)),
                     Space::with_height(8),
-                    text_input("Nhập passphrase hiện tại...", &self.clear_data_passphrase)
-                        .on_input(SettingsMessage::ClearDataPassphraseChanged)
-                        .secure(true)
-                        .padding(10)
-                        .size(13),
+                    text_input(
+                        t("Nhập passphrase hiện tại...", "Enter current passphrase..."),
+                        &self.clear_data_passphrase
+                    )
+                    .on_input(SettingsMessage::ClearDataPassphraseChanged)
+                    .secure(true)
+                    .padding(10)
+                    .size(13),
                     Space::with_height(8),
-                    button(text("Xóa toàn bộ ngay").size(13))
+                    button(text(t("Xóa toàn bộ ngay", "Delete Everything")).size(13))
                         .on_press(SettingsMessage::ConfirmClearData)
                         .padding(10)
                         .style(primary_button_style()),
                     Space::with_height(6),
-                    button(text("Hủy").size(13))
+                    button(text(t("Hủy", "Cancel")).size(13))
                         .on_press(SettingsMessage::CancelClearData)
                         .padding(10)
                         .style(secondary_button_style()),
@@ -412,14 +501,14 @@ impl SettingsView {
                 .width(Length::Fill),
         );
 
-        let about_btn = button(text("About").size(16))
+        let about_btn = button(text(t("Giới thiệu", "About")).size(16))
             .on_press(SettingsMessage::ToggleAbout)
             .padding(12)
             .width(Length::Fill)
             .style(secondary_button_style());
 
         let mut info_col = column![
-            text("Information")
+            text(t("Thông tin", "Information"))
                 .size(18)
                 .style(text_color(Colors::TEXT_PRIMARY)),
             Space::with_height(12),
@@ -435,14 +524,17 @@ impl SettingsView {
                         .style(text_color(Colors::TEXT_MUTED)),
                 )
                 .push(
-                    text("Built with iced.rs")
+                    text(t("Xây dựng với iced.rs", "Built with iced.rs"))
                         .size(12)
                         .style(text_color(Colors::TEXT_MUTED)),
                 )
                 .push(
-                    text("Storage: encrypted backup (ChaCha20-Poly1305 + Argon2id)")
-                        .size(12)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                    text(t(
+                        "Lưu trữ: backup mã hóa (ChaCha20-Poly1305 + Argon2id)",
+                        "Storage: encrypted backup (ChaCha20-Poly1305 + Argon2id)",
+                    ))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_MUTED)),
                 );
         }
 

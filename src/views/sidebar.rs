@@ -1,3 +1,4 @@
+use crate::i18n::t;
 use crate::theme::{secondary_button_style, sidebar_style, text_color, Colors};
 use iced::{
     widget::{button, column, container, row, text, Space},
@@ -39,12 +40,12 @@ impl NavItem {
 
     pub fn title(self) -> &'static str {
         match self {
-            Self::Dashboard => "Dashboard",
-            Self::Wallets => "Wallets",
-            Self::Send => "Send",
-            Self::Receive => "Receive",
-            Self::History => "History",
-            Self::Settings => "Settings",
+            Self::Dashboard => t("Tổng quan", "Dashboard"),
+            Self::Wallets => t("Ví", "Wallets"),
+            Self::Send => t("Gửi", "Send"),
+            Self::Receive => t("Nhận", "Receive"),
+            Self::History => t("Lịch sử", "History"),
+            Self::Settings => t("Cài đặt", "Settings"),
         }
     }
 }

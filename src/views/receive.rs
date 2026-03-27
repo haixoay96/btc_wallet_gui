@@ -8,6 +8,7 @@ use iced::{
 use qrcode::{types::Color as QrColor, QrCode};
 use std::fmt;
 
+use crate::i18n::t;
 use crate::theme::{
     card_style, color_with_alpha, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, text_color, Colors,
@@ -105,19 +106,22 @@ impl ReceiveView {
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
         let wallet = wallets.get(selected_wallet);
 
-        let title = text("Receive BTC")
+        let title = text(t("Nhận BTC", "Receive BTC"))
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
 
         let wallet_selector = column![
-            text("Wallet")
+            text(t("Ví", "Wallet"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
             pick_list(wallet_options, selected_wallet_option, |choice| {
                 ReceiveMessage::SelectWallet(choice.index)
             })
-            .placeholder("Chọn ví để nhận BTC...")
+            .placeholder(t(
+                "Chọn ví để nhận BTC...",
+                "Select wallet to receive BTC..."
+            ))
             .width(Length::Fill)
             .padding(12)
             .style(pick_list_style())
@@ -133,33 +137,39 @@ impl ReceiveView {
 
             content = content.push(
                 text(format!(
-                    "Balance: {:.8} BTC | Network: {}",
+                    "{}: {:.8} BTC | {}: {}",
+                    t("Số dư", "Balance"),
                     balance_btc,
+                    t("Mạng", "Network"),
                     wallet.network.as_str()
                 ))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             );
 
-            let derive_button = button(text("+ Derive New Address").size(14))
-                .on_press(ReceiveMessage::DeriveNewAddress)
-                .padding(10)
-                .style(primary_button_style());
+            let derive_button =
+                button(text(t("+ Tạo địa chỉ mới", "+ Derive New Address")).size(14))
+                    .on_press(ReceiveMessage::DeriveNewAddress)
+                    .padding(10)
+                    .style(primary_button_style());
 
             content = content.push(derive_button);
 
             if wallet.addresses.is_empty() {
                 content = content.push(
-                    text("Ví chưa có địa chỉ, hãy bấm 'Derive New Address'.")
-                        .size(14)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                    text(t(
+                        "Ví chưa có địa chỉ, hãy bấm 'Tạo địa chỉ mới'.",
+                        "This wallet has no address yet, click 'Derive New Address'.",
+                    ))
+                    .size(14)
+                    .style(text_color(Colors::TEXT_MUTED)),
                 );
             } else {
                 let selected_index = self.selected_index.min(wallet.addresses.len() - 1);
                 if let Some(addr) = wallet.addresses.get(selected_index) {
                     content = content.push(Space::with_height(12));
                     content = content.push(
-                        text("Selected Address:")
+                        text(t("Địa chỉ đang chọn:", "Selected Address:"))
                             .size(16)
                             .style(text_color(Colors::TEXT_PRIMARY)),
                     );
@@ -180,9 +190,9 @@ impl ReceiveView {
                         row![
                             button(
                                 text(if self.copied {
-                                    "Copied!"
+                                    t("Đã copy!", "Copied!")
                                 } else {
-                                    "Copy Address"
+                                    t("Copy địa chỉ", "Copy Address")
                                 })
                                 .size(14),
                             )
@@ -196,9 +206,9 @@ impl ReceiveView {
                             Space::with_width(8),
                             button(
                                 text(if qr_visible_for_selected {
-                                    "Ẩn QR"
+                                    t("Ẩn QR", "Hide QR")
                                 } else {
-                                    "Hiện QR"
+                                    t("Hiện QR", "Show QR")
                                 })
                                 .size(14),
                             )
@@ -210,14 +220,17 @@ impl ReceiveView {
                     );
 
                     if !qr_visible_for_selected && self.qr_error.is_some() {
-                        let err = self.qr_error.as_deref().unwrap_or("Không tạo được QR");
+                        let err = self
+                            .qr_error
+                            .as_deref()
+                            .unwrap_or(t("Không tạo được QR", "Failed to generate QR"));
                         content = content.push(text(err).size(13).style(text_color(Colors::ERROR)));
                     }
                 }
 
                 content = content.push(Space::with_height(16));
                 content = content.push(
-                    text("All Addresses")
+                    text(t("Tất cả địa chỉ", "All Addresses"))
                         .size(18)
                         .style(text_color(Colors::TEXT_PRIMARY)),
                 );
@@ -235,7 +248,9 @@ impl ReceiveView {
                             .style(text_color(Colors::TEXT_PRIMARY)),
                         Space::with_width(Length::Fill),
                         if is_selected {
-                            text("Selected").size(11).style(text_color(Colors::SUCCESS))
+                            text(t("Đang chọn", "Selected"))
+                                .size(11)
+                                .style(text_color(Colors::SUCCESS))
                         } else {
                             text("")
                         },
@@ -260,7 +275,7 @@ impl ReceiveView {
             }
         } else {
             content = content.push(
-                text("No wallet selected")
+                text(t("Chưa chọn ví", "No wallet selected"))
                     .size(16)
                     .style(text_color(Colors::ERROR)),
             );
@@ -278,7 +293,7 @@ impl ReceiveView {
         ) {
             let popup = container(
                 column![
-                    text("QR Code nhận BTC")
+                    text(t("QR Code nhận BTC", "BTC Receive QR Code"))
                         .size(18)
                         .style(text_color(Colors::TEXT_PRIMARY)),
                     text(address.as_str())
@@ -293,7 +308,7 @@ impl ReceiveView {
                     .width(Length::Fill)
                     .center_x(Length::Fill),
                     Space::with_height(10),
-                    button(text("Đóng").size(14))
+                    button(text(t("Đóng", "Close")).size(14))
                         .on_press(ReceiveMessage::CloseQrPopup)
                         .padding(10)
                         .style(primary_button_style()),
@@ -382,7 +397,8 @@ fn selected_wallet_choice(wallets: &[WalletEntry], selected_wallet: usize) -> Op
 }
 
 fn build_qr_handle(address: &str) -> Result<image::Handle, String> {
-    let qr = QrCode::new(address.as_bytes()).map_err(|err| format!("Không tạo được QR: {err}"))?;
+    let qr = QrCode::new(address.as_bytes())
+        .map_err(|err| format!("{}: {err}", t("Không tạo được QR", "Failed to generate QR")))?;
 
     let module_count = qr.width();
     let scale = 8usize;

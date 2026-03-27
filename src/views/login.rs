@@ -3,6 +3,7 @@ use iced::{
     Alignment, Element, Length, Padding,
 };
 
+use crate::i18n::t;
 use crate::theme::{
     card_style, input_style, primary_button_style, secondary_button_style, text_color, Colors,
 };
@@ -104,7 +105,13 @@ impl LoginView {
             LoginMessage::BrowseBackupPath => Some(crate::app::AppMessage::PickImportBackupPath),
             LoginMessage::Submit => {
                 if self.passphrase.trim().is_empty() {
-                    self.error = Some("Passphrase không được để trống".to_string());
+                    self.error = Some(
+                        t(
+                            "Passphrase không được để trống",
+                            "Passphrase cannot be empty",
+                        )
+                        .to_string(),
+                    );
                     return None;
                 }
 
@@ -116,17 +123,24 @@ impl LoginView {
                     }),
                     LoginMode::NewWallet => {
                         if self.nickname.trim().is_empty() {
-                            self.error = Some("Vui lòng nhập nickname".to_string());
+                            self.error = Some(
+                                t("Vui lòng nhập nickname", "Please enter nickname").to_string(),
+                            );
                             return None;
                         }
 
                         if self.confirm_passphrase.trim().is_empty() {
-                            self.error = Some("Vui lòng xác nhận passphrase".to_string());
+                            self.error = Some(
+                                t("Vui lòng xác nhận passphrase", "Please confirm passphrase")
+                                    .to_string(),
+                            );
                             return None;
                         }
 
                         if self.passphrase != self.confirm_passphrase {
-                            self.error = Some("Passphrase không khớp".to_string());
+                            self.error = Some(
+                                t("Passphrase không khớp", "Passphrases do not match").to_string(),
+                            );
                             return None;
                         }
 
@@ -138,7 +152,13 @@ impl LoginView {
                     }
                     LoginMode::ImportBackup => {
                         if self.backup_path.trim().is_empty() {
-                            self.error = Some("Vui lòng nhập đường dẫn file backup".to_string());
+                            self.error = Some(
+                                t(
+                                    "Vui lòng nhập đường dẫn file backup",
+                                    "Please enter backup file path",
+                                )
+                                .to_string(),
+                            );
                             return None;
                         }
 
@@ -167,28 +187,41 @@ impl LoginView {
     }
 
     pub fn view(&self) -> Element<'_, LoginMessage> {
-        let title = text("Bitcoin Wallet")
+        let title = text(t("Ví Bitcoin", "Bitcoin Wallet"))
             .size(36)
             .style(text_color(Colors::TEXT_PRIMARY));
 
         let subtitle = text(match self.mode {
-            LoginMode::ExistingWallet => "Đăng nhập bằng passphrase",
-            LoginMode::NewWallet => "Tạo bộ dữ liệu ví mới bằng passphrase",
-            LoginMode::ImportBackup => {
-                "Import backup khi app chưa có dữ liệu, sau đó đăng nhập bằng passphrase backup"
-            }
+            LoginMode::ExistingWallet => t("Đăng nhập bằng passphrase", "Login with passphrase"),
+            LoginMode::NewWallet => t(
+                "Tạo bộ dữ liệu ví mới bằng passphrase",
+                "Create new wallet data with passphrase",
+            ),
+            LoginMode::ImportBackup => t(
+                "Import backup khi app chưa có dữ liệu, sau đó đăng nhập bằng passphrase backup",
+                "Import backup when app has no data yet, then login with backup passphrase",
+            ),
         })
         .size(16)
         .style(text_color(Colors::TEXT_SECONDARY));
 
         let mode_switcher: Element<'_, LoginMessage> = if self.can_create_new_passphrase {
             row![
-                mode_button("Đăng nhập", self.mode == LoginMode::ExistingWallet)
-                    .on_press(LoginMessage::SetMode(LoginMode::ExistingWallet)),
-                mode_button("Tạo passphrase mới", self.mode == LoginMode::NewWallet)
-                    .on_press(LoginMessage::SetMode(LoginMode::NewWallet)),
-                mode_button("Import backup", self.mode == LoginMode::ImportBackup)
-                    .on_press(LoginMessage::SetMode(LoginMode::ImportBackup)),
+                mode_button(
+                    t("Đăng nhập", "Login").to_string(),
+                    self.mode == LoginMode::ExistingWallet
+                )
+                .on_press(LoginMessage::SetMode(LoginMode::ExistingWallet)),
+                mode_button(
+                    t("Tạo passphrase mới", "Create new passphrase").to_string(),
+                    self.mode == LoginMode::NewWallet
+                )
+                .on_press(LoginMessage::SetMode(LoginMode::NewWallet)),
+                mode_button(
+                    t("Import backup", "Import backup").to_string(),
+                    self.mode == LoginMode::ImportBackup
+                )
+                .on_press(LoginMessage::SetMode(LoginMode::ImportBackup)),
             ]
             .spacing(10)
             .align_y(Alignment::Center)
@@ -198,7 +231,7 @@ impl LoginView {
         };
 
         let nickname_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
-            text_input("Nhập nickname...", &self.nickname)
+            text_input(t("Nhập nickname...", "Enter nickname..."), &self.nickname)
                 .on_input(LoginMessage::NicknameChanged)
                 .padding(12)
                 .size(16)
@@ -208,43 +241,55 @@ impl LoginView {
             Space::with_height(0).into()
         };
 
-        let passphrase_input = text_input("Nhập passphrase...", &self.passphrase)
-            .on_input(LoginMessage::PassphraseChanged)
+        let passphrase_input = text_input(
+            t("Nhập passphrase...", "Enter passphrase..."),
+            &self.passphrase,
+        )
+        .on_input(LoginMessage::PassphraseChanged)
+        .on_submit(LoginMessage::Submit)
+        .secure(true)
+        .padding(12)
+        .size(16)
+        .style(input_style());
+
+        let confirm_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
+            text_input(
+                t("Xác nhận passphrase...", "Confirm passphrase..."),
+                &self.confirm_passphrase,
+            )
+            .on_input(LoginMessage::ConfirmPassphraseChanged)
             .on_submit(LoginMessage::Submit)
             .secure(true)
             .padding(12)
             .size(16)
-            .style(input_style());
-
-        let confirm_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
-            text_input("Xác nhận passphrase...", &self.confirm_passphrase)
-                .on_input(LoginMessage::ConfirmPassphraseChanged)
-                .on_submit(LoginMessage::Submit)
-                .secure(true)
-                .padding(12)
-                .size(16)
-                .style(input_style())
-                .into()
+            .style(input_style())
+            .into()
         } else {
             Space::with_height(0).into()
         };
 
         let backup_path_input: Element<'_, LoginMessage> = if self.mode == LoginMode::ImportBackup {
             column![
-                text("Backup File Path")
+                text(t("Đường dẫn file backup", "Backup File Path"))
                     .size(12)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
                 row![
-                    text_input("Ví dụ: ~/Downloads/wallet_backup.enc", &self.backup_path)
-                        .on_input(LoginMessage::BackupPathChanged)
-                        .on_submit(LoginMessage::Submit)
-                        .padding(12)
-                        .size(16)
-                        .style(input_style())
-                        .width(Length::Fill),
+                    text_input(
+                        t(
+                            "Ví dụ: ~/Downloads/wallet_backup.enc",
+                            "Example: ~/Downloads/wallet_backup.enc"
+                        ),
+                        &self.backup_path
+                    )
+                    .on_input(LoginMessage::BackupPathChanged)
+                    .on_submit(LoginMessage::Submit)
+                    .padding(12)
+                    .size(16)
+                    .style(input_style())
+                    .width(Length::Fill),
                     Space::with_width(8),
-                    button(text("Chọn file").size(14))
+                    button(text(t("Chọn file", "Choose file")).size(14))
                         .on_press(LoginMessage::BrowseBackupPath)
                         .padding(12)
                         .style(secondary_button_style()),
@@ -258,9 +303,9 @@ impl LoginView {
         };
 
         let action_label = match self.mode {
-            LoginMode::ExistingWallet => "Đăng nhập",
-            LoginMode::NewWallet => "Khởi tạo dữ liệu mới",
-            LoginMode::ImportBackup => "Import backup và đăng nhập",
+            LoginMode::ExistingWallet => t("Đăng nhập", "Login"),
+            LoginMode::NewWallet => t("Khởi tạo dữ liệu mới", "Initialize new data"),
+            LoginMode::ImportBackup => t("Import backup và đăng nhập", "Import backup and login"),
         };
 
         let error_text = if let Some(error) = &self.error {
@@ -309,7 +354,7 @@ impl LoginView {
     }
 }
 
-fn mode_button(label: &'static str, active: bool) -> iced::widget::Button<'static, LoginMessage> {
+fn mode_button(label: String, active: bool) -> iced::widget::Button<'static, LoginMessage> {
     button(text(label).size(13)).padding(10).style(if active {
         primary_button_style()
     } else {

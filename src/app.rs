@@ -12,6 +12,7 @@ use iced::{
 };
 use printpdf::{BuiltinFont, Mm, PdfDocument};
 
+use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, Storage, UserProfile};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
@@ -47,6 +48,7 @@ pub struct SendRequest {
 pub struct App {
     state: AppState,
     storage_passphrase: Option<String>,
+    language: AppLanguage,
     user_nickname: Option<String>,
     wallets: Vec<WalletEntry>,
     selected_wallet: usize,
@@ -88,6 +90,7 @@ pub enum AppMessage {
     ReceiveMessage(ReceiveMessage),
     HistoryMessage(HistoryMessage),
     SettingsMessage(SettingsMessage),
+    ChangeLanguage(AppLanguage),
 
     CreateWallet(String, WalletNetwork),
     ImportWalletFromMnemonic {
@@ -138,6 +141,9 @@ pub enum AppMessage {
 
 impl App {
     pub fn new() -> (Self, Task<AppMessage>) {
+        let default_language = AppLanguage::Vietnamese;
+        set_current_language(default_language);
+
         let has_existing_state = Storage::new()
             .map(|storage| storage.has_existing_state())
             .unwrap_or(false);
@@ -151,6 +157,7 @@ impl App {
             Self {
                 state: AppState::Login,
                 storage_passphrase: None,
+                language: default_language,
                 user_nickname: None,
                 wallets: Vec::new(),
                 selected_wallet: 0,
@@ -171,7 +178,7 @@ impl App {
     }
 
     pub fn title(&self) -> String {
-        "Bitcoin Wallet".to_string()
+        t("Ví Bitcoin", "Bitcoin Wallet").to_string()
     }
 
     pub fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
@@ -188,7 +195,11 @@ impl App {
                     Ok(storage) => {
                         let had_existing_state = storage.has_existing_state();
                         if had_existing_state && creating_new {
-                            let message = "Ứng dụng đã có dữ liệu. Vui lòng đăng nhập bằng passphrase hiện tại.".to_string();
+                            let message = t(
+                                "Ứng dụng đã có dữ liệu. Vui lòng đăng nhập bằng passphrase hiện tại.",
+                                "Application data already exists. Please login with your current passphrase.",
+                            )
+                            .to_string();
                             self.error = Some(message.clone());
                             self.login_view.set_error(message);
                             return Task::none();
@@ -198,7 +209,11 @@ impl App {
                             Ok(mut state) => {
                                 if !had_existing_state {
                                     if !creating_new {
-                                        let message = "Chưa có dữ liệu. Vui lòng tạo passphrase mới hoặc dùng Import backup ở màn hình này.".to_string();
+                                        let message = t(
+                                            "Chưa có dữ liệu. Vui lòng tạo passphrase mới hoặc dùng Import backup ở màn hình này.",
+                                            "No existing data found. Please create a new passphrase or import backup on this screen.",
+                                        )
+                                        .to_string();
                                         self.error = Some(message.clone());
                                         self.login_view.set_error(message);
                                         return Task::none();
@@ -206,17 +221,26 @@ impl App {
 
                                     let normalized_nickname =
                                         normalize_nickname(nickname.as_deref()).ok_or_else(|| {
-                                            "Vui lòng nhập nickname hợp lệ".to_string()
+                                            t(
+                                                "Vui lòng nhập nickname hợp lệ",
+                                                "Please enter a valid nickname",
+                                            )
+                                            .to_string()
                                         });
 
                                     match normalized_nickname {
                                         Ok(value) => {
                                             state.profile.nickname = Some(value);
+                                            state.profile.language = self.language;
                                             if let Err(err) =
                                                 storage.save_state(&state, &passphrase)
                                             {
                                                 let message = format!(
-                                                    "Không thể khởi tạo dữ liệu mới: {err}"
+                                                    "{}: {err}",
+                                                    t(
+                                                        "Không thể khởi tạo dữ liệu mới",
+                                                        "Failed to initialize new app data",
+                                                    )
                                                 );
                                                 self.error = Some(message.clone());
                                                 self.login_view.set_error(message);
@@ -233,6 +257,8 @@ impl App {
 
                                 self.user_nickname =
                                     normalize_nickname(state.profile.nickname.as_deref());
+                                self.language = state.profile.language;
+                                set_current_language(self.language);
                                 self.storage_passphrase = Some(passphrase);
                                 self.wallets = state.wallets;
                                 self.state = AppState::Main;
@@ -244,26 +270,37 @@ impl App {
 
                                 if had_existing_state {
                                     self.status = Some(format!(
-                                        "Welcome back, {}. Loaded {} wallet(s)",
+                                        "{} {}, {} {}",
+                                        t("Chào mừng quay lại,", "Welcome back,"),
                                         self.display_name(),
-                                        self.wallets.len()
+                                        t("đã tải", "loaded"),
+                                        wallet_count_text(self.wallets.len())
                                     ));
                                 } else {
                                     self.status = Some(format!(
-                                        "Welcome, {}! Create your first wallet.",
-                                        self.display_name()
+                                        "{} {}! {}",
+                                        t("Xin chào,", "Welcome,"),
+                                        self.display_name(),
+                                        t(
+                                            "Hãy tạo ví đầu tiên của bạn.",
+                                            "Create your first wallet."
+                                        ),
                                     ));
                                 }
                             }
                             Err(err) => {
-                                let message = format!("Đăng nhập thất bại: {err}");
+                                let message =
+                                    format!("{}: {err}", t("Đăng nhập thất bại", "Login failed"));
                                 self.error = Some(message.clone());
                                 self.login_view.set_error(message);
                             }
                         }
                     }
                     Err(err) => {
-                        self.error = Some(format!("Error initializing storage: {err}"));
+                        self.error = Some(format!(
+                            "{}: {err}",
+                            t("Không thể khởi tạo storage", "Failed to initialize storage")
+                        ));
                     }
                 }
 
@@ -278,7 +315,11 @@ impl App {
                 self.error = None;
 
                 if passphrase.trim().is_empty() {
-                    let message = "Passphrase không được để trống".to_string();
+                    let message = t(
+                        "Passphrase không được để trống",
+                        "Passphrase must not be empty",
+                    )
+                    .to_string();
                     self.error = Some(message.clone());
                     self.login_view.set_error(message);
                     return Task::none();
@@ -289,7 +330,11 @@ impl App {
                 match Storage::new() {
                     Ok(storage) => {
                         if storage.has_existing_state() {
-                            let message = "Ứng dụng đã có dữ liệu. Chỉ import backup từ màn hình này khi chưa tạo passphrase.".to_string();
+                            let message = t(
+                                "Ứng dụng đã có dữ liệu. Chỉ import backup từ màn hình này khi chưa tạo passphrase.",
+                                "Application data already exists. Import backup here is only allowed before creating a passphrase.",
+                            )
+                            .to_string();
                             self.error = Some(message.clone());
                             self.login_view.set_error(message);
                             return Task::none();
@@ -298,8 +343,13 @@ impl App {
                         match storage.import_backup(&import_path, &passphrase) {
                             Ok(state) => {
                                 if let Err(err) = storage.save_state(&state, &passphrase) {
-                                    let message =
-                                        format!("Không thể lưu dữ liệu backup vào app: {err}");
+                                    let message = format!(
+                                        "{}: {err}",
+                                        t(
+                                            "Không thể lưu dữ liệu backup vào app",
+                                            "Failed to save imported backup into app storage",
+                                        )
+                                    );
                                     self.error = Some(message.clone());
                                     self.login_view.set_error(message);
                                     return Task::none();
@@ -307,6 +357,8 @@ impl App {
 
                                 self.user_nickname =
                                     normalize_nickname(state.profile.nickname.as_deref());
+                                self.language = state.profile.language;
+                                set_current_language(self.language);
                                 self.storage_passphrase = Some(passphrase);
                                 self.wallets = state.wallets;
                                 self.state = AppState::Main;
@@ -316,21 +368,29 @@ impl App {
                                 self.update_dashboard();
                                 self.login_view.clear_error();
                                 self.status = Some(format!(
-                                    "Imported {} wallet(s) from {}",
-                                    self.wallets.len(),
+                                    "{} {} {} {}",
+                                    t("Đã import", "Imported"),
+                                    wallet_count_text(self.wallets.len()),
+                                    t("từ", "from"),
                                     import_path.display()
                                 ));
                                 self.error = None;
                             }
                             Err(err) => {
-                                let message = format!("Import backup thất bại: {err}");
+                                let message = format!(
+                                    "{}: {err}",
+                                    t("Import backup thất bại", "Backup import failed")
+                                );
                                 self.error = Some(message.clone());
                                 self.login_view.set_error(message);
                             }
                         }
                     }
                     Err(err) => {
-                        let message = format!("Error initializing storage: {err}");
+                        let message = format!(
+                            "{}: {err}",
+                            t("Không thể khởi tạo storage", "Failed to initialize storage")
+                        );
                         self.error = Some(message.clone());
                         self.login_view.set_error(message);
                     }
@@ -415,6 +475,17 @@ impl App {
                 Task::none()
             }
 
+            AppMessage::ChangeLanguage(language) => {
+                self.language = language;
+                set_current_language(language);
+                self.settings_view.set_success(t(
+                    "Đã đổi ngôn ngữ ứng dụng",
+                    "Application language updated",
+                ));
+                self.save_state();
+                Task::none()
+            }
+
             AppMessage::CreateWallet(name, network) => {
                 match Wallet::new(&name, network) {
                     Ok(wallet) => {
@@ -423,16 +494,22 @@ impl App {
                         self.save_state();
                         self.update_dashboard();
                         self.wallets_view = WalletsView::new();
-                        self.wallets_view.set_info(
+                        self.wallets_view.set_info(t(
                             "Ví mới đã tạo. Hãy backup mnemonic ngay và hoàn thành bài test.",
-                        );
+                            "New wallet created. Please back up the mnemonic now and complete the backup test.",
+                        ));
                         self.status = Some(format!(
-                            "Created wallet '{name}' successfully. Backup mnemonic is required."
+                            "{} '{name}'. {}",
+                            t("Đã tạo ví thành công", "Wallet created successfully"),
+                            t("Cần backup mnemonic.", "Mnemonic backup is required.")
                         ));
                         self.error = None;
                     }
                     Err(err) => {
-                        self.error = Some(format!("Error creating wallet: {err}"));
+                        self.error = Some(format!(
+                            "{}: {err}",
+                            t("Tạo ví thất bại", "Failed to create wallet")
+                        ));
                     }
                 }
                 Task::none()
@@ -450,16 +527,24 @@ impl App {
                         self.save_state();
                         self.update_dashboard();
                         self.wallets_view = WalletsView::new();
-                        self.wallets_view.set_info(
+                        self.wallets_view.set_info(t(
                             "Import mnemonic thành công. Ví này đã được đánh dấu backup.",
-                        );
-                        self.status = Some(format!("Imported wallet '{name}' from mnemonic"));
+                            "Mnemonic import succeeded. This wallet has been marked as backed up.",
+                        ));
+                        self.status = Some(format!(
+                            "{} '{name}' {}",
+                            t("Đã import ví", "Imported wallet"),
+                            t("từ mnemonic", "from mnemonic")
+                        ));
                         self.error = None;
                     }
                     Err(err) => {
-                        self.wallets_view
-                            .set_error(format!("Import mnemonic thất bại: {err}"));
-                        self.error = Some(format!("Import mnemonic thất bại: {err}"));
+                        let message = format!(
+                            "{}: {err}",
+                            t("Import mnemonic thất bại", "Mnemonic import failed")
+                        );
+                        self.wallets_view.set_error(message.clone());
+                        self.error = Some(message);
                     }
                 }
                 Task::none()
@@ -478,16 +563,24 @@ impl App {
                         self.save_state();
                         self.update_dashboard();
                         self.wallets_view = WalletsView::new();
-                        self.wallets_view.set_info(
+                        self.wallets_view.set_info(t(
                             "Import SLIP-0039 thành công. Ví này đã được đánh dấu backup.",
-                        );
-                        self.status = Some(format!("Imported wallet '{name}' from SLIP-0039"));
+                            "SLIP-0039 import succeeded. This wallet has been marked as backed up.",
+                        ));
+                        self.status = Some(format!(
+                            "{} '{name}' {}",
+                            t("Đã import ví", "Imported wallet"),
+                            t("từ SLIP-0039", "from SLIP-0039")
+                        ));
                         self.error = None;
                     }
                     Err(err) => {
-                        self.wallets_view
-                            .set_error(format!("Import SLIP-0039 thất bại: {err}"));
-                        self.error = Some(format!("Import SLIP-0039 thất bại: {err}"));
+                        let message = format!(
+                            "{}: {err}",
+                            t("Import SLIP-0039 thất bại", "SLIP-0039 import failed")
+                        );
+                        self.wallets_view.set_error(message.clone());
+                        self.error = Some(message);
                     }
                 }
                 Task::none()
@@ -496,7 +589,11 @@ impl App {
             AppMessage::SelectWallet(index) => {
                 if index < self.wallets.len() {
                     self.selected_wallet = index;
-                    self.status = Some(format!("Selected wallet: {}", self.wallets[index].name));
+                    self.status = Some(format!(
+                        "{}: {}",
+                        t("Đã chọn ví", "Selected wallet"),
+                        self.wallets[index].name
+                    ));
                     self.error = None;
                 }
                 Task::none()
@@ -515,7 +612,7 @@ impl App {
 
                     self.save_state();
                     self.update_dashboard();
-                    self.status = Some(format!("Deleted wallet '{name}'"));
+                    self.status = Some(format!("{} '{name}'", t("Đã xóa ví", "Deleted wallet")));
                     self.error = None;
                 }
                 Task::none()
@@ -535,16 +632,25 @@ impl App {
                         Ok(addresses) => {
                             *wallet_entry = wallet.entry;
                             self.save_state();
-                            self.status =
-                                Some(format!("Derived {} new address(es)", addresses.len()));
+                            self.status = Some(format!(
+                                "{} {}",
+                                t("Đã tạo", "Derived"),
+                                address_count_text(addresses.len())
+                            ));
                             self.error = None;
                         }
                         Err(err) => {
-                            self.error = Some(format!("Không thể derive địa chỉ: {err}"));
+                            self.error = Some(format!(
+                                "{}: {err}",
+                                t(
+                                    "Không thể tạo địa chỉ mới",
+                                    "Could not derive new addresses"
+                                )
+                            ));
                         }
                     }
                 } else {
-                    self.error = Some("No wallet selected".to_string());
+                    self.error = Some(t("Chưa chọn ví", "No wallet selected").to_string());
                 }
                 Task::none()
             }
@@ -556,32 +662,42 @@ impl App {
                 let active_passphrase = match &self.storage_passphrase {
                     Some(value) => value.clone(),
                     None => {
-                        self.wallets_view
-                            .set_error("Không có session đăng nhập hợp lệ");
+                        self.wallets_view.set_error(t(
+                            "Không có session đăng nhập hợp lệ",
+                            "No active login session found",
+                        ));
                         return Task::none();
                     }
                 };
 
                 if wallet_index >= self.wallets.len() {
-                    self.wallets_view.set_error("Wallet không tồn tại");
+                    self.wallets_view
+                        .set_error(t("Ví không tồn tại", "Wallet does not exist"));
                     return Task::none();
                 }
 
                 if passphrase != active_passphrase {
-                    self.wallets_view
-                        .set_error("Passphrase không đúng, không thể hiển thị mnemonic");
+                    self.wallets_view.set_error(t(
+                        "Passphrase không đúng, không thể hiển thị mnemonic",
+                        "Incorrect passphrase, cannot reveal mnemonic",
+                    ));
                     return Task::none();
                 }
 
                 let wallet_name = self.wallets[wallet_index].name.clone();
                 if self.wallets[wallet_index].mnemonic.is_none() {
-                    self.wallets_view
-                        .set_error("Ví này không có mnemonic để hiển thị");
+                    self.wallets_view.set_error(t(
+                        "Ví này không có mnemonic để hiển thị",
+                        "This wallet has no mnemonic to reveal",
+                    ));
                     return Task::none();
                 }
 
                 self.wallets_view.mark_mnemonic_revealed(wallet_index);
-                self.status = Some(format!("Mnemonic unlocked for wallet '{wallet_name}'"));
+                self.status = Some(format!(
+                    "{} '{wallet_name}'",
+                    t("Đã mở khóa mnemonic cho ví", "Mnemonic unlocked for wallet")
+                ));
                 self.error = None;
                 Task::none()
             }
@@ -591,7 +707,8 @@ impl App {
                 checks,
             } => {
                 if wallet_index >= self.wallets.len() {
-                    self.wallets_view.set_error("Wallet không tồn tại");
+                    self.wallets_view
+                        .set_error(t("Ví không tồn tại", "Wallet does not exist"));
                     return Task::none();
                 }
 
@@ -600,20 +717,26 @@ impl App {
                     let mnemonic = match &wallet.mnemonic {
                         Some(value) => value,
                         None => {
-                            self.wallets_view
-                                .set_error("Ví này không có mnemonic để xác thực backup");
+                            self.wallets_view.set_error(t(
+                                "Ví này không có mnemonic để xác thực backup",
+                                "This wallet has no mnemonic for backup verification",
+                            ));
                             return Task::none();
                         }
                     };
 
                     let words: Vec<&str> = mnemonic.split_whitespace().collect();
                     if words.is_empty() {
-                        self.wallets_view.set_error("Mnemonic không hợp lệ");
+                        self.wallets_view
+                            .set_error(t("Mnemonic không hợp lệ", "Invalid mnemonic"));
                         return Task::none();
                     }
 
                     if checks.is_empty() {
-                        self.wallets_view.set_error("Thiếu dữ liệu bài test backup");
+                        self.wallets_view.set_error(t(
+                            "Thiếu dữ liệu bài test backup",
+                            "Missing backup test data",
+                        ));
                         return Task::none();
                     }
 
@@ -621,8 +744,10 @@ impl App {
                     for (position, input_word) in &checks {
                         let pos = *position;
                         if pos == 0 || pos > words.len() {
-                            self.wallets_view
-                                .set_error("Vị trí từ trong bài test không hợp lệ");
+                            self.wallets_view.set_error(t(
+                                "Vị trí từ trong bài test không hợp lệ",
+                                "Invalid word position in backup test",
+                            ));
                             return Task::none();
                         }
 
@@ -649,13 +774,21 @@ impl App {
                         self.save_state();
                         self.wallets_view.mark_backup_verified(wallet_index);
                         self.status = Some(format!(
-                            "Wallet '{wallet_name}' passed mnemonic backup test"
+                            "{} '{wallet_name}'",
+                            t(
+                                "Ví đã vượt qua bài test backup mnemonic",
+                                "Wallet passed mnemonic backup test",
+                            )
                         ));
                         self.error = None;
                     }
                     Err(wrong_positions) => {
                         self.wallets_view.set_error(format!(
-                            "Bài test chưa đúng ở vị trí: {}",
+                            "{}: {}",
+                            t(
+                                "Bài test chưa đúng ở vị trí",
+                                "Backup test is incorrect at positions"
+                            ),
                             wrong_positions
                                 .iter()
                                 .map(usize::to_string)
@@ -670,7 +803,8 @@ impl App {
 
             AppMessage::ExportMnemonicPdf(wallet_index) => {
                 if wallet_index >= self.wallets.len() {
-                    self.wallets_view.set_error("Wallet không tồn tại");
+                    self.wallets_view
+                        .set_error(t("Ví không tồn tại", "Wallet does not exist"));
                     return Task::none();
                 }
 
@@ -678,8 +812,10 @@ impl App {
                 let mnemonic = match wallet.mnemonic.as_deref() {
                     Some(value) => value,
                     None => {
-                        self.wallets_view
-                            .set_error("Ví này không có mnemonic để export PDF");
+                        self.wallets_view.set_error(t(
+                            "Ví này không có mnemonic để export PDF",
+                            "This wallet has no mnemonic to export as PDF",
+                        ));
                         return Task::none();
                     }
                 };
@@ -697,14 +833,23 @@ impl App {
                     mnemonic,
                 ) {
                     Ok(_) => {
-                        let message = format!("Đã export mnemonic PDF: {}", export_path.display());
+                        let message = format!(
+                            "{}: {}",
+                            t("Đã export mnemonic PDF", "Exported mnemonic PDF"),
+                            export_path.display()
+                        );
                         self.wallets_view.set_info(message.clone());
                         self.status = Some(message);
                         self.error = None;
                     }
                     Err(err) => {
-                        self.wallets_view
-                            .set_error(format!("Export mnemonic PDF thất bại: {err}"));
+                        self.wallets_view.set_error(format!(
+                            "{}: {err}",
+                            t(
+                                "Export mnemonic PDF thất bại",
+                                "Failed to export mnemonic PDF"
+                            )
+                        ));
                     }
                 }
                 Task::none()
@@ -717,7 +862,8 @@ impl App {
                 slip39_passphrase,
             } => {
                 if wallet_index >= self.wallets.len() {
-                    self.wallets_view.set_error("Wallet không tồn tại");
+                    self.wallets_view
+                        .set_error(t("Ví không tồn tại", "Wallet does not exist"));
                     return Task::none();
                 }
 
@@ -725,8 +871,10 @@ impl App {
                 let mnemonic = match wallet.mnemonic.as_deref() {
                     Some(value) => value,
                     None => {
-                        self.wallets_view
-                            .set_error("Ví này không có mnemonic để export SLIP-0039");
+                        self.wallets_view.set_error(t(
+                            "Ví này không có mnemonic để export SLIP-0039",
+                            "This wallet has no mnemonic to export as SLIP-0039",
+                        ));
                         return Task::none();
                     }
                 };
@@ -739,8 +887,10 @@ impl App {
                 ) {
                     Ok(value) => value,
                     Err(err) => {
-                        self.wallets_view
-                            .set_error(format!("Không thể tách SLIP-0039: {err}"));
+                        self.wallets_view.set_error(format!(
+                            "{}: {err}",
+                            t("Không thể tách SLIP-0039", "Could not split to SLIP-0039")
+                        ));
                         return Task::none();
                     }
                 };
@@ -763,7 +913,11 @@ impl App {
                 ) {
                     Ok(export_directory) => {
                         let message = format!(
-                            "Đã export SLIP-0039 shares PDF tại: {}",
+                            "{}: {}",
+                            t(
+                                "Đã export SLIP-0039 shares PDF tại",
+                                "Exported SLIP-0039 shares PDF to",
+                            ),
                             export_directory.display()
                         );
                         self.wallets_view.set_info(message.clone());
@@ -771,8 +925,10 @@ impl App {
                         self.error = None;
                     }
                     Err(err) => {
-                        self.wallets_view
-                            .set_error(format!("Export SLIP-0039 thất bại: {err}"));
+                        self.wallets_view.set_error(format!(
+                            "{}: {err}",
+                            t("Export SLIP-0039 thất bại", "Failed to export SLIP-0039")
+                        ));
                     }
                 }
                 Task::none()
@@ -789,17 +945,22 @@ impl App {
                     match wallet.estimate_auto_fee_for_amount(amount_sat, &input_source) {
                         Ok(fee) => {
                             self.send_view.set_estimated_fee(fee);
-                            self.status = Some(format!("Estimated fee: {fee} sat"));
+                            self.status =
+                                Some(format!("{}: {fee} sat", t("Phí ước tính", "Estimated fee")));
                             self.error = None;
                         }
                         Err(err) => {
                             self.send_view.set_error(err.to_string());
-                            self.error = Some(format!("Estimate fee failed: {err}"));
+                            self.error = Some(format!(
+                                "{}: {err}",
+                                t("Ước tính phí thất bại", "Fee estimation failed")
+                            ));
                         }
                     }
                 } else {
-                    self.send_view.set_error("No wallet selected");
-                    self.error = Some("No wallet selected".to_string());
+                    let message = t("Chưa chọn ví", "No wallet selected").to_string();
+                    self.send_view.set_error(message.clone());
+                    self.error = Some(message);
                 }
                 Task::none()
             }
@@ -826,8 +987,10 @@ impl App {
                         let amount_sat = match request.amount_sat {
                             Some(value) if value > 0 => value,
                             _ => {
-                                self.send_view
-                                    .set_error("Amount không hợp lệ cho giao dịch thường");
+                                self.send_view.set_error(t(
+                                    "Số lượng không hợp lệ cho giao dịch thường",
+                                    "Invalid amount for regular transaction",
+                                ));
                                 return Task::none();
                             }
                         };
@@ -839,7 +1002,11 @@ impl App {
                                 Ok(value) => value,
                                 Err(err) => {
                                     self.send_view.set_error(format!(
-                                        "Không thể estimate fee tự động: {err}"
+                                        "{}: {err}",
+                                        t(
+                                            "Không thể ước tính phí tự động",
+                                            "Could not estimate auto fee",
+                                        )
                                     ));
                                     return Task::none();
                                 }
@@ -863,9 +1030,18 @@ impl App {
 
                             let short_txid = short_txid(&tx_result.txid);
                             let send_message = if tx_result.broadcasted {
-                                format!("Transaction broadcasted: {short_txid}")
+                                format!(
+                                    "{}: {short_txid}",
+                                    t("Đã broadcast giao dịch", "Transaction broadcasted")
+                                )
                             } else {
-                                format!("Transaction created (not broadcast): {short_txid}")
+                                format!(
+                                    "{}: {short_txid}",
+                                    t(
+                                        "Đã tạo giao dịch (chưa broadcast)",
+                                        "Transaction created (not broadcast)",
+                                    )
+                                )
                             };
                             self.send_view.set_success(send_message.clone());
                             self.status = Some(send_message);
@@ -873,19 +1049,29 @@ impl App {
                         }
                         Err(err) => {
                             self.send_view.set_error(err.to_string());
-                            self.error = Some(format!("Send failed: {err}"));
+                            self.error = Some(format!(
+                                "{}: {err}",
+                                t("Gửi giao dịch thất bại", "Send transaction failed")
+                            ));
                         }
                     }
                 } else {
-                    self.send_view.set_error("No wallet selected");
-                    self.error = Some("No wallet selected".to_string());
+                    let message = t("Chưa chọn ví", "No wallet selected").to_string();
+                    self.send_view.set_error(message.clone());
+                    self.error = Some(message);
                 }
 
                 Task::none()
             }
 
             AppMessage::CopyAddress(address) => {
-                self.status = Some("Copied address to clipboard".to_string());
+                self.status = Some(
+                    t(
+                        "Đã copy địa chỉ vào clipboard",
+                        "Copied address to clipboard",
+                    )
+                    .to_string(),
+                );
                 self.error = None;
                 clipboard::write(address)
             }
@@ -897,15 +1083,19 @@ impl App {
                 let active_passphrase = match &self.storage_passphrase {
                     Some(value) => value.clone(),
                     None => {
-                        self.settings_view
-                            .set_error("Không có session đăng nhập hợp lệ");
+                        self.settings_view.set_error(t(
+                            "Không có session đăng nhập hợp lệ",
+                            "No active login session found",
+                        ));
                         return Task::none();
                     }
                 };
 
                 if current != active_passphrase {
-                    self.settings_view
-                        .set_error("Passphrase hiện tại không đúng");
+                    self.settings_view.set_error(t(
+                        "Passphrase hiện tại không đúng",
+                        "Current passphrase is incorrect",
+                    ));
                     return Task::none();
                 }
 
@@ -914,18 +1104,31 @@ impl App {
                         Ok(_) => {
                             self.storage_passphrase = Some(new_passphrase);
                             self.settings_view.clear_sensitive_inputs();
-                            self.settings_view.set_success("Đổi passphrase thành công");
-                            self.status = Some("Passphrase updated successfully".to_string());
+                            self.settings_view.set_success(t(
+                                "Đổi passphrase thành công",
+                                "Passphrase updated successfully",
+                            ));
+                            self.status = Some(
+                                t(
+                                    "Đổi passphrase thành công",
+                                    "Passphrase updated successfully",
+                                )
+                                .to_string(),
+                            );
                             self.error = None;
                         }
                         Err(err) => {
-                            self.settings_view
-                                .set_error(format!("Đổi passphrase thất bại: {err}"));
+                            self.settings_view.set_error(format!(
+                                "{}: {err}",
+                                t("Đổi passphrase thất bại", "Failed to update passphrase")
+                            ));
                         }
                     },
                     Err(err) => {
-                        self.settings_view
-                            .set_error(format!("Không thể mở storage: {err}"));
+                        self.settings_view.set_error(format!(
+                            "{}: {err}",
+                            t("Không thể mở storage", "Could not open storage")
+                        ));
                     }
                 }
                 Task::none()
@@ -935,8 +1138,10 @@ impl App {
                 let passphrase = match &self.storage_passphrase {
                     Some(value) => value.clone(),
                     None => {
-                        self.settings_view
-                            .set_error("Không có session đăng nhập hợp lệ");
+                        self.settings_view.set_error(t(
+                            "Không có session đăng nhập hợp lệ",
+                            "No active login session found",
+                        ));
                         return Task::none();
                     }
                 };
@@ -945,6 +1150,7 @@ impl App {
                 let state = PersistedState {
                     profile: UserProfile {
                         nickname: self.user_nickname.clone(),
+                        language: self.language,
                     },
                     wallets: self.wallets.clone(),
                 };
@@ -954,7 +1160,11 @@ impl App {
                         match storage.export_encrypted_backup(&state, &passphrase, &export_path) {
                             Ok(_) => {
                                 let message = format!(
-                                    "Exported encrypted backup to {}",
+                                    "{} {}",
+                                    t(
+                                        "Đã export backup mã hóa tới",
+                                        "Exported encrypted backup to"
+                                    ),
                                     export_path.display()
                                 );
                                 self.settings_view.set_success(message.clone());
@@ -962,14 +1172,18 @@ impl App {
                                 self.error = None;
                             }
                             Err(err) => {
-                                self.settings_view
-                                    .set_error(format!("Export thất bại: {err}"));
+                                self.settings_view.set_error(format!(
+                                    "{}: {err}",
+                                    t("Export backup thất bại", "Backup export failed")
+                                ));
                             }
                         }
                     }
                     Err(err) => {
-                        self.settings_view
-                            .set_error(format!("Không thể mở storage: {err}"));
+                        self.settings_view.set_error(format!(
+                            "{}: {err}",
+                            t("Không thể mở storage", "Could not open storage")
+                        ));
                     }
                 }
 
@@ -980,15 +1194,19 @@ impl App {
                 let active_passphrase = match &self.storage_passphrase {
                     Some(value) => value.clone(),
                     None => {
-                        self.settings_view
-                            .set_error("Không có session đăng nhập hợp lệ");
+                        self.settings_view.set_error(t(
+                            "Không có session đăng nhập hợp lệ",
+                            "No active login session found",
+                        ));
                         return Task::none();
                     }
                 };
 
                 if passphrase != active_passphrase {
-                    self.settings_view
-                        .set_error("Passphrase hiện tại không đúng");
+                    self.settings_view.set_error(t(
+                        "Passphrase hiện tại không đúng",
+                        "Current passphrase is incorrect",
+                    ));
                     return Task::none();
                 }
 
@@ -997,17 +1215,23 @@ impl App {
                         Ok(_) => {
                             self.reset_to_login(true);
                             self.login_view.set_mode(LoginMode::NewWallet);
-                            self.login_view
-                                .set_error("Đã xóa toàn bộ dữ liệu cũ. Hãy tạo passphrase mới.");
+                            self.login_view.set_error(t(
+                                "Đã xóa toàn bộ dữ liệu cũ. Hãy tạo passphrase mới.",
+                                "All old data has been deleted. Please create a new passphrase.",
+                            ));
                         }
                         Err(err) => {
-                            self.settings_view
-                                .set_error(format!("Không thể xóa dữ liệu: {err}"));
+                            self.settings_view.set_error(format!(
+                                "{}: {err}",
+                                t("Không thể xóa dữ liệu", "Could not clear data")
+                            ));
                         }
                     },
                     Err(err) => {
-                        self.settings_view
-                            .set_error(format!("Không thể mở storage: {err}"));
+                        self.settings_view.set_error(format!(
+                            "{}: {err}",
+                            t("Không thể mở storage", "Could not open storage")
+                        ));
                     }
                 }
                 Task::none()
@@ -1071,11 +1295,15 @@ impl App {
                 };
 
                 let greeting_bar = container(
-                    text(format!("Xin chào, {}", self.display_name()))
-                        .size(14)
-                        .style(crate::theme::text_color(
-                            crate::theme::Colors::TEXT_SECONDARY,
-                        )),
+                    text(format!(
+                        "{} {}",
+                        t("Xin chào,", "Hello,"),
+                        self.display_name()
+                    ))
+                    .size(14)
+                    .style(crate::theme::text_color(
+                        crate::theme::Colors::TEXT_SECONDARY,
+                    )),
                 )
                 .padding(8);
 
@@ -1116,7 +1344,7 @@ impl App {
 
     fn refresh_all_wallets(&mut self) {
         if self.wallets.is_empty() {
-            self.status = Some("Không có ví để refresh".to_string());
+            self.status = Some(t("Không có ví để làm mới", "No wallets to refresh").to_string());
             return;
         }
 
@@ -1144,11 +1372,19 @@ impl App {
         self.update_dashboard();
 
         self.status = Some(format!(
-            "Refreshed {refreshed_wallets} wallet(s), {refreshed_txs} transaction(s)"
+            "{} {}, {} {}",
+            t("Đã làm mới", "Refreshed"),
+            wallet_count_text(refreshed_wallets),
+            refreshed_txs,
+            t("giao dịch", "transaction(s)")
         ));
 
         if !errors.is_empty() {
-            self.error = Some(format!("Một số ví refresh lỗi: {}", errors.join(" | ")));
+            self.error = Some(format!(
+                "{}: {}",
+                t("Một số ví làm mới lỗi", "Some wallets failed to refresh",),
+                errors.join(" | ")
+            ));
         } else {
             self.error = None;
         }
@@ -1165,15 +1401,22 @@ impl App {
                 let state = PersistedState {
                     profile: UserProfile {
                         nickname: self.user_nickname.clone(),
+                        language: self.language,
                     },
                     wallets: self.wallets.clone(),
                 };
                 if let Err(err) = storage.save_state(&state, &passphrase) {
-                    self.error = Some(format!("Error saving state: {err}"));
+                    self.error = Some(format!(
+                        "{}: {err}",
+                        t("Không thể lưu trạng thái", "Failed to save app state")
+                    ));
                 }
             }
             Err(err) => {
-                self.error = Some(format!("Error initializing storage: {err}"));
+                self.error = Some(format!(
+                    "{}: {err}",
+                    t("Không thể khởi tạo storage", "Failed to initialize storage")
+                ));
             }
         }
     }
@@ -1201,13 +1444,21 @@ impl App {
     }
 
     fn display_name(&self) -> &str {
-        self.user_nickname.as_deref().unwrap_or("bạn")
+        self.user_nickname.as_deref().unwrap_or(t("bạn", "friend"))
     }
 }
 
 fn short_txid(txid: &str) -> String {
     let prefix = txid.get(..12).unwrap_or(txid);
     format!("{prefix}...")
+}
+
+fn wallet_count_text(count: usize) -> String {
+    format!("{} {}", count, t("ví", "wallet(s)"))
+}
+
+fn address_count_text(count: usize) -> String {
+    format!("{} {}", count, t("địa chỉ mới", "new address(es)"))
 }
 
 fn resolve_user_path(raw_path: &str) -> PathBuf {
@@ -1223,8 +1474,11 @@ fn resolve_user_path(raw_path: &str) -> PathBuf {
 
 fn pick_import_backup_path() -> Option<PathBuf> {
     rfd::FileDialog::new()
-        .set_title("Chọn file backup để import")
-        .add_filter("Backup files", &["enc", "json"])
+        .set_title(t(
+            "Chọn file backup để import",
+            "Choose backup file to import",
+        ))
+        .add_filter(t("File backup", "Backup files"), &["enc", "json"])
         .pick_file()
 }
 
@@ -1232,8 +1486,8 @@ fn pick_export_backup_path(current_path: &str) -> Option<PathBuf> {
     let resolved = resolve_user_path(current_path);
 
     let mut dialog = rfd::FileDialog::new()
-        .set_title("Chọn nơi lưu backup")
-        .add_filter("Encrypted backup", &["enc"]);
+        .set_title(t("Chọn nơi lưu backup", "Choose where to save backup"))
+        .add_filter(t("Backup mã hóa", "Encrypted backup"), &["enc"]);
 
     if let Some(parent) = resolved.parent() {
         dialog = dialog.set_directory(parent);
@@ -1250,15 +1504,18 @@ fn pick_export_backup_path(current_path: &str) -> Option<PathBuf> {
 
 fn pick_mnemonic_pdf_path(default_file_name: &str) -> Option<PathBuf> {
     rfd::FileDialog::new()
-        .set_title("Lưu mnemonic ra PDF")
-        .add_filter("PDF file", &["pdf"])
+        .set_title(t("Lưu mnemonic ra PDF", "Save mnemonic as PDF"))
+        .add_filter(t("File PDF", "PDF file"), &["pdf"])
         .set_file_name(default_file_name)
         .save_file()
 }
 
 fn pick_slip39_export_directory() -> Option<PathBuf> {
     rfd::FileDialog::new()
-        .set_title("Chọn thư mục chứa backup SLIP-0039")
+        .set_title(t(
+            "Chọn thư mục chứa backup SLIP-0039",
+            "Choose folder for SLIP-0039 backup",
+        ))
         .pick_folder()
 }
 
@@ -1319,10 +1576,20 @@ fn export_mnemonic_to_pdf(
 
     let font_regular = doc
         .add_builtin_font(BuiltinFont::Helvetica)
-        .map_err(|err| format!("Không tải được font PDF: {err}"))?;
+        .map_err(|err| {
+            format!(
+                "{}: {err}",
+                t("Không tải được font PDF", "Could not load PDF font")
+            )
+        })?;
     let font_bold = doc
         .add_builtin_font(BuiltinFont::HelveticaBold)
-        .map_err(|err| format!("Không tải được font PDF: {err}"))?;
+        .map_err(|err| {
+            format!(
+                "{}: {err}",
+                t("Không tải được font PDF", "Could not load PDF font")
+            )
+        })?;
 
     current_layer.use_text(
         "Bitcoin Wallet - Mnemonic Backup",
@@ -1369,11 +1636,20 @@ fn export_mnemonic_to_pdf(
         );
     }
 
-    let file = File::create(path)
-        .map_err(|err| format!("Không tạo được file PDF {}: {err}", path.display()))?;
+    let file = File::create(path).map_err(|err| {
+        format!(
+            "{} {}: {err}",
+            t("Không tạo được file PDF", "Could not create PDF file"),
+            path.display()
+        )
+    })?;
     let mut writer = BufWriter::new(file);
-    doc.save(&mut writer)
-        .map_err(|err| format!("Không ghi được nội dung PDF: {err}"))?;
+    doc.save(&mut writer).map_err(|err| {
+        format!(
+            "{}: {err}",
+            t("Không ghi được nội dung PDF", "Could not write PDF content")
+        )
+    })?;
 
     Ok(())
 }
@@ -1389,7 +1665,11 @@ fn export_slip39_shares_to_pdf_directory(
     shares: &[String],
 ) -> Result<PathBuf, String> {
     if shares.is_empty() {
-        return Err("Không có SLIP-0039 share nào để export".to_string());
+        return Err(t(
+            "Không có SLIP-0039 share nào để export",
+            "No SLIP-0039 shares available to export",
+        )
+        .to_string());
     }
 
     let export_dir = create_unique_export_directory(base_directory, directory_name)?;
@@ -1420,7 +1700,11 @@ fn create_unique_export_directory(
 ) -> Result<PathBuf, String> {
     if !base_directory.exists() {
         return Err(format!(
-            "Thư mục đích không tồn tại: {}",
+            "{}: {}",
+            t(
+                "Thư mục đích không tồn tại",
+                "Destination directory does not exist"
+            ),
             base_directory.display()
         ));
     }
@@ -1436,7 +1720,11 @@ fn create_unique_export_directory(
         if !candidate.exists() {
             fs::create_dir_all(&candidate).map_err(|err| {
                 format!(
-                    "Không thể tạo thư mục export SLIP-0039 {}: {err}",
+                    "{} {}: {err}",
+                    t(
+                        "Không thể tạo thư mục export SLIP-0039",
+                        "Could not create SLIP-0039 export directory",
+                    ),
                     candidate.display()
                 )
             })?;
@@ -1444,7 +1732,11 @@ fn create_unique_export_directory(
         }
     }
 
-    Err("Không thể tạo thư mục export SLIP-0039 (đã thử quá nhiều lần)".to_string())
+    Err(t(
+        "Không thể tạo thư mục export SLIP-0039 (đã thử quá nhiều lần)",
+        "Could not create SLIP-0039 export directory (too many attempts)",
+    )
+    .to_string())
 }
 
 fn export_slip39_share_to_pdf(
@@ -1468,10 +1760,20 @@ fn export_slip39_share_to_pdf(
 
     let font_regular = doc
         .add_builtin_font(BuiltinFont::Helvetica)
-        .map_err(|err| format!("Không tải được font PDF: {err}"))?;
+        .map_err(|err| {
+            format!(
+                "{}: {err}",
+                t("Không tải được font PDF", "Could not load PDF font")
+            )
+        })?;
     let font_bold = doc
         .add_builtin_font(BuiltinFont::HelveticaBold)
-        .map_err(|err| format!("Không tải được font PDF: {err}"))?;
+        .map_err(|err| {
+            format!(
+                "{}: {err}",
+                t("Không tải được font PDF", "Could not load PDF font")
+            )
+        })?;
 
     current_layer.use_text(
         "Bitcoin Wallet - SLIP-0039 Share",
@@ -1546,11 +1848,20 @@ fn export_slip39_share_to_pdf(
         );
     }
 
-    let file = File::create(path)
-        .map_err(|err| format!("Không tạo được file PDF {}: {err}", path.display()))?;
+    let file = File::create(path).map_err(|err| {
+        format!(
+            "{} {}: {err}",
+            t("Không tạo được file PDF", "Could not create PDF file"),
+            path.display()
+        )
+    })?;
     let mut writer = BufWriter::new(file);
-    doc.save(&mut writer)
-        .map_err(|err| format!("Không ghi được nội dung PDF: {err}"))?;
+    doc.save(&mut writer).map_err(|err| {
+        format!(
+            "{}: {err}",
+            t("Không ghi được nội dung PDF", "Could not write PDF content")
+        )
+    })?;
 
     Ok(())
 }
