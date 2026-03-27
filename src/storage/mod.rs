@@ -41,14 +41,6 @@ impl Storage {
         if self.paths.encrypted_state_file.exists() {
             return self.load_encrypted_state(&self.paths.encrypted_state_file, passphrase);
         }
-
-        if let Some(legacy_path) = self.paths.first_existing_legacy_path() {
-            let state = self.load_plain_state(legacy_path)?;
-            self.save_encrypted_state(&self.paths.encrypted_state_file, &state, passphrase)?;
-            self.archive_legacy_file(legacy_path)?;
-            return Ok(state);
-        }
-
         Ok(PersistedState::default())
     }
 
@@ -62,7 +54,6 @@ impl Storage {
 
     pub fn has_existing_state(&self) -> bool {
         self.paths.encrypted_state_file.exists()
-            || self.paths.first_existing_legacy_path().is_some()
     }
 
     pub fn load_language_preference(&self) -> Result<AppLanguage> {
@@ -121,20 +112,6 @@ impl Storage {
 
     pub fn clear_all_data(&self) -> Result<()> {
         remove_file_if_exists(&self.paths.encrypted_state_file)?;
-
-        for legacy_path in &self.paths.legacy_candidates {
-            remove_file_if_exists(legacy_path)?;
-
-            let backup_name = legacy_path
-                .file_name()
-                .and_then(|name| name.to_str())
-                .map(|name| format!("{name}.migrated.bak"));
-
-            if let Some(backup_name) = backup_name {
-                let backup_path = legacy_path.with_file_name(backup_name);
-                remove_file_if_exists(&backup_path)?;
-            }
-        }
 
         if self.paths.data_dir.exists() {
             match fs::remove_dir_all(&self.paths.data_dir) {

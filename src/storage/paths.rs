@@ -3,20 +3,18 @@ use std::{env, path::PathBuf};
 use anyhow::{Context, Result};
 use directories::ProjectDirs;
 
-const APP_QUALIFIER: &str = "com";
-const APP_ORGANIZATION: &str = "duclinh";
+const APP_QUALIFIER: &str = "vn";
+const APP_ORGANIZATION: &str = "bitboy";
 const APP_NAME: &str = "btc_wallet_gui";
 
-const ENCRYPTED_DATA_FILE: &str = "wallet_data.enc";
-const LEGACY_DATA_FILE: &str = "wallet_data.json";
+const ENCRYPTED_DATA_FILE: &str = "app_data.enc";
 const PREFERENCES_FILE: &str = "app_preferences.json";
 
 #[derive(Debug)]
 pub struct StoragePaths {
     pub data_dir: PathBuf,
     pub encrypted_state_file: PathBuf,
-    pub preferences_file: PathBuf,
-    pub legacy_candidates: Vec<PathBuf>,
+    pub preferences_file: PathBuf
 }
 
 impl StoragePaths {
@@ -33,25 +31,11 @@ impl StoragePaths {
 
         let encrypted_state_file = data_dir.join(ENCRYPTED_DATA_FILE);
         let preferences_file = data_dir.join(PREFERENCES_FILE);
-        let mut legacy_candidates = vec![data_dir.join(LEGACY_DATA_FILE)];
-
-        if let Ok(cwd) = env::current_dir() {
-            let cwd_legacy = cwd.join(LEGACY_DATA_FILE);
-            if cwd_legacy != legacy_candidates[0] {
-                legacy_candidates.push(cwd_legacy);
-            }
-        }
-
         Ok(Self {
             data_dir,
             encrypted_state_file,
-            preferences_file,
-            legacy_candidates,
+            preferences_file
         })
-    }
-
-    pub fn first_existing_legacy_path(&self) -> Option<&PathBuf> {
-        self.legacy_candidates.iter().find(|path| path.exists())
     }
 }
 
