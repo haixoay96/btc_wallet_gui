@@ -487,10 +487,12 @@ impl App {
                 self.language = language;
                 set_current_language(language);
                 self.save_language_preference();
-                self.settings_view.set_success(t(
-                    "Đã đổi ngôn ngữ ứng dụng",
-                    "Application language updated",
-                ));
+                if matches!(self.state, AppState::Main) {
+                    self.settings_view.set_success(t(
+                        "Đã đổi ngôn ngữ ứng dụng",
+                        "Application language updated",
+                    ));
+                }
                 self.save_state();
                 Task::none()
             }

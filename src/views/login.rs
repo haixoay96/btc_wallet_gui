@@ -1,15 +1,19 @@
 use iced::{
-    widget::{button, column, container, row, text, text_input, Space},
+    widget::{button, column, container, pick_list, row, text, text_input, Space},
     Alignment, Element, Length, Padding,
 };
 
-use crate::i18n::t;
+use crate::i18n::{current_language, t, AppLanguage};
 use crate::theme::{
-    card_style, input_style, primary_button_style, secondary_button_style, text_color, Colors,
+    card_style, input_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    secondary_button_style, text_color, Colors,
 };
+
+const APP_LANGUAGES: [AppLanguage; 2] = AppLanguage::ALL;
 
 #[derive(Debug, Clone)]
 pub enum LoginMessage {
+    LanguageChanged(AppLanguage),
     NicknameChanged(String),
     PassphraseChanged(String),
     ConfirmPassphraseChanged(String),
@@ -82,6 +86,10 @@ impl LoginView {
 
     pub fn update(&mut self, message: LoginMessage) -> Option<crate::app::AppMessage> {
         match message {
+            LoginMessage::LanguageChanged(language) => {
+                self.error = None;
+                Some(crate::app::AppMessage::ChangeLanguage(language))
+            }
             LoginMessage::NicknameChanged(value) => {
                 self.nickname = value;
                 self.error = None;
@@ -187,6 +195,25 @@ impl LoginView {
     }
 
     pub fn view(&self) -> Element<'_, LoginMessage> {
+        let language_selector = row![
+            Space::with_width(Length::Fill),
+            text(t("Ngôn ngữ", "Language"))
+                .size(13)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+            Space::with_width(8),
+            pick_list(
+                APP_LANGUAGES,
+                Some(current_language()),
+                LoginMessage::LanguageChanged
+            )
+            .placeholder(t("Chọn ngôn ngữ", "Select language"))
+            .style(pick_list_style())
+            .menu_style(pick_list_menu_style())
+            .padding([6, 10]),
+        ]
+        .align_y(Alignment::Center)
+        .width(Length::Fill);
+
         let title = text(t("Ví Bitcoin", "Bitcoin Wallet"))
             .size(36)
             .style(text_color(Colors::TEXT_PRIMARY));
@@ -317,6 +344,7 @@ impl LoginView {
         };
 
         let content = column![
+            language_selector,
             Space::with_height(24),
             title,
             Space::with_height(8),
