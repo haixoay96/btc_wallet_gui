@@ -1,6 +1,6 @@
 use std::{
     env,
-    fs::File,
+    fs::{self, File},
     io::BufWriter,
     path::{Path, PathBuf},
 };
@@ -95,6 +95,12 @@ pub enum AppMessage {
         network: WalletNetwork,
         mnemonic: String,
     },
+    ImportWalletFromSlip39 {
+        name: String,
+        network: WalletNetwork,
+        shares: Vec<String>,
+        slip39_passphrase: String,
+    },
     DeleteWallet(usize),
     SelectWallet(usize),
     RefreshHistory,
@@ -108,6 +114,12 @@ pub enum AppMessage {
         checks: Vec<(usize, String)>,
     },
     ExportMnemonicPdf(usize),
+    ExportWalletSlip39 {
+        wallet_index: usize,
+        threshold: u8,
+        share_count: u8,
+        slip39_passphrase: String,
+    },
 
     EstimateSendFee {
         amount_sat: u64,
@@ -453,6 +465,34 @@ impl App {
                 Task::none()
             }
 
+            AppMessage::ImportWalletFromSlip39 {
+                name,
+                network,
+                shares,
+                slip39_passphrase,
+            } => {
+                match Wallet::from_slip39_shares(&name, network, &shares, &slip39_passphrase) {
+                    Ok(wallet) => {
+                        self.wallets.push(wallet.entry);
+                        self.selected_wallet = self.wallets.len() - 1;
+                        self.save_state();
+                        self.update_dashboard();
+                        self.wallets_view = WalletsView::new();
+                        self.wallets_view.set_info(
+                            "Import SLIP-0039 thành công. Ví này đã được đánh dấu backup.",
+                        );
+                        self.status = Some(format!("Imported wallet '{name}' from SLIP-0039"));
+                        self.error = None;
+                    }
+                    Err(err) => {
+                        self.wallets_view
+                            .set_error(format!("Import SLIP-0039 thất bại: {err}"));
+                        self.error = Some(format!("Import SLIP-0039 thất bại: {err}"));
+                    }
+                }
+                Task::none()
+            }
+
             AppMessage::SelectWallet(index) => {
                 if index < self.wallets.len() {
                     self.selected_wallet = index;
@@ -665,6 +705,71 @@ impl App {
                     Err(err) => {
                         self.wallets_view
                             .set_error(format!("Export mnemonic PDF thất bại: {err}"));
+                    }
+                }
+                Task::none()
+            }
+
+            AppMessage::ExportWalletSlip39 {
+                wallet_index,
+                threshold,
+                share_count,
+                slip39_passphrase,
+            } => {
+                if wallet_index >= self.wallets.len() {
+                    self.wallets_view.set_error("Wallet không tồn tại");
+                    return Task::none();
+                }
+
+                let wallet = &self.wallets[wallet_index];
+                let mnemonic = match wallet.mnemonic.as_deref() {
+                    Some(value) => value,
+                    None => {
+                        self.wallets_view
+                            .set_error("Ví này không có mnemonic để export SLIP-0039");
+                        return Task::none();
+                    }
+                };
+
+                let shares = match Wallet::split_mnemonic_to_slip39_shares(
+                    mnemonic,
+                    threshold,
+                    share_count,
+                    &slip39_passphrase,
+                ) {
+                    Ok(value) => value,
+                    Err(err) => {
+                        self.wallets_view
+                            .set_error(format!("Không thể tách SLIP-0039: {err}"));
+                        return Task::none();
+                    }
+                };
+
+                let default_name = default_slip39_filename(&wallet.name, threshold, share_count);
+                let Some(raw_path) = pick_slip39_export_path(&default_name) else {
+                    return Task::none();
+                };
+                let export_path = ensure_txt_extension(raw_path);
+
+                match export_slip39_to_txt(
+                    &export_path,
+                    &wallet.name,
+                    wallet.network.as_str(),
+                    threshold,
+                    share_count,
+                    !slip39_passphrase.trim().is_empty(),
+                    &shares,
+                ) {
+                    Ok(_) => {
+                        let message =
+                            format!("Đã export SLIP-0039 shares: {}", export_path.display());
+                        self.wallets_view.set_info(message.clone());
+                        self.status = Some(message);
+                        self.error = None;
+                    }
+                    Err(err) => {
+                        self.wallets_view
+                            .set_error(format!("Export SLIP-0039 thất bại: {err}"));
                     }
                 }
                 Task::none()
@@ -1148,8 +1253,25 @@ fn pick_mnemonic_pdf_path(default_file_name: &str) -> Option<PathBuf> {
         .save_file()
 }
 
+fn pick_slip39_export_path(default_file_name: &str) -> Option<PathBuf> {
+    rfd::FileDialog::new()
+        .set_title("Lưu SLIP-0039 shares")
+        .add_filter("Text file", &["txt"])
+        .set_file_name(default_file_name)
+        .save_file()
+}
+
 fn default_mnemonic_pdf_filename(wallet_name: &str) -> String {
     format!("{}_mnemonic_backup.pdf", sanitize_filename(wallet_name))
+}
+
+fn default_slip39_filename(wallet_name: &str, threshold: u8, share_count: u8) -> String {
+    format!(
+        "{}_slip39_{}of{}.txt",
+        sanitize_filename(wallet_name),
+        threshold,
+        share_count
+    )
 }
 
 fn sanitize_filename(raw: &str) -> String {
@@ -1179,6 +1301,20 @@ fn ensure_pdf_extension(mut path: PathBuf) -> PathBuf {
 
     if !has_pdf {
         path.set_extension("pdf");
+    }
+
+    path
+}
+
+fn ensure_txt_extension(mut path: PathBuf) -> PathBuf {
+    let has_txt = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("txt"))
+        .unwrap_or(false);
+
+    if !has_txt {
+        path.set_extension("txt");
     }
 
     path
@@ -1251,6 +1387,46 @@ fn export_mnemonic_to_pdf(
     let mut writer = BufWriter::new(file);
     doc.save(&mut writer)
         .map_err(|err| format!("Không ghi được nội dung PDF: {err}"))?;
+
+    Ok(())
+}
+
+fn export_slip39_to_txt(
+    path: &Path,
+    wallet_name: &str,
+    network: &str,
+    threshold: u8,
+    share_count: u8,
+    has_slip39_passphrase: bool,
+    shares: &[String],
+) -> Result<(), String> {
+    if shares.is_empty() {
+        return Err("Không có SLIP-0039 share nào để export".to_string());
+    }
+
+    let mut output = String::new();
+    output.push_str("# Bitcoin Wallet - SLIP-0039 Backup\n");
+    output.push_str(&format!("# Wallet: {wallet_name}\n"));
+    output.push_str(&format!("# Network: {network}\n"));
+    output.push_str(&format!("# Scheme: {threshold}-of-{share_count}\n"));
+    output.push_str(&format!(
+        "# SLIP39 passphrase: {}\n",
+        if has_slip39_passphrase {
+            "SET"
+        } else {
+            "EMPTY"
+        }
+    ));
+    output.push_str(
+        "# Lưu mỗi share ở nơi khác nhau. Chỉ cần đủ K share để khôi phục mnemonic gốc.\n\n",
+    );
+
+    for (index, share) in shares.iter().enumerate() {
+        output.push_str(&format!("share_{}: {}\n", index + 1, share.trim()));
+    }
+
+    fs::write(path, output)
+        .map_err(|err| format!("Không ghi được file SLIP-0039 {}: {err}", path.display()))?;
 
     Ok(())
 }

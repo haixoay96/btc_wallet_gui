@@ -35,6 +35,29 @@ impl Wallet {
         address::import_wallet_from_mnemonic(name, network, mnemonic_phrase)
     }
 
+    pub fn from_slip39_shares(
+        name: &str,
+        network: WalletNetwork,
+        share_phrases: &[String],
+        slip39_passphrase: &str,
+    ) -> Result<Self> {
+        address::import_wallet_from_slip39_shares(name, network, share_phrases, slip39_passphrase)
+    }
+
+    pub fn split_mnemonic_to_slip39_shares(
+        mnemonic_phrase: &str,
+        threshold: u8,
+        share_count: u8,
+        slip39_passphrase: &str,
+    ) -> Result<Vec<String>> {
+        address::split_mnemonic_to_slip39_shares(
+            mnemonic_phrase,
+            threshold,
+            share_count,
+            slip39_passphrase,
+        )
+    }
+
     pub fn from_account_xprv(
         name: &str,
         network: WalletNetwork,
