@@ -78,7 +78,7 @@ impl Sidebar {
         }
     }
 
-    pub fn view(&self) -> Element<SidebarMessage> {
+    pub fn view(&self) -> Element<'_, SidebarMessage> {
         let logo = text("₿")
             .size(48)
             .style(text_color(Colors::ACCENT_PURPLE));

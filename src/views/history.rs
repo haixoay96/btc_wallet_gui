@@ -1,5 +1,5 @@
 use iced::{
-    widget::{button, column, container, row, text, Space, scrollable},
+    widget::{button, column, container, row, text, Space},
     Alignment, Element, Length,
 };
 use crate::theme::{Colors, card_style, primary_button_style, secondary_button_style, text_color};
@@ -51,7 +51,7 @@ impl HistoryView {
         }
     }
 
-    pub fn view(&self, wallet: Option<&WalletEntry>) -> Element<HistoryMessage> {
+    pub fn view(&self, wallet: Option<&WalletEntry>) -> Element<'_, HistoryMessage> {
         let title = text("Transaction History")
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
@@ -188,11 +188,9 @@ impl HistoryView {
             );
         }
 
-        scrollable(
-            container(content)
-                .width(Length::Fill)
-                .height(Length::Fill)
-        )
-        .into()
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
     }
 }

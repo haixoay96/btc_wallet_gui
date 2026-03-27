@@ -1,9 +1,10 @@
 use iced::{
-    widget::{button, column, container, row, text, text_input, Space, radio, scrollable},
-    Alignment, Element, Length, Padding,
+    widget::{button, column, container, radio, row, scrollable, text, text_input, Space},
+    Alignment, Element, Length,
 };
-use crate::theme::{Colors, card_style, primary_button_style, secondary_button_style, text_color, danger_button_style};
-use crate::wallet::{WalletEntry, FeeMode, TxBuildOptions, InputSource, ChangeStrategy};
+
+use crate::theme::{card_style, primary_button_style, secondary_button_style, text_color, Colors};
+use crate::wallet::{ChangeStrategy, FeeMode, InputSource, WalletEntry};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimpleFeeMode {
@@ -37,6 +38,7 @@ pub struct SendView {
     broadcast: bool,
     estimated_fee: Option<u64>,
     error: Option<String>,
+    success: Option<String>,
 }
 
 impl SendView {
@@ -52,37 +54,64 @@ impl SendView {
             broadcast: false,
             estimated_fee: None,
             error: None,
+            success: None,
         }
+    }
+
+    pub fn set_estimated_fee(&mut self, fee_sat: u64) {
+        self.estimated_fee = Some(fee_sat);
+        self.error = None;
+    }
+
+    pub fn set_error(&mut self, message: impl Into<String>) {
+        self.error = Some(message.into());
+    }
+
+    pub fn set_success(&mut self, message: impl Into<String>) {
+        self.success = Some(message.into());
+        self.error = None;
     }
 
     pub fn update(&mut self, message: SendMessage) -> Option<crate::app::AppMessage> {
         match message {
             SendMessage::ToAddressChanged(addr) => {
                 self.to_address = addr;
+                self.error = None;
                 None
             }
             SendMessage::AmountChanged(amount) => {
                 self.amount = amount;
+                self.error = None;
+                self.estimated_fee = None;
                 None
             }
             SendMessage::FeeModeChanged(mode) => {
                 self.fee_mode = mode;
+                self.error = None;
                 None
             }
             SendMessage::FeeAmountChanged(fee) => {
                 self.fee_amount = fee;
+                self.error = None;
                 None
             }
             SendMessage::UseAllFunds(use_all) => {
                 self.use_all_funds = use_all;
+                if use_all {
+                    self.estimated_fee = None;
+                }
+                self.error = None;
                 None
             }
             SendMessage::FromAddressChanged(addr) => {
                 self.from_address = addr;
+                self.error = None;
+                self.estimated_fee = None;
                 None
             }
             SendMessage::ChangeAddressChanged(addr) => {
                 self.change_address = addr;
+                self.error = None;
                 None
             }
             SendMessage::BroadcastChanged(broadcast) => {
@@ -90,21 +119,94 @@ impl SendView {
                 None
             }
             SendMessage::EstimateFee => {
-                // TODO: Implement fee estimation
-                None
+                if self.use_all_funds {
+                    self.error =
+                        Some("Send all funds không cần estimate fee trước".to_string());
+                    return None;
+                }
+
+                let amount_sat = match parse_u64_required(&self.amount, "amount") {
+                    Ok(value) => value,
+                    Err(err) => {
+                        self.error = Some(err);
+                        return None;
+                    }
+                };
+
+                let input_source = match parse_input_source(&self.from_address) {
+                    Ok(value) => value,
+                    Err(err) => {
+                        self.error = Some(err);
+                        return None;
+                    }
+                };
+
+                self.error = None;
+                self.success = None;
+                Some(crate::app::AppMessage::EstimateSendFee {
+                    amount_sat,
+                    input_source,
+                })
             }
             SendMessage::Send => {
                 if self.to_address.trim().is_empty() {
-                    self.error = Some("Please enter recipient address".to_string());
+                    self.error = Some("Vui lòng nhập địa chỉ nhận".to_string());
                     return None;
                 }
-                if self.amount.trim().is_empty() && !self.use_all_funds {
-                    self.error = Some("Please enter amount".to_string());
-                    return None;
-                }
+
+                let input_source = match parse_input_source(&self.from_address) {
+                    Ok(value) => value,
+                    Err(err) => {
+                        self.error = Some(err);
+                        return None;
+                    }
+                };
+
+                let change_strategy = match parse_change_strategy(&self.change_address) {
+                    Ok(value) => value,
+                    Err(err) => {
+                        self.error = Some(err);
+                        return None;
+                    }
+                };
+
+                let fee_mode = match self.fee_mode {
+                    SimpleFeeMode::Auto => FeeMode::Auto,
+                    SimpleFeeMode::Fixed => match parse_u64_required(&self.fee_amount, "fee") {
+                        Ok(value) => FeeMode::FixedSat(value),
+                        Err(err) => {
+                            self.error = Some(err);
+                            return None;
+                        }
+                    },
+                };
+
+                let amount_sat = if self.use_all_funds {
+                    None
+                } else {
+                    match parse_u64_required(&self.amount, "amount") {
+                        Ok(value) => Some(value),
+                        Err(err) => {
+                            self.error = Some(err);
+                            return None;
+                        }
+                    }
+                };
+
                 self.error = None;
-                // TODO: Implement actual send
-                None
+                self.success = None;
+
+                Some(crate::app::AppMessage::SendTransaction(
+                    crate::app::SendRequest {
+                        to_address: self.to_address.trim().to_string(),
+                        amount_sat,
+                        fee_mode,
+                        use_all_funds: self.use_all_funds,
+                        input_source,
+                        change_strategy,
+                        broadcast: self.broadcast,
+                    },
+                ))
             }
             SendMessage::ClearForm => {
                 self.to_address.clear();
@@ -115,13 +217,14 @@ impl SendView {
                 self.broadcast = false;
                 self.use_all_funds = false;
                 self.error = None;
+                self.success = None;
                 self.estimated_fee = None;
                 None
             }
         }
     }
 
-    pub fn view(&self, wallet: Option<&WalletEntry>) -> Element<SendMessage> {
+    pub fn view(&self, wallet: Option<&WalletEntry>) -> Element<'_, SendMessage> {
         let title = text("Send BTC")
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
@@ -139,67 +242,94 @@ impl SendView {
         };
 
         let to_input = column![
-            text("To Address").size(14).style(text_color(Colors::TEXT_SECONDARY)),
+            text("To Address")
+                .size(14)
+                .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
             text_input("Enter recipient address...", &self.to_address)
                 .on_input(SendMessage::ToAddressChanged)
                 .padding(12)
                 .size(14)
-        ].spacing(4);
+        ]
+        .spacing(4);
 
         let use_all_toggle = row![
-            text("Send All Funds").size(14).style(text_color(Colors::TEXT_SECONDARY)),
+            text("Send All Funds")
+                .size(14)
+                .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_width(Length::Fill),
-            button(
-                text(if self.use_all_funds { "✓ ON" } else { "OFF" }).size(12)
-            )
-            .on_press(SendMessage::UseAllFunds(!self.use_all_funds))
-            .padding(6)
-            .style(if self.use_all_funds { primary_button_style() } else { secondary_button_style() })
-        ].align_y(Alignment::Center);
+            button(text(if self.use_all_funds { "ON" } else { "OFF" }).size(12))
+                .on_press(SendMessage::UseAllFunds(!self.use_all_funds))
+                .padding(6)
+                .style(if self.use_all_funds {
+                    primary_button_style()
+                } else {
+                    secondary_button_style()
+                })
+        ]
+        .align_y(Alignment::Center);
 
         let amount_input = column![
-            text("Amount (sat)").size(14).style(text_color(Colors::TEXT_SECONDARY)),
+            text("Amount (sat)")
+                .size(14)
+                .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
             text_input("Enter amount in satoshis...", &self.amount)
                 .on_input(SendMessage::AmountChanged)
                 .padding(12)
                 .size(14)
-        ].spacing(4);
+        ]
+        .spacing(4);
 
         let fee_mode_section = column![
-            text("Fee Mode").size(14).style(text_color(Colors::TEXT_SECONDARY)),
+            text("Fee Mode")
+                .size(14)
+                .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
             row![
-                radio("Auto", SimpleFeeMode::Auto, Some(self.fee_mode), SendMessage::FeeModeChanged)
-                    .size(14),
+                radio(
+                    "Auto",
+                    SimpleFeeMode::Auto,
+                    Some(self.fee_mode),
+                    SendMessage::FeeModeChanged
+                )
+                .size(14),
                 Space::with_width(16),
-                radio("Fixed", SimpleFeeMode::Fixed, Some(self.fee_mode), SendMessage::FeeModeChanged)
-                    .size(14),
-            ].spacing(8)
-        ].spacing(4);
+                radio(
+                    "Fixed",
+                    SimpleFeeMode::Fixed,
+                    Some(self.fee_mode),
+                    SendMessage::FeeModeChanged
+                )
+                .size(14),
+            ]
+            .spacing(8)
+        ]
+        .spacing(4);
 
-        let fee_input = if self.fee_mode == SimpleFeeMode::Fixed {
+        let fee_input: Element<'_, SendMessage> = if self.fee_mode == SimpleFeeMode::Fixed {
             column![
-                text("Fee Amount (sat)").size(14).style(text_color(Colors::TEXT_SECONDARY)),
+                text("Fee Amount (sat)")
+                    .size(14)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
                 text_input("Enter fee in satoshis...", &self.fee_amount)
                     .on_input(SendMessage::FeeAmountChanged)
                     .padding(12)
                     .size(14)
-            ].spacing(4)
-        } else {
-            column![
-                if let Some(fee) = self.estimated_fee {
-                    text(format!("Estimated fee: {} sat", fee))
-                        .size(14)
-                        .style(text_color(Colors::SUCCESS))
-                } else {
-                    text("Click 'Estimate Fee' to calculate")
-                        .size(14)
-                        .style(text_color(Colors::TEXT_MUTED))
-                }
             ]
+            .spacing(4)
+            .into()
+        } else if let Some(fee) = self.estimated_fee {
+            text(format!("Estimated fee: {} sat", fee))
+                .size(14)
+                .style(text_color(Colors::SUCCESS))
+                .into()
+        } else {
+            text("Click 'Estimate Fee' for auto mode")
+                .size(14)
+                .style(text_color(Colors::TEXT_MUTED))
+                .into()
         };
 
         let estimate_btn = button(text("Estimate Fee").size(14))
@@ -208,44 +338,68 @@ impl SendView {
             .style(secondary_button_style());
 
         let advanced_section = column![
-            text("Advanced Options (Optional)").size(16).style(text_color(Colors::TEXT_PRIMARY)),
+            text("Advanced Options (Optional)")
+                .size(16)
+                .style(text_color(Colors::TEXT_PRIMARY)),
             Space::with_height(8),
             column![
-                text("From Address (leave empty for all)").size(12).style(text_color(Colors::TEXT_SECONDARY)),
+                text("From address indexes (comma separated)")
+                    .size(12)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
-                text_input("Specific address to spend from...", &self.from_address)
+                text_input("Example: 0,1,4", &self.from_address)
                     .on_input(SendMessage::FromAddressChanged)
                     .padding(10)
                     .size(12)
-            ].spacing(2),
+            ]
+            .spacing(2),
             Space::with_height(8),
             column![
-                text("Change Address (leave empty for new)").size(12).style(text_color(Colors::TEXT_SECONDARY)),
+                text("Change address index (empty = derive new)")
+                    .size(12)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
-                text_input("Address to receive change...", &self.change_address)
+                text_input("Example: 2", &self.change_address)
                     .on_input(SendMessage::ChangeAddressChanged)
                     .padding(10)
                     .size(12)
-            ].spacing(2),
+            ]
+            .spacing(2),
             Space::with_height(8),
             row![
-                text("Broadcast Immediately").size(14).style(text_color(Colors::TEXT_SECONDARY)),
+                text("Broadcast Immediately")
+                    .size(14)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_width(Length::Fill),
-                button(
-                    text(if self.broadcast { "✓ YES" } else { "NO" }).size(12)
-                )
-                .on_press(SendMessage::BroadcastChanged(!self.broadcast))
-                .padding(6)
-                .style(if self.broadcast { primary_button_style() } else { secondary_button_style() })
-            ].align_y(Alignment::Center)
-        ].spacing(8);
+                button(text(if self.broadcast { "YES" } else { "NO" }).size(12))
+                    .on_press(SendMessage::BroadcastChanged(!self.broadcast))
+                    .padding(6)
+                    .style(if self.broadcast {
+                        primary_button_style()
+                    } else {
+                        secondary_button_style()
+                    })
+            ]
+            .align_y(Alignment::Center)
+        ]
+        .spacing(8);
 
-        let error_text = if let Some(error) = &self.error {
+        let error_text: Element<'_, SendMessage> = if let Some(error) = &self.error {
             text(error.as_str())
                 .size(14)
                 .style(text_color(Colors::ERROR))
+                .into()
         } else {
-            text("")
+            Space::with_height(0).into()
+        };
+
+        let success_text: Element<'_, SendMessage> = if let Some(success) = &self.success {
+            text(success.as_str())
+                .size(14)
+                .style(text_color(Colors::SUCCESS))
+                .into()
+        } else {
+            Space::with_height(0).into()
         };
 
         let send_btn = button(text("Send Transaction").size(16))
@@ -276,23 +430,66 @@ impl SendView {
             Space::with_height(8),
             estimate_btn,
             Space::with_height(24),
-            container(advanced_section)
-                .style(card_style())
-                .padding(16),
+            container(advanced_section).style(card_style()).padding(16),
             Space::with_height(24),
             error_text,
+            success_text,
             Space::with_height(16),
-            row![send_btn, Space::with_width(16), clear_btn]
-                .width(Length::Fill),
+            row![send_btn, Space::with_width(16), clear_btn].width(Length::Fill),
         ]
         .spacing(8)
         .padding(32);
 
-        scrollable(
-            container(content)
-                .width(Length::Fill)
-                .height(Length::Fill)
-        )
-        .into()
+        scrollable(container(content).width(Length::Fill).height(Length::Fill)).into()
     }
+}
+
+fn parse_u64_required(raw: &str, field: &str) -> Result<u64, String> {
+    let value = raw.trim();
+    if value.is_empty() {
+        return Err(format!("Vui lòng nhập {field}"));
+    }
+
+    let parsed = value
+        .parse::<u64>()
+        .map_err(|_| format!("{field} phải là số nguyên dương"))?;
+
+    if parsed == 0 {
+        return Err(format!("{field} phải lớn hơn 0"));
+    }
+
+    Ok(parsed)
+}
+
+fn parse_input_source(raw: &str) -> Result<InputSource, String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(InputSource::All);
+    }
+
+    let mut indexes = Vec::new();
+    for token in trimmed.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+        let index = token
+            .parse::<u32>()
+            .map_err(|_| "from indexes không hợp lệ (ví dụ: 0,1,2)".to_string())?;
+        indexes.push(index);
+    }
+
+    if indexes.is_empty() {
+        return Err("from indexes không được rỗng".to_string());
+    }
+
+    Ok(InputSource::AddressIndexes(indexes))
+}
+
+fn parse_change_strategy(raw: &str) -> Result<ChangeStrategy, String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(ChangeStrategy::NewAddress);
+    }
+
+    let index = trimmed
+        .parse::<u32>()
+        .map_err(|_| "change index không hợp lệ".to_string())?;
+    Ok(ChangeStrategy::ExistingIndex(index))
 }

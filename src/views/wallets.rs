@@ -7,6 +7,7 @@ use crate::wallet::WalletNetwork;
 
 #[derive(Debug, Clone)]
 pub enum WalletsMessage {
+    ToggleCreateForm,
     CreateWallet,
     NameChanged(String),
     NetworkChanged(WalletNetwork),
@@ -35,6 +36,10 @@ impl WalletsView {
 
     pub fn update(&mut self, message: WalletsMessage) -> Option<crate::app::AppMessage> {
         match message {
+            WalletsMessage::ToggleCreateForm => {
+                self.show_create_form = !self.show_create_form;
+                None
+            }
             WalletsMessage::CreateWallet => {
                 if self.create_name.trim().is_empty() {
                     return None;
@@ -71,25 +76,19 @@ impl WalletsView {
         }
     }
 
-    pub fn view(&self, wallets: &[crate::wallet::WalletEntry], selected: usize) -> Element<WalletsMessage> {
+    pub fn view(&self, wallets: &[crate::wallet::WalletEntry], selected: usize) -> Element<'_, WalletsMessage> {
         let title = text("Wallets")
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
 
-        let action_buttons = row![
-            button(text("Create Wallet").size(14))
-                .on_press(WalletsMessage::CreateWallet)
-                .padding(10)
-                .style(primary_button_style()),
-            Space::with_width(8),
-            button(text("Toggle Form").size(14))
-                .on_press(WalletsMessage::CreateWallet)
-                .padding(10)
-                .style(secondary_button_style()),
-        ]
-        .spacing(8);
+        let toggle_btn = button(
+            text(if self.show_create_form { "✕ Cancel" } else { "+ Create Wallet" }).size(14)
+        )
+        .on_press(WalletsMessage::ToggleCreateForm)
+        .padding(10)
+        .style(if self.show_create_form { secondary_button_style() } else { primary_button_style() });
 
-        let mut content = column![title, Space::with_height(16), action_buttons]
+        let mut content = column![title, Space::with_height(16), toggle_btn]
             .spacing(16)
             .padding(32);
 
@@ -117,7 +116,7 @@ impl WalletsView {
                     secondary_button_style()
                 });
 
-            let create_btn = button(text("Create").size(14))
+            let create_btn = button(text("✓ Create").size(14))
                 .on_press(WalletsMessage::CreateWallet)
                 .padding(10)
                 .style(primary_button_style());
@@ -193,10 +192,10 @@ impl WalletsView {
                 column![
                     text("Your Wallets").size(18).style(text_color(Colors::TEXT_PRIMARY)),
                     Space::with_height(12),
-                    scrollable(wallet_list).height(Length::Fixed(400.0)),
+                    scrollable(wallet_list).height(Length::Shrink),
                 ]
             );
-        } else {
+        } else if !self.show_create_form {
             content = content.push(
                 container(
                     text("No wallets yet. Create your first wallet!")

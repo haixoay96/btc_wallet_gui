@@ -8,8 +8,8 @@ use crate::theme::{Colors, card_style, input_style, primary_button_style, text_c
 pub enum LoginMessage {
     PassphraseChanged(String),
     ConfirmPassphraseChanged(String),
-    Login,
-    CreateWallet,
+    Submit,
+    ToggleMode,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,6 +35,14 @@ impl LoginView {
         }
     }
 
+    pub fn set_error(&mut self, message: impl Into<String>) {
+        self.error = Some(message.into());
+    }
+
+    pub fn clear_error(&mut self) {
+        self.error = None;
+    }
+
     pub fn update(&mut self, message: LoginMessage) -> Option<crate::app::AppMessage> {
         match message {
             LoginMessage::PassphraseChanged(value) => {
@@ -47,57 +55,70 @@ impl LoginView {
                 self.error = None;
                 None
             }
-            LoginMessage::Login => {
+            LoginMessage::Submit => {
                 if self.passphrase.trim().is_empty() {
                     self.error = Some("Passphrase không được để trống".to_string());
                     return None;
                 }
+
+                if self.mode == LoginMode::NewWallet {
+                    if self.confirm_passphrase.trim().is_empty() {
+                        self.error = Some("Vui lòng xác nhận passphrase".to_string());
+                        return None;
+                    }
+
+                    if self.passphrase != self.confirm_passphrase {
+                        self.error = Some("Passphrase không khớp".to_string());
+                        return None;
+                    }
+                }
+
                 Some(crate::app::AppMessage::Login(self.passphrase.clone()))
             }
-            LoginMessage::CreateWallet => {
-                if self.passphrase.trim().is_empty() {
-                    self.error = Some("Passphrase không được để trống".to_string());
-                    return None;
-                }
-                if self.passphrase != self.confirm_passphrase {
-                    self.error = Some("Passphrase không khớp".to_string());
-                    return None;
-                }
-                self.mode = LoginMode::ExistingWallet;
+            LoginMessage::ToggleMode => {
+                self.mode = match self.mode {
+                    LoginMode::ExistingWallet => LoginMode::NewWallet,
+                    LoginMode::NewWallet => LoginMode::ExistingWallet,
+                };
                 self.confirm_passphrase.clear();
-                Some(crate::app::AppMessage::Login(self.passphrase.clone()))
+                self.error = None;
+                None
             }
         }
     }
 
-    pub fn view(&self) -> Element<LoginMessage> {
+    pub fn view(&self) -> Element<'_, LoginMessage> {
+        let is_existing_mode = self.mode == LoginMode::ExistingWallet;
+
         let title = text("Bitcoin Wallet")
             .size(36)
             .style(text_color(Colors::TEXT_PRIMARY));
 
-        let subtitle = text("Exodus-style GUI with iced.rs")
+        let subtitle = text(if is_existing_mode {
+            "Đăng nhập bằng passphrase"
+        } else {
+            "Tạo bộ dữ liệu ví mới bằng passphrase"
+        })
             .size(16)
             .style(text_color(Colors::TEXT_SECONDARY));
 
         let passphrase_input = text_input("Nhập passphrase...", &self.passphrase)
             .on_input(LoginMessage::PassphraseChanged)
-            .on_submit(LoginMessage::Login)
+            .on_submit(LoginMessage::Submit)
             .padding(12)
             .size(16)
             .style(input_style());
 
-        let confirm_input = if self.mode == LoginMode::NewWallet {
+        let confirm_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
             text_input("Xác nhận passphrase...", &self.confirm_passphrase)
                 .on_input(LoginMessage::ConfirmPassphraseChanged)
-                .on_submit(LoginMessage::CreateWallet)
+                .on_submit(LoginMessage::Submit)
                 .padding(12)
                 .size(16)
                 .style(input_style())
+                .into()
         } else {
-            text_input("", "")
-                .padding(12)
-                .size(16)
-                .style(input_style())
+            Space::with_height(0).into()
         };
 
         let error_text = if let Some(error) = &self.error {
@@ -110,18 +131,18 @@ impl LoginView {
 
         let buttons = row![
             button(
-                text(if self.mode == LoginMode::ExistingWallet { "Đăng nhập" } else { "Tạo ví mới" })
+                text(if is_existing_mode { "Đăng nhập" } else { "Khởi tạo dữ liệu mới" })
                     .size(16)
             )
-            .on_press(if self.mode == LoginMode::ExistingWallet { LoginMessage::Login } else { LoginMessage::CreateWallet })
+            .on_press(LoginMessage::Submit)
             .padding(12)
             .style(primary_button_style()),
             Space::with_width(12),
             button(
-                text(if self.mode == LoginMode::ExistingWallet { "Tạo ví mới" } else { "Đăng nhập" })
+                text(if is_existing_mode { "Chuyển sang tạo mới" } else { "Chuyển sang đăng nhập" })
                     .size(16)
             )
-            .on_press(if self.mode == LoginMode::ExistingWallet { LoginMessage::CreateWallet } else { LoginMessage::Login })
+            .on_press(LoginMessage::ToggleMode)
             .padding(12)
             .style(primary_button_style())
         ]

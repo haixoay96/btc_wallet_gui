@@ -5,18 +5,15 @@ A modern Bitcoin wallet GUI application built with [iced.rs](https://github.com/
 ## Features
 
 ### Completed
-- Encrypted storage using AES-256-GCM + Argon2
-- Multiple wallet management
-- Exodus-style dark theme with purple/teal accents
+- Login/Register with passphrase
+- Encrypted storage using ChaCha20-Poly1305 + Argon2id
 - Dashboard with balance overview
-- Sidebar navigation
-
-### In Development
-- Send BTC transactions
-- Receive BTC with QR codes
-- Transaction history
-- Settings and passphrase management
-- Balance refresh from Blockstream API
+- Multiple wallet management (create/select/delete)
+- Send BTC with fee options (auto/fixed, send-all, advanced input/change options)
+- Receive BTC with address list, derive new address, copy to clipboard
+- Transaction history with incoming/outgoing/all filters
+- Settings: passphrase change, encrypted backup export/import
+- Balance & history refresh from Blockstream API
 
 ## Build & Run
 

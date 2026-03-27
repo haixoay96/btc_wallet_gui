@@ -1,6 +1,9 @@
-use std::fs;
+use std::{
+    fs,
+    path::Path,
+};
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result};
 
 
 mod encryption;
@@ -45,9 +48,39 @@ impl Storage {
         self.paths.encrypted_state_file.exists()
     }
 
+    pub fn has_existing_state(&self) -> bool {
+        self.paths.encrypted_state_file.exists()
+            || self.paths.first_existing_legacy_path().is_some()
+    }
+
     pub fn rotate_passphrase(&self, old_pass: &str, new_pass: &str) -> Result<()> {
         let state = self.load_state(old_pass)?;
         self.save_state(&state, new_pass)
+    }
+
+    pub fn export_encrypted_backup(
+        &self,
+        state: &PersistedState,
+        passphrase: &str,
+        path: &Path,
+    ) -> Result<()> {
+        self.save_encrypted_state(path, state, passphrase)
+    }
+
+    pub fn import_backup(&self, path: &Path, passphrase: &str) -> Result<PersistedState> {
+        let content = fs::read(path)
+            .with_context(|| format!("Không đọc được backup file: {}", path.display()))?;
+
+        if let Ok(envelope) = serde_json::from_slice::<EncryptedEnvelope>(&content) {
+            let plaintext = decrypt_blob(&envelope, passphrase)?;
+            let state: PersistedState = serde_json::from_slice(&plaintext)
+                .context("Backup decrypted không đúng định dạng JSON")?;
+            return Ok(state);
+        }
+
+        let state: PersistedState = serde_json::from_slice(&content)
+            .context("Backup không đúng định dạng wallet state")?;
+        Ok(state)
     }
 
     fn load_plain_state(&self, path: &std::path::Path) -> Result<PersistedState> {
@@ -62,7 +95,8 @@ impl Storage {
 
         let parent = path
             .parent()
-            .ok_or_else(|| anyhow!("Đường dẫn file state không hợp lệ"))?;
+            .filter(|dir| !dir.as_os_str().is_empty())
+            .unwrap_or_else(|| Path::new("."));
         fs::create_dir_all(parent)
             .with_context(|| format!("Không tạo được thư mục dữ liệu: {}", parent.display()))?;
 

@@ -1,6 +1,6 @@
 use iced::{
     widget::{button, column, container, text, row, Space},
-    Alignment, Element, Length, Padding,
+    Alignment, Element, Length,
 };
 use crate::theme::{Colors, card_style, primary_button_style, text_color};
 
@@ -30,7 +30,7 @@ impl DashboardView {
         self.wallet_count = wallets;
     }
 
-    pub fn view(&self) -> Element<DashboardMessage> {
+    pub fn view(&self) -> Element<'_, DashboardMessage> {
         let title = text("Dashboard")
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
