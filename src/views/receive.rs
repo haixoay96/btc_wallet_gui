@@ -266,11 +266,10 @@ impl ReceiveView {
             );
         }
 
-        let base: Element<'a, ReceiveMessage> =
-            container(scrollable(content).width(Length::Fill).height(Length::Fill))
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into();
+        let base: Element<'a, ReceiveMessage> = container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into();
 
         if let (true, Some(handle), Some(address)) = (
             self.show_qr,
@@ -286,9 +285,13 @@ impl ReceiveView {
                         .size(12)
                         .style(text_color(Colors::TEXT_SECONDARY)),
                     Space::with_height(10),
-                    image::Image::new(handle.clone())
-                        .width(Length::Fixed(240.0))
-                        .height(Length::Fixed(240.0)),
+                    container(
+                        image::Image::new(handle.clone())
+                            .width(Length::Fixed(240.0))
+                            .height(Length::Fixed(240.0)),
+                    )
+                    .width(Length::Fill)
+                    .center_x(Length::Fill),
                     Space::with_height(10),
                     button(text("Đóng").size(14))
                         .on_press(ReceiveMessage::CloseQrPopup)

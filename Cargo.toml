@@ -18,13 +18,13 @@ rand = "0.9"
 qrcode = "0.14"
 printpdf = "0.7"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
-rfd = { version = "0.14", default-features = false, features = ["xdg-portal", "tokio"] }
+rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 
 [profile.release]
-codegen-units = 1
-lto = "fat"
-strip = true
+codegen-units = 1  # Tắt biên dịch song song để tối ưu tốt hơn
+lto = "fat"  
+strip = true  # Loại bỏ symbol dư thừa để file thực thi gọn nhẹ hơn
 panic = 'abort'
