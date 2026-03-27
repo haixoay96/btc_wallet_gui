@@ -1035,7 +1035,7 @@ impl WalletsView {
                                     ]
                                     .spacing(10),
                                     slip39_passphrase_input,
-                                    button(text("Export SLIP-0039 shares (.txt)").size(13))
+                                    button(text("Export SLIP-0039 shares (PDF folder)").size(13))
                                         .on_press(WalletsMessage::ExportSlip39Shares(selected_index))
                                         .padding(10)
                                         .style(secondary_button_style()),
