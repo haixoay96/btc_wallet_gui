@@ -330,6 +330,9 @@ impl SettingsView {
             );
         }
 
-        scrollable(container(content).width(Length::Fill).height(Length::Fill)).into()
+        scrollable(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
     }
 }

@@ -440,7 +440,10 @@ impl SendView {
         .spacing(8)
         .padding(32);
 
-        scrollable(container(content).width(Length::Fill).height(Length::Fill)).into()
+        scrollable(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
     }
 }
 
