@@ -1,11 +1,15 @@
 use iced::{
-    widget::{button, column, container, pick_list, row, scrollable, text, Space},
-    Alignment, Element, Length,
+    widget::{
+        button, column, container, image, mouse_area, opaque, pick_list, row, scrollable, stack,
+        text, Space,
+    },
+    Alignment, Background, Border, Color, Element, Length, Shadow, Theme,
 };
+use qrcode::{types::Color as QrColor, QrCode};
 use std::fmt;
 
 use crate::theme::{
-    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    card_style, color_with_alpha, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, text_color, Colors,
 };
 use crate::wallet::WalletEntry;
@@ -14,6 +18,8 @@ use crate::wallet::WalletEntry;
 pub enum ReceiveMessage {
     SelectWallet(usize),
     CopyAddress(String),
+    ToggleQrCode(String),
+    CloseQrPopup,
     DeriveNewAddress,
     SelectAddress(usize),
 }
@@ -21,6 +27,10 @@ pub enum ReceiveMessage {
 pub struct ReceiveView {
     selected_index: usize,
     copied: bool,
+    show_qr: bool,
+    qr_address: Option<String>,
+    qr_handle: Option<image::Handle>,
+    qr_error: Option<String>,
 }
 
 impl ReceiveView {
@@ -28,6 +38,10 @@ impl ReceiveView {
         Self {
             selected_index: 0,
             copied: false,
+            show_qr: false,
+            qr_address: None,
+            qr_handle: None,
+            qr_error: None,
         }
     }
 
@@ -36,19 +50,47 @@ impl ReceiveView {
             ReceiveMessage::SelectWallet(index) => {
                 self.selected_index = 0;
                 self.copied = false;
+                self.clear_qr_state();
                 Some(crate::app::AppMessage::SelectWallet(index))
             }
             ReceiveMessage::CopyAddress(addr) => {
                 self.copied = true;
                 Some(crate::app::AppMessage::CopyAddress(addr))
             }
+            ReceiveMessage::ToggleQrCode(address) => {
+                let is_same_address = self.qr_address.as_deref() == Some(address.as_str());
+                if self.show_qr && is_same_address {
+                    self.close_qr_popup();
+                    return None;
+                }
+
+                match build_qr_handle(&address) {
+                    Ok(handle) => {
+                        self.show_qr = true;
+                        self.qr_address = Some(address);
+                        self.qr_handle = Some(handle);
+                        self.qr_error = None;
+                    }
+                    Err(err) => {
+                        self.show_qr = false;
+                        self.qr_error = Some(err);
+                    }
+                }
+                None
+            }
+            ReceiveMessage::CloseQrPopup => {
+                self.close_qr_popup();
+                None
+            }
             ReceiveMessage::DeriveNewAddress => {
                 self.copied = false;
+                self.clear_qr_state();
                 Some(crate::app::AppMessage::DeriveAddresses(1))
             }
             ReceiveMessage::SelectAddress(index) => {
                 self.selected_index = index;
                 self.copied = false;
+                self.clear_qr_state();
                 None
             }
         }
@@ -131,23 +173,46 @@ impl ReceiveView {
                         .padding(16)
                         .width(Length::Fill),
                     );
+                    let qr_visible_for_selected =
+                        self.show_qr && self.qr_address.as_deref() == Some(addr.address.as_str());
+
                     content = content.push(
-                        button(
-                            text(if self.copied {
-                                "Copied!"
+                        row![
+                            button(
+                                text(if self.copied {
+                                    "Copied!"
+                                } else {
+                                    "Copy Address"
+                                })
+                                .size(14),
+                            )
+                            .on_press(ReceiveMessage::CopyAddress(addr.address.clone()))
+                            .padding(10)
+                            .style(if self.copied {
+                                secondary_button_style()
                             } else {
-                                "Copy Address"
-                            })
-                            .size(14),
-                        )
-                        .on_press(ReceiveMessage::CopyAddress(addr.address.clone()))
-                        .padding(10)
-                        .style(if self.copied {
-                            secondary_button_style()
-                        } else {
-                            primary_button_style()
-                        }),
+                                primary_button_style()
+                            }),
+                            Space::with_width(8),
+                            button(
+                                text(if qr_visible_for_selected {
+                                    "Ẩn QR"
+                                } else {
+                                    "Hiện QR"
+                                })
+                                .size(14),
+                            )
+                            .on_press(ReceiveMessage::ToggleQrCode(addr.address.clone()))
+                            .padding(10)
+                            .style(secondary_button_style()),
+                        ]
+                        .align_y(Alignment::Center),
                     );
+
+                    if !qr_visible_for_selected && self.qr_error.is_some() {
+                        let err = self.qr_error.as_deref().unwrap_or("Không tạo được QR");
+                        content = content.push(text(err).size(13).style(text_color(Colors::ERROR)));
+                    }
                 }
 
                 content = content.push(Space::with_height(16));
@@ -201,10 +266,85 @@ impl ReceiveView {
             );
         }
 
-        container(content)
+        let base: Element<'a, ReceiveMessage> =
+            container(scrollable(content).width(Length::Fill).height(Length::Fill))
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into();
+
+        if let (true, Some(handle), Some(address)) = (
+            self.show_qr,
+            self.qr_handle.as_ref(),
+            self.qr_address.as_ref(),
+        ) {
+            let popup = container(
+                column![
+                    text("QR Code nhận BTC")
+                        .size(18)
+                        .style(text_color(Colors::TEXT_PRIMARY)),
+                    text(address.as_str())
+                        .size(12)
+                        .style(text_color(Colors::TEXT_SECONDARY)),
+                    Space::with_height(10),
+                    image::Image::new(handle.clone())
+                        .width(Length::Fixed(240.0))
+                        .height(Length::Fixed(240.0)),
+                    Space::with_height(10),
+                    button(text("Đóng").size(14))
+                        .on_press(ReceiveMessage::CloseQrPopup)
+                        .padding(10)
+                        .style(primary_button_style()),
+                ]
+                .align_x(Alignment::Center)
+                .spacing(6),
+            )
+            .style(card_style())
+            .padding(18)
+            .width(Length::Fixed(380.0));
+
+            let backdrop = container(
+                mouse_area(
+                    container(Space::with_width(Length::Fill))
+                        .width(Length::Fill)
+                        .height(Length::Fill),
+                )
+                .on_press(ReceiveMessage::CloseQrPopup),
+            )
+            .style(qr_backdrop_style())
             .width(Length::Fill)
-            .height(Length::Fill)
-            .into()
+            .height(Length::Fill);
+
+            let popup_layer = container(popup)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .center_x(Length::Fill)
+                .center_y(Length::Fill);
+
+            let overlay = stack(vec![opaque(backdrop).into(), popup_layer.into()])
+                .width(Length::Fill)
+                .height(Length::Fill);
+
+            return stack(vec![base, overlay.into()])
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into();
+        }
+
+        base
+    }
+}
+
+impl ReceiveView {
+    fn clear_qr_state(&mut self) {
+        self.show_qr = false;
+        self.qr_address = None;
+        self.qr_handle = None;
+        self.qr_error = None;
+    }
+
+    fn close_qr_popup(&mut self) {
+        self.show_qr = false;
+        self.qr_error = None;
     }
 }
 
@@ -235,5 +375,59 @@ fn selected_wallet_choice(wallets: &[WalletEntry], selected_wallet: usize) -> Op
     wallets.get(selected_wallet).map(|wallet| WalletChoice {
         index: selected_wallet,
         label: format!("{} ({})", wallet.name, wallet.network.as_str()),
+    })
+}
+
+fn build_qr_handle(address: &str) -> Result<image::Handle, String> {
+    let qr = QrCode::new(address.as_bytes()).map_err(|err| format!("Không tạo được QR: {err}"))?;
+
+    let module_count = qr.width();
+    let scale = 8usize;
+    let border = 4usize;
+    let side = (module_count + border * 2) * scale;
+
+    let mut rgba = vec![255u8; side * side * 4];
+
+    for y in 0..side {
+        let module_y = y / scale;
+        for x in 0..side {
+            let module_x = x / scale;
+
+            let is_dark = if module_x >= border
+                && module_y >= border
+                && module_x < border + module_count
+                && module_y < border + module_count
+            {
+                qr[(module_x - border, module_y - border)] == QrColor::Dark
+            } else {
+                false
+            };
+
+            if is_dark {
+                let offset = (y * side + x) * 4;
+                rgba[offset] = 24;
+                rgba[offset + 1] = 24;
+                rgba[offset + 2] = 30;
+                rgba[offset + 3] = 255;
+            }
+        }
+    }
+
+    Ok(image::Handle::from_rgba(side as u32, side as u32, rgba))
+}
+
+fn qr_backdrop_style() -> Box<dyn Fn(&Theme) -> container::Style> {
+    Box::new(|_theme: &Theme| container::Style {
+        background: Some(Background::Color(color_with_alpha(
+            Colors::BG_PRIMARY,
+            0.75,
+        ))),
+        border: Border {
+            color: Color::TRANSPARENT,
+            width: 0.0,
+            radius: 0.0.into(),
+        },
+        shadow: Shadow::default(),
+        text_color: None,
     })
 }

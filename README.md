@@ -1,4 +1,4 @@
-# Bitcoin Wallet GUI - Exodus Style
+# Bitcoin Wallet GUI
 
 A modern Bitcoin wallet GUI application built with [iced.rs](https://github.com/iced-rs/iced), inspired by Exodus wallet design.
 

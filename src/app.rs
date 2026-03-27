@@ -1,5 +1,7 @@
 use std::{
     env,
+    fs::File,
+    io::BufWriter,
     path::{Path, PathBuf},
 };
 
@@ -8,6 +10,7 @@ use iced::{
     widget::{column, container, row, text, Space},
     Element, Length, Task,
 };
+use printpdf::{BuiltinFont, Mm, PdfDocument};
 
 use crate::storage::{PersistedState, Storage, UserProfile};
 use crate::views::{
@@ -104,6 +107,7 @@ pub enum AppMessage {
         wallet_index: usize,
         checks: Vec<(usize, String)>,
     },
+    ExportMnemonicPdf(usize),
 
     EstimateSendFee {
         amount_sat: u64,
@@ -624,6 +628,48 @@ impl App {
                 Task::none()
             }
 
+            AppMessage::ExportMnemonicPdf(wallet_index) => {
+                if wallet_index >= self.wallets.len() {
+                    self.wallets_view.set_error("Wallet không tồn tại");
+                    return Task::none();
+                }
+
+                let wallet = &self.wallets[wallet_index];
+                let mnemonic = match wallet.mnemonic.as_deref() {
+                    Some(value) => value,
+                    None => {
+                        self.wallets_view
+                            .set_error("Ví này không có mnemonic để export PDF");
+                        return Task::none();
+                    }
+                };
+
+                let default_name = default_mnemonic_pdf_filename(&wallet.name);
+                let Some(raw_path) = pick_mnemonic_pdf_path(&default_name) else {
+                    return Task::none();
+                };
+                let export_path = ensure_pdf_extension(raw_path);
+
+                match export_mnemonic_to_pdf(
+                    &export_path,
+                    &wallet.name,
+                    wallet.network.as_str(),
+                    mnemonic,
+                ) {
+                    Ok(_) => {
+                        let message = format!("Đã export mnemonic PDF: {}", export_path.display());
+                        self.wallets_view.set_info(message.clone());
+                        self.status = Some(message);
+                        self.error = None;
+                    }
+                    Err(err) => {
+                        self.wallets_view
+                            .set_error(format!("Export mnemonic PDF thất bại: {err}"));
+                    }
+                }
+                Task::none()
+            }
+
             AppMessage::EstimateSendFee {
                 amount_sat,
                 input_source,
@@ -1092,6 +1138,121 @@ fn pick_export_backup_path(current_path: &str) -> Option<PathBuf> {
     }
 
     dialog.save_file()
+}
+
+fn pick_mnemonic_pdf_path(default_file_name: &str) -> Option<PathBuf> {
+    rfd::FileDialog::new()
+        .set_title("Lưu mnemonic ra PDF")
+        .add_filter("PDF file", &["pdf"])
+        .set_file_name(default_file_name)
+        .save_file()
+}
+
+fn default_mnemonic_pdf_filename(wallet_name: &str) -> String {
+    format!("{}_mnemonic_backup.pdf", sanitize_filename(wallet_name))
+}
+
+fn sanitize_filename(raw: &str) -> String {
+    let mut result = String::with_capacity(raw.len());
+    for ch in raw.chars() {
+        if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+            result.push(ch);
+        } else if ch.is_whitespace() {
+            result.push('_');
+        }
+    }
+
+    let trimmed = result.trim_matches('_');
+    if trimmed.is_empty() {
+        "wallet".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn ensure_pdf_extension(mut path: PathBuf) -> PathBuf {
+    let has_pdf = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("pdf"))
+        .unwrap_or(false);
+
+    if !has_pdf {
+        path.set_extension("pdf");
+    }
+
+    path
+}
+
+fn export_mnemonic_to_pdf(
+    path: &Path,
+    wallet_name: &str,
+    network: &str,
+    mnemonic: &str,
+) -> Result<(), String> {
+    let (doc, page, layer) =
+        PdfDocument::new("Mnemonic Backup", Mm(210.0), Mm(297.0), "Mnemonic Layer");
+    let current_layer = doc.get_page(page).get_layer(layer);
+
+    let font_regular = doc
+        .add_builtin_font(BuiltinFont::Helvetica)
+        .map_err(|err| format!("Không tải được font PDF: {err}"))?;
+    let font_bold = doc
+        .add_builtin_font(BuiltinFont::HelveticaBold)
+        .map_err(|err| format!("Không tải được font PDF: {err}"))?;
+
+    current_layer.use_text(
+        "Bitcoin Wallet - Mnemonic Backup",
+        18.0,
+        Mm(18.0),
+        Mm(280.0),
+        &font_bold,
+    );
+    current_layer.use_text(
+        format!("Wallet: {wallet_name}"),
+        12.0,
+        Mm(18.0),
+        Mm(268.0),
+        &font_regular,
+    );
+    current_layer.use_text(
+        format!("Network: {network}"),
+        12.0,
+        Mm(18.0),
+        Mm(260.0),
+        &font_regular,
+    );
+    current_layer.use_text(
+        "Keep this file offline and private. Anyone with these words can spend your funds.",
+        10.0,
+        Mm(18.0),
+        Mm(250.0),
+        &font_regular,
+    );
+
+    let words: Vec<&str> = mnemonic.split_whitespace().collect();
+    for (idx, word) in words.iter().enumerate() {
+        let row = idx / 2;
+        let col = idx % 2;
+        let x = if col == 0 { 18.0 } else { 110.0 };
+        let y = 236.0 - (row as f32 * 10.0);
+
+        current_layer.use_text(
+            format!("{:02}. {}", idx + 1, word),
+            12.0,
+            Mm(x),
+            Mm(y),
+            &font_regular,
+        );
+    }
+
+    let file = File::create(path)
+        .map_err(|err| format!("Không tạo được file PDF {}: {err}", path.display()))?;
+    let mut writer = BufWriter::new(file);
+    doc.save(&mut writer)
+        .map_err(|err| format!("Không ghi được nội dung PDF: {err}"))?;
+
+    Ok(())
 }
 
 fn normalize_nickname(raw: Option<&str>) -> Option<String> {

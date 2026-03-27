@@ -31,6 +31,7 @@ pub enum WalletsMessage {
         wallet_index: usize,
         word_count: usize,
     },
+    ExportMnemonicPdf(usize),
     BackupWordChanged(usize, String),
     SubmitBackupTest(usize),
     DismissWalletNotice,
@@ -249,6 +250,19 @@ impl WalletsView {
                 self.backup_test_wallet_index = Some(wallet_index);
                 self.error = None;
                 None
+            }
+            WalletsMessage::ExportMnemonicPdf(wallet_index) => {
+                if self.revealed_wallet_index != Some(wallet_index) {
+                    self.error = Some("Hãy mở mnemonic trước khi export PDF".to_string());
+                    return None;
+                }
+                if self.backup_test_wallet_index == Some(wallet_index) {
+                    self.error =
+                        Some("Không thể export PDF khi đang làm bài test backup".to_string());
+                    return None;
+                }
+                self.error = None;
+                Some(crate::app::AppMessage::ExportMnemonicPdf(wallet_index))
             }
             WalletsMessage::BackupWordChanged(field_index, value) => {
                 if let Some(slot) = self.backup_test_answers.get_mut(field_index) {
@@ -715,6 +729,13 @@ impl WalletsView {
                             .style(card_style())
                             .padding(12)
                             .width(Length::Fill),
+                        );
+
+                        panel = panel.push(
+                            button(text("Export mnemonic to PDF").size(13))
+                                .on_press(WalletsMessage::ExportMnemonicPdf(selected_index))
+                                .padding(10)
+                                .style(secondary_button_style()),
                         );
                     }
 
