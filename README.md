@@ -2,11 +2,18 @@
 
 Ứng dụng ví Bitcoin desktop viết bằng Rust + `iced`, tập trung vào trải nghiệm quản lý nhiều ví, backup mnemonic rõ ràng, và thao tác send/receive nhanh.
 
+## 0. Cập nhật gần đây
+
+- Thêm chọn ngôn ngữ ngay trên màn hình Login (không cần đăng nhập trước).
+- Ngôn ngữ đã chọn được ghi nhớ cho lần mở app sau.
+- Mặc định lần chạy đầu tiên: English.
+
 ## 1. Tính năng chính
 
 - Đăng nhập bằng passphrase.
 - Tạo dữ liệu ví mới với passphrase + nickname.
 - Import backup khi app chưa có dữ liệu.
+- Chọn ngôn ngữ ngay tại Login hoặc trong Settings.
 - Dashboard tổng quan số dư (tổng, confirmed, số lượng ví).
 - Quản lý nhiều ví: tạo, chọn, xóa.
 - Import ví từ:
@@ -43,7 +50,9 @@
   - English
   - Tiếng Việt
 - Mặc định lần mở ứng dụng đầu tiên: `English`.
-- Đổi ngôn ngữ trong `Settings`.
+- Đổi ngôn ngữ ở:
+  - Login screen.
+  - `Settings`.
 - Ngôn ngữ đã chọn được lưu lại để màn hình khởi động/login lần sau hiển thị đúng ngôn ngữ đó.
 
 ## 3. Các loại ví hỗ trợ
@@ -92,6 +101,7 @@ Khuyến nghị:
   - Hoặc import backup.
 - Nếu app đã có dữ liệu:
   - Đăng nhập bằng passphrase hiện có.
+- Có thể đổi ngôn ngữ ngay tại màn hình này trước khi thao tác tiếp.
 
 ### Wallets
 
@@ -140,19 +150,21 @@ Khuyến nghị:
 
 ## 7. Build và chạy ứng dụng
 
-## 7.1 Yêu cầu
+### 7.1 Yêu cầu
 
 - Rust stable (khuyên dùng cài bằng `rustup`).
 - Cargo (đi kèm Rust).
 - Trên Linux có thể cần thêm package hệ thống cho GUI (Wayland/X11 tùy distro).
 
-## 7.2 Chạy dev
+### 7.2 Quick start
 
 ```bash
+cargo fmt
+cargo check
 cargo run
 ```
 
-## 7.3 Build release
+### 7.3 Build release
 
 ```bash
 cargo build --release
@@ -164,7 +176,7 @@ Binary nằm tại:
 target/release/btc_wallet_gui
 ```
 
-## 7.4 Kiểm tra code
+### 7.4 Kiểm tra code
 
 ```bash
 cargo fmt
