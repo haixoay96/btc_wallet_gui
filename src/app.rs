@@ -13,7 +13,7 @@ use crate::storage::{PersistedState, Storage};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::{HistoryMessage, HistoryView},
-    login::{LoginMessage, LoginView},
+    login::{LoginMessage, LoginMode, LoginView},
     receive::{ReceiveMessage, ReceiveView},
     send::{SendMessage, SendView},
     settings::{SettingsMessage, SettingsView},
@@ -94,17 +94,27 @@ pub enum AppMessage {
     },
     ExportWalletBackup(String),
     ImportWalletBackup(String),
+    ClearAllData,
 }
 
 impl App {
     pub fn new() -> (Self, Task<AppMessage>) {
+        let has_existing_state = Storage::new()
+            .map(|storage| storage.has_existing_state())
+            .unwrap_or(false);
+        let mut login_view = LoginView::new();
+        login_view.set_can_create_new_passphrase(!has_existing_state);
+        if !has_existing_state {
+            login_view.set_mode(LoginMode::NewWallet);
+        }
+
         (
             Self {
                 state: AppState::Login,
                 storage_passphrase: None,
                 wallets: Vec::new(),
                 selected_wallet: 0,
-                login_view: LoginView::new(),
+                login_view,
                 sidebar: Sidebar::new(),
                 dashboard: DashboardView::new(),
                 wallets_view: WalletsView::new(),
@@ -534,6 +544,29 @@ impl App {
 
                 Task::none()
             }
+
+            AppMessage::ClearAllData => {
+                match Storage::new() {
+                    Ok(storage) => match storage.clear_all_data() {
+                        Ok(_) => {
+                            self.reset_to_login(true);
+                            self.login_view
+                                .set_mode(LoginMode::NewWallet);
+                            self.login_view
+                                .set_error("Đã xóa toàn bộ dữ liệu cũ. Hãy tạo passphrase mới.");
+                        }
+                        Err(err) => {
+                            self.settings_view
+                                .set_error(format!("Không thể xóa dữ liệu: {err}"));
+                        }
+                    },
+                    Err(err) => {
+                        self.settings_view
+                            .set_error(format!("Không thể mở storage: {err}"));
+                    }
+                }
+                Task::none()
+            }
         }
     }
 
@@ -683,6 +716,27 @@ impl App {
                 self.error = Some(format!("Error initializing storage: {err}"));
             }
         }
+    }
+
+    fn reset_to_login(&mut self, allow_create_passphrase: bool) {
+        self.state = AppState::Login;
+        self.storage_passphrase = None;
+        self.wallets.clear();
+        self.selected_wallet = 0;
+        self.current_page = NavItem::Dashboard;
+        self.status = None;
+        self.error = None;
+
+        self.login_view = LoginView::new();
+        self.login_view
+            .set_can_create_new_passphrase(allow_create_passphrase);
+        self.sidebar = Sidebar::new();
+        self.dashboard = DashboardView::new();
+        self.wallets_view = WalletsView::new();
+        self.send_view = SendView::new();
+        self.receive_view = ReceiveView::new();
+        self.history_view = HistoryView::new();
+        self.settings_view = SettingsView::new();
     }
 }
 

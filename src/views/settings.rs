@@ -17,6 +17,9 @@ pub enum SettingsMessage {
     ExportWallet,
     ImportWallet,
     ToggleAbout,
+    ToggleClearDataConfirm,
+    ConfirmClearData,
+    CancelClearData,
 }
 
 pub struct SettingsView {
@@ -27,6 +30,7 @@ pub struct SettingsView {
     export_path: String,
     import_path: String,
     show_about: bool,
+    show_clear_data_confirm: bool,
     error: Option<String>,
     success: Option<String>,
 }
@@ -41,6 +45,7 @@ impl SettingsView {
             export_path: "./wallet_backup.enc".to_string(),
             import_path: "./wallet_backup.enc".to_string(),
             show_about: false,
+            show_clear_data_confirm: false,
             error: None,
             success: None,
         }
@@ -142,6 +147,22 @@ impl SettingsView {
                 self.show_about = !self.show_about;
                 None
             }
+            SettingsMessage::ToggleClearDataConfirm => {
+                self.show_clear_data_confirm = !self.show_clear_data_confirm;
+                self.error = None;
+                self.success = None;
+                None
+            }
+            SettingsMessage::ConfirmClearData => {
+                self.show_clear_data_confirm = false;
+                self.error = None;
+                self.success = None;
+                Some(crate::app::AppMessage::ClearAllData)
+            }
+            SettingsMessage::CancelClearData => {
+                self.show_clear_data_confirm = false;
+                None
+            }
         }
     }
 
@@ -181,6 +202,7 @@ impl SettingsView {
                 Space::with_height(4),
                 text_input("Enter current passphrase...", &self.current_passphrase)
                     .on_input(SettingsMessage::CurrentPassphraseChanged)
+                    .secure(true)
                     .padding(10)
                     .size(14)
             ]
@@ -193,6 +215,7 @@ impl SettingsView {
                 Space::with_height(4),
                 text_input("Enter new passphrase...", &self.new_passphrase)
                     .on_input(SettingsMessage::NewPassphraseChanged)
+                    .secure(true)
                     .padding(10)
                     .size(14)
             ]
@@ -205,6 +228,7 @@ impl SettingsView {
                 Space::with_height(4),
                 text_input("Confirm new passphrase...", &self.confirm_passphrase)
                     .on_input(SettingsMessage::ConfirmPassphraseChanged)
+                    .secure(true)
                     .padding(10)
                     .size(14)
             ]
@@ -284,6 +308,52 @@ impl SettingsView {
         .width(Length::Fill);
 
         content = content.push(import_section);
+
+        let clear_data_button = button(text("Clear All Wallet Data").size(14))
+            .on_press(SettingsMessage::ToggleClearDataConfirm)
+            .padding(12)
+            .style(secondary_button_style());
+
+        let mut clear_data_col = column![
+            text("Danger Zone")
+                .size(18)
+                .style(text_color(Colors::ERROR)),
+            Space::with_height(8),
+            text("Xóa toàn bộ ví và dữ liệu đã lưu trong ứng dụng")
+                .size(12)
+                .style(text_color(Colors::WARNING)),
+            Space::with_height(10),
+            clear_data_button,
+        ]
+        .spacing(6);
+
+        if self.show_clear_data_confirm {
+            clear_data_col = clear_data_col.push(
+                column![
+                    text("Xác nhận xóa toàn bộ dữ liệu?")
+                        .size(13)
+                        .style(text_color(Colors::ERROR)),
+                    Space::with_height(8),
+                    button(text("Xóa toàn bộ ngay").size(13))
+                        .on_press(SettingsMessage::ConfirmClearData)
+                        .padding(10)
+                        .style(primary_button_style()),
+                    Space::with_height(6),
+                    button(text("Hủy").size(13))
+                        .on_press(SettingsMessage::CancelClearData)
+                        .padding(10)
+                        .style(secondary_button_style()),
+                ]
+                .spacing(4),
+            );
+        }
+
+        content = content.push(
+            container(clear_data_col)
+                .style(card_style())
+                .padding(16)
+                .width(Length::Fill),
+        );
 
         let about_btn = button(text("About").size(16))
             .on_press(SettingsMessage::ToggleAbout)

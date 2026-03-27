@@ -1,5 +1,6 @@
 use std::{
     fs,
+    io::ErrorKind,
     path::Path,
 };
 
@@ -56,6 +57,40 @@ impl Storage {
     pub fn rotate_passphrase(&self, old_pass: &str, new_pass: &str) -> Result<()> {
         let state = self.load_state(old_pass)?;
         self.save_state(&state, new_pass)
+    }
+
+    pub fn clear_all_data(&self) -> Result<()> {
+        remove_file_if_exists(&self.paths.encrypted_state_file)?;
+
+        for legacy_path in &self.paths.legacy_candidates {
+            remove_file_if_exists(legacy_path)?;
+
+            let backup_name = legacy_path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .map(|name| format!("{name}.migrated.bak"));
+
+            if let Some(backup_name) = backup_name {
+                let backup_path = legacy_path.with_file_name(backup_name);
+                remove_file_if_exists(&backup_path)?;
+            }
+        }
+
+        if self.paths.data_dir.exists() {
+            match fs::remove_dir_all(&self.paths.data_dir) {
+                Ok(_) => {}
+                Err(err) if err.kind() == ErrorKind::NotFound => {}
+                Err(err) => {
+                    return Err(anyhow::anyhow!(
+                        "Không xóa được thư mục dữ liệu {}: {}",
+                        self.paths.data_dir.display(),
+                        err
+                    ));
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn export_encrypted_backup(
@@ -143,4 +178,16 @@ pub fn save_state(state: &PersistedState, passphrase: &str) -> Result<()> {
 pub fn encrypted_state_exists() -> Result<bool> {
     let storage = Storage::new()?;
     Ok(storage.encrypted_state_exists())
+}
+
+fn remove_file_if_exists(path: &Path) -> Result<()> {
+    match fs::remove_file(path) {
+        Ok(_) => Ok(()),
+        Err(err) if err.kind() == ErrorKind::NotFound => Ok(()),
+        Err(err) => Err(anyhow::anyhow!(
+            "Không thể xóa file {}: {}",
+            path.display(),
+            err
+        )),
+    }
 }

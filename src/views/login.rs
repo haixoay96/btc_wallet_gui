@@ -22,6 +22,7 @@ pub struct LoginView {
     passphrase: String,
     confirm_passphrase: String,
     mode: LoginMode,
+    can_create_new_passphrase: bool,
     error: Option<String>,
 }
 
@@ -31,8 +32,25 @@ impl LoginView {
             passphrase: String::new(),
             confirm_passphrase: String::new(),
             mode: LoginMode::ExistingWallet,
+            can_create_new_passphrase: true,
             error: None,
         }
+    }
+
+    pub fn set_can_create_new_passphrase(&mut self, can_create: bool) {
+        self.can_create_new_passphrase = can_create;
+        if !can_create {
+            self.mode = LoginMode::ExistingWallet;
+            self.confirm_passphrase.clear();
+        }
+    }
+
+    pub fn set_mode(&mut self, mode: LoginMode) {
+        self.mode = if !self.can_create_new_passphrase && mode == LoginMode::NewWallet {
+            LoginMode::ExistingWallet
+        } else {
+            mode
+        };
     }
 
     pub fn set_error(&mut self, message: impl Into<String>) {
@@ -76,6 +94,10 @@ impl LoginView {
                 Some(crate::app::AppMessage::Login(self.passphrase.clone()))
             }
             LoginMessage::ToggleMode => {
+                if !self.can_create_new_passphrase {
+                    return None;
+                }
+
                 self.mode = match self.mode {
                     LoginMode::ExistingWallet => LoginMode::NewWallet,
                     LoginMode::NewWallet => LoginMode::ExistingWallet,
@@ -94,7 +116,9 @@ impl LoginView {
             .size(36)
             .style(text_color(Colors::TEXT_PRIMARY));
 
-        let subtitle = text(if is_existing_mode {
+        let subtitle = text(if !self.can_create_new_passphrase {
+            "Đăng nhập bằng passphrase hiện tại"
+        } else if is_existing_mode {
             "Đăng nhập bằng passphrase"
         } else {
             "Tạo bộ dữ liệu ví mới bằng passphrase"
@@ -105,6 +129,7 @@ impl LoginView {
         let passphrase_input = text_input("Nhập passphrase...", &self.passphrase)
             .on_input(LoginMessage::PassphraseChanged)
             .on_submit(LoginMessage::Submit)
+            .secure(true)
             .padding(12)
             .size(16)
             .style(input_style());
@@ -113,6 +138,7 @@ impl LoginView {
             text_input("Xác nhận passphrase...", &self.confirm_passphrase)
                 .on_input(LoginMessage::ConfirmPassphraseChanged)
                 .on_submit(LoginMessage::Submit)
+                .secure(true)
                 .padding(12)
                 .size(16)
                 .style(input_style())
@@ -129,7 +155,7 @@ impl LoginView {
             text("")
         };
 
-        let buttons = row![
+        let mut buttons = row![
             button(
                 text(if is_existing_mode { "Đăng nhập" } else { "Khởi tạo dữ liệu mới" })
                     .size(16)
@@ -137,17 +163,21 @@ impl LoginView {
             .on_press(LoginMessage::Submit)
             .padding(12)
             .style(primary_button_style()),
-            Space::with_width(12),
-            button(
-                text(if is_existing_mode { "Chuyển sang tạo mới" } else { "Chuyển sang đăng nhập" })
-                    .size(16)
-            )
-            .on_press(LoginMessage::ToggleMode)
-            .padding(12)
-            .style(primary_button_style())
         ]
         .spacing(12)
         .align_y(Alignment::Center);
+
+        if self.can_create_new_passphrase {
+            buttons = buttons.push(Space::with_width(12)).push(
+                button(
+                    text(if is_existing_mode { "Chuyển sang tạo mới" } else { "Chuyển sang đăng nhập" })
+                        .size(16)
+                )
+                .on_press(LoginMessage::ToggleMode)
+                .padding(12)
+                .style(primary_button_style()),
+            );
+        }
 
         let content = column![
             Space::with_height(40),
