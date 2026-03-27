@@ -1,6 +1,7 @@
 use std::{fs, io::ErrorKind, path::Path};
 
 use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
 
 mod encryption;
 mod legacy;
@@ -9,10 +10,25 @@ mod paths;
 use self::encryption::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
 pub use self::legacy::{PersistedState, UserProfile};
 use self::paths::StoragePaths;
+use crate::i18n::AppLanguage;
 
 #[derive(Debug)]
 pub struct Storage {
     paths: StoragePaths,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AppPreferences {
+    #[serde(default)]
+    language: AppLanguage,
+}
+
+impl Default for AppPreferences {
+    fn default() -> Self {
+        Self {
+            language: AppLanguage::English,
+        }
+    }
 }
 
 impl Storage {
@@ -47,6 +63,55 @@ impl Storage {
     pub fn has_existing_state(&self) -> bool {
         self.paths.encrypted_state_file.exists()
             || self.paths.first_existing_legacy_path().is_some()
+    }
+
+    pub fn load_language_preference(&self) -> Result<AppLanguage> {
+        if !self.paths.preferences_file.exists() {
+            return Ok(AppLanguage::English);
+        }
+
+        let content = fs::read_to_string(&self.paths.preferences_file).with_context(|| {
+            format!(
+                "Không đọc được file cài đặt app: {}",
+                self.paths.preferences_file.display()
+            )
+        })?;
+
+        let prefs: AppPreferences = serde_json::from_str(&content).with_context(|| {
+            format!(
+                "File cài đặt app không đúng định dạng JSON: {}",
+                self.paths.preferences_file.display()
+            )
+        })?;
+
+        Ok(prefs.language)
+    }
+
+    pub fn save_language_preference(&self, language: AppLanguage) -> Result<()> {
+        let prefs = AppPreferences { language };
+        let encoded =
+            serde_json::to_vec_pretty(&prefs).context("Không serialize được app preferences")?;
+
+        let parent = self
+            .paths
+            .preferences_file
+            .parent()
+            .filter(|dir| !dir.as_os_str().is_empty())
+            .unwrap_or_else(|| Path::new("."));
+        fs::create_dir_all(parent)
+            .with_context(|| format!("Không tạo được thư mục dữ liệu: {}", parent.display()))?;
+
+        let tmp_path = self.paths.preferences_file.with_extension("json.tmp");
+        fs::write(&tmp_path, encoded)
+            .with_context(|| format!("Không ghi được file tạm: {}", tmp_path.display()))?;
+        fs::rename(&tmp_path, &self.paths.preferences_file).with_context(|| {
+            format!(
+                "Không đổi tên file tạm sang file đích: {}",
+                self.paths.preferences_file.display()
+            )
+        })?;
+
+        Ok(())
     }
 
     pub fn rotate_passphrase(&self, old_pass: &str, new_pass: &str) -> Result<()> {

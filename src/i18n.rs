@@ -6,8 +6,8 @@ use std::sync::atomic::{AtomicU8, Ordering};
 #[serde(rename_all = "lowercase")]
 pub enum AppLanguage {
     #[default]
-    Vietnamese,
     English,
+    Vietnamese,
 }
 
 impl AppLanguage {
@@ -38,7 +38,7 @@ impl fmt::Display for AppLanguage {
     }
 }
 
-static CURRENT_LANGUAGE: AtomicU8 = AtomicU8::new(0);
+static CURRENT_LANGUAGE: AtomicU8 = AtomicU8::new(1);
 
 pub fn set_current_language(language: AppLanguage) {
     CURRENT_LANGUAGE.store(language.as_u8(), Ordering::Relaxed);

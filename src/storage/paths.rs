@@ -9,11 +9,13 @@ const APP_NAME: &str = "btc_wallet_gui";
 
 const ENCRYPTED_DATA_FILE: &str = "wallet_data.enc";
 const LEGACY_DATA_FILE: &str = "wallet_data.json";
+const PREFERENCES_FILE: &str = "app_preferences.json";
 
 #[derive(Debug)]
 pub struct StoragePaths {
     pub data_dir: PathBuf,
     pub encrypted_state_file: PathBuf,
+    pub preferences_file: PathBuf,
     pub legacy_candidates: Vec<PathBuf>,
 }
 
@@ -30,6 +32,7 @@ impl StoragePaths {
         };
 
         let encrypted_state_file = data_dir.join(ENCRYPTED_DATA_FILE);
+        let preferences_file = data_dir.join(PREFERENCES_FILE);
         let mut legacy_candidates = vec![data_dir.join(LEGACY_DATA_FILE)];
 
         if let Ok(cwd) = env::current_dir() {
@@ -42,6 +45,7 @@ impl StoragePaths {
         Ok(Self {
             data_dir,
             encrypted_state_file,
+            preferences_file,
             legacy_candidates,
         })
     }

@@ -141,12 +141,18 @@ pub enum AppMessage {
 
 impl App {
     pub fn new() -> (Self, Task<AppMessage>) {
-        let default_language = AppLanguage::Vietnamese;
-        set_current_language(default_language);
+        let fallback_language = AppLanguage::English;
+        let (initial_language, has_existing_state) = match Storage::new() {
+            Ok(storage) => {
+                let language = storage
+                    .load_language_preference()
+                    .unwrap_or(fallback_language);
+                (language, storage.has_existing_state())
+            }
+            Err(_) => (fallback_language, false),
+        };
+        set_current_language(initial_language);
 
-        let has_existing_state = Storage::new()
-            .map(|storage| storage.has_existing_state())
-            .unwrap_or(false);
         let mut login_view = LoginView::new();
         login_view.set_can_create_new_passphrase(!has_existing_state);
         if !has_existing_state {
@@ -157,7 +163,7 @@ impl App {
             Self {
                 state: AppState::Login,
                 storage_passphrase: None,
-                language: default_language,
+                language: initial_language,
                 user_nickname: None,
                 wallets: Vec::new(),
                 selected_wallet: 0,
@@ -259,6 +265,7 @@ impl App {
                                     normalize_nickname(state.profile.nickname.as_deref());
                                 self.language = state.profile.language;
                                 set_current_language(self.language);
+                                self.save_language_preference();
                                 self.storage_passphrase = Some(passphrase);
                                 self.wallets = state.wallets;
                                 self.state = AppState::Main;
@@ -359,6 +366,7 @@ impl App {
                                     normalize_nickname(state.profile.nickname.as_deref());
                                 self.language = state.profile.language;
                                 set_current_language(self.language);
+                                self.save_language_preference();
                                 self.storage_passphrase = Some(passphrase);
                                 self.wallets = state.wallets;
                                 self.state = AppState::Main;
@@ -478,6 +486,7 @@ impl App {
             AppMessage::ChangeLanguage(language) => {
                 self.language = language;
                 set_current_language(language);
+                self.save_language_preference();
                 self.settings_view.set_success(t(
                     "Đã đổi ngôn ngữ ứng dụng",
                     "Application language updated",
@@ -1387,6 +1396,22 @@ impl App {
             ));
         } else {
             self.error = None;
+        }
+    }
+
+    fn save_language_preference(&mut self) {
+        let result =
+            Storage::new().and_then(|storage| storage.save_language_preference(self.language));
+        if let Err(err) = result {
+            if self.error.is_none() {
+                self.error = Some(format!(
+                    "{}: {err}",
+                    t(
+                        "Không thể lưu cài đặt ngôn ngữ",
+                        "Could not save language preference"
+                    )
+                ));
+            }
         }
     }
 
