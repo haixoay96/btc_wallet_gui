@@ -73,6 +73,8 @@ pub enum AppMessage {
         backup_path: String,
         passphrase: String,
     },
+    PickImportBackupPath,
+    PickExportBackupPath(String),
     LoginMessage(LoginMessage),
 
     Navigate(NavItem),
@@ -153,7 +155,7 @@ impl App {
     }
 
     pub fn title(&self) -> String {
-        "Bitcoin Wallet - Exodus Style".to_string()
+        "Bitcoin Wallet".to_string()
     }
 
     pub fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
@@ -318,6 +320,22 @@ impl App {
                     }
                 }
 
+                Task::none()
+            }
+
+            AppMessage::PickImportBackupPath => {
+                if let Some(path) = pick_import_backup_path() {
+                    self.login_view
+                        .set_backup_path(path.to_string_lossy().to_string());
+                }
+                Task::none()
+            }
+
+            AppMessage::PickExportBackupPath(current_path) => {
+                if let Some(path) = pick_export_backup_path(&current_path) {
+                    self.settings_view
+                        .set_export_path(path.to_string_lossy().to_string());
+                }
                 Task::none()
             }
 
@@ -1047,6 +1065,33 @@ fn resolve_user_path(raw_path: &str) -> PathBuf {
     }
 
     PathBuf::from(trimmed)
+}
+
+fn pick_import_backup_path() -> Option<PathBuf> {
+    rfd::FileDialog::new()
+        .set_title("Chọn file backup để import")
+        .add_filter("Backup files", &["enc", "json"])
+        .pick_file()
+}
+
+fn pick_export_backup_path(current_path: &str) -> Option<PathBuf> {
+    let resolved = resolve_user_path(current_path);
+
+    let mut dialog = rfd::FileDialog::new()
+        .set_title("Chọn nơi lưu backup")
+        .add_filter("Encrypted backup", &["enc"]);
+
+    if let Some(parent) = resolved.parent() {
+        dialog = dialog.set_directory(parent);
+    }
+
+    if let Some(file_name) = resolved.file_name().and_then(|name| name.to_str()) {
+        dialog = dialog.set_file_name(file_name);
+    } else {
+        dialog = dialog.set_file_name("wallet_backup.enc");
+    }
+
+    dialog.save_file()
 }
 
 fn normalize_nickname(raw: Option<&str>) -> Option<String> {

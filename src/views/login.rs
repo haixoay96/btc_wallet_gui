@@ -13,6 +13,7 @@ pub enum LoginMessage {
     PassphraseChanged(String),
     ConfirmPassphraseChanged(String),
     BackupPathChanged(String),
+    BrowseBackupPath,
     Submit,
     SetMode(LoginMode),
 }
@@ -73,6 +74,11 @@ impl LoginView {
         self.error = None;
     }
 
+    pub fn set_backup_path(&mut self, path: String) {
+        self.backup_path = path;
+        self.error = None;
+    }
+
     pub fn update(&mut self, message: LoginMessage) -> Option<crate::app::AppMessage> {
         match message {
             LoginMessage::NicknameChanged(value) => {
@@ -95,6 +101,7 @@ impl LoginView {
                 self.error = None;
                 None
             }
+            LoginMessage::BrowseBackupPath => Some(crate::app::AppMessage::PickImportBackupPath),
             LoginMessage::Submit => {
                 if self.passphrase.trim().is_empty() {
                     self.error = Some("Passphrase không được để trống".to_string());
@@ -228,12 +235,21 @@ impl LoginView {
                     .size(12)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
-                text_input("Ví dụ: ~/Downloads/wallet_backup.enc", &self.backup_path)
-                    .on_input(LoginMessage::BackupPathChanged)
-                    .on_submit(LoginMessage::Submit)
-                    .padding(12)
-                    .size(16)
-                    .style(input_style()),
+                row![
+                    text_input("Ví dụ: ~/Downloads/wallet_backup.enc", &self.backup_path)
+                        .on_input(LoginMessage::BackupPathChanged)
+                        .on_submit(LoginMessage::Submit)
+                        .padding(12)
+                        .size(16)
+                        .style(input_style())
+                        .width(Length::Fill),
+                    Space::with_width(8),
+                    button(text("Chọn file").size(14))
+                        .on_press(LoginMessage::BrowseBackupPath)
+                        .padding(12)
+                        .style(secondary_button_style()),
+                ]
+                .align_y(Alignment::Center),
             ]
             .spacing(2)
             .into()

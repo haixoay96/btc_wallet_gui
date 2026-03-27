@@ -1,8 +1,8 @@
 use std::{env, fmt, path::PathBuf};
 
 use iced::{
-    widget::{button, column, container, pick_list, scrollable, text, text_input, Space},
-    Element, Length,
+    widget::{button, column, container, pick_list, row, scrollable, text, text_input, Space},
+    Alignment, Element, Length,
 };
 
 use crate::theme::{
@@ -27,6 +27,7 @@ pub enum SettingsMessage {
     SubmitPassphraseChange,
     ExportLocationChanged(BackupLocation),
     ExportPathChanged(String),
+    BrowseExportPath,
     ExportWallet,
     ToggleAbout,
     ToggleClearDataConfirm,
@@ -105,6 +106,11 @@ impl SettingsView {
         self.confirm_passphrase.clear();
     }
 
+    pub fn set_export_path(&mut self, path: String) {
+        self.export_path = path;
+        self.error = None;
+    }
+
     pub fn update(&mut self, message: SettingsMessage) -> Option<crate::app::AppMessage> {
         match message {
             SettingsMessage::ToggleChangePassphrase => {
@@ -162,6 +168,9 @@ impl SettingsView {
                 self.error = None;
                 None
             }
+            SettingsMessage::BrowseExportPath => Some(
+                crate::app::AppMessage::PickExportBackupPath(self.export_path.clone()),
+            ),
             SettingsMessage::ExportWallet => {
                 let path = self.export_path.trim();
                 if path.is_empty() {
@@ -326,10 +335,19 @@ impl SettingsView {
             .style(pick_list_style())
             .menu_style(pick_list_menu_style()),
             Space::with_height(8),
-            text_input("Path to backup file...", &self.export_path)
-                .on_input(SettingsMessage::ExportPathChanged)
-                .padding(10)
-                .size(14),
+            row![
+                text_input("Path to backup file...", &self.export_path)
+                    .on_input(SettingsMessage::ExportPathChanged)
+                    .padding(10)
+                    .size(14)
+                    .width(Length::Fill),
+                Space::with_width(8),
+                button(text("Chọn nơi lưu").size(14))
+                    .on_press(SettingsMessage::BrowseExportPath)
+                    .padding(10)
+                    .style(secondary_button_style()),
+            ]
+            .align_y(Alignment::Center),
             Space::with_height(8),
             button(text("Export Wallet Backup").size(14))
                 .on_press(SettingsMessage::ExportWallet)
