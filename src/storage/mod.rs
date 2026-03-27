@@ -1,18 +1,13 @@
-use std::{
-    fs,
-    io::ErrorKind,
-    path::Path,
-};
+use std::{fs, io::ErrorKind, path::Path};
 
 use anyhow::{Context, Result};
-
 
 mod encryption;
 mod legacy;
 mod paths;
 
-pub use self::legacy::PersistedState;
-use self::encryption::{EncryptedEnvelope, encrypt_blob, decrypt_blob};
+use self::encryption::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
+pub use self::legacy::{PersistedState, UserProfile};
 use self::paths::StoragePaths;
 
 #[derive(Debug)]
@@ -113,8 +108,8 @@ impl Storage {
             return Ok(state);
         }
 
-        let state: PersistedState = serde_json::from_slice(&content)
-            .context("Backup không đúng định dạng wallet state")?;
+        let state: PersistedState =
+            serde_json::from_slice(&content).context("Backup không đúng định dạng wallet state")?;
         Ok(state)
     }
 
@@ -122,7 +117,12 @@ impl Storage {
         legacy::load_plain_state(path)
     }
 
-    fn save_encrypted_state(&self, path: &std::path::Path, state: &PersistedState, passphrase: &str) -> Result<()> {
+    fn save_encrypted_state(
+        &self,
+        path: &std::path::Path,
+        state: &PersistedState,
+        passphrase: &str,
+    ) -> Result<()> {
         let json = serde_json::to_vec_pretty(state).context("Không serialize được wallet state")?;
         let envelope = encrypt_blob(&json, passphrase)?;
         let encoded =
@@ -139,13 +139,18 @@ impl Storage {
         fs::write(&tmp_path, encoded)
             .with_context(|| format!("Không ghi được file tạm: {}", tmp_path.display()))?;
 
-        fs::rename(&tmp_path, path)
-            .with_context(|| format!("Không đổi tên file tạm sang file đích: {}", path.display()))?;
+        fs::rename(&tmp_path, path).with_context(|| {
+            format!("Không đổi tên file tạm sang file đích: {}", path.display())
+        })?;
 
         Ok(())
     }
 
-    fn load_encrypted_state(&self, path: &std::path::Path, passphrase: &str) -> Result<PersistedState> {
+    fn load_encrypted_state(
+        &self,
+        path: &std::path::Path,
+        passphrase: &str,
+    ) -> Result<PersistedState> {
         let content = fs::read(path)
             .with_context(|| format!("Không đọc được file encrypted: {}", path.display()))?;
 

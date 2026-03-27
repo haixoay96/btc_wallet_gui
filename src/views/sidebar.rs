@@ -1,8 +1,8 @@
+use crate::theme::{secondary_button_style, sidebar_style, text_color, Colors};
 use iced::{
-    widget::{button, column, container, text, row, Space},
+    widget::{button, column, container, row, text, Space},
     Alignment, Element, Length, Padding,
 };
-use crate::theme::{Colors, sidebar_style, secondary_button_style, text_color};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NavItem {
@@ -79,9 +79,7 @@ impl Sidebar {
     }
 
     pub fn view(&self) -> Element<'_, SidebarMessage> {
-        let logo = text("₿")
-            .size(48)
-            .style(text_color(Colors::ACCENT_PURPLE));
+        let logo = text("₿").size(48).style(text_color(Colors::ACCENT_PURPLE));
 
         let logo_container = container(logo)
             .padding(Padding::from([20, 30]))
@@ -94,34 +92,27 @@ impl Sidebar {
                     let is_active = self.active == item;
                     let icon = text(item.icon()).size(24);
                     let title = text(item.title()).size(14);
-                    
+
                     let style = if is_active {
                         crate::theme::primary_button_style()
                     } else {
                         secondary_button_style()
                     };
 
-                    button(
-                        row![icon, Space::with_width(12), title]
-                            .align_y(Alignment::Center)
-                    )
-                    .on_press(SidebarMessage::Navigate(item))
-                    .padding(12)
-                    .width(Length::Fill)
-                    .style(style)
-                    .into()
+                    button(row![icon, Space::with_width(12), title].align_y(Alignment::Center))
+                        .on_press(SidebarMessage::Navigate(item))
+                        .padding(12)
+                        .width(Length::Fill)
+                        .style(style)
+                        .into()
                 })
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>(),
         )
         .spacing(8)
         .padding(Padding::from(16))
         .into();
 
-        let content = column![
-            logo_container,
-            Space::with_height(20),
-            nav_items,
-        ];
+        let content = column![logo_container, Space::with_height(20), nav_items,];
 
         container(content)
             .width(220)

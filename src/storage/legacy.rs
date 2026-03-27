@@ -1,15 +1,21 @@
-use std::{
-    fs,
-    path::Path,
-};
+use std::{fs, path::Path};
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::wallet::WalletEntry;
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct UserProfile {
+    #[serde(default)]
+    pub nickname: Option<String>,
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct PersistedState {
+    #[serde(default)]
+    pub profile: UserProfile,
+    #[serde(default)]
     pub wallets: Vec<WalletEntry>,
 }
 

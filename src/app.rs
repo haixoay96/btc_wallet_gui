@@ -9,7 +9,7 @@ use iced::{
     Element, Length, Task,
 };
 
-use crate::storage::{PersistedState, Storage};
+use crate::storage::{PersistedState, Storage, UserProfile};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::{HistoryMessage, HistoryView},
@@ -44,6 +44,7 @@ pub struct SendRequest {
 pub struct App {
     state: AppState,
     storage_passphrase: Option<String>,
+    user_nickname: Option<String>,
     wallets: Vec<WalletEntry>,
     selected_wallet: usize,
 
@@ -63,7 +64,15 @@ pub struct App {
 
 #[derive(Debug, Clone)]
 pub enum AppMessage {
-    Login(String),
+    Login {
+        passphrase: String,
+        nickname: Option<String>,
+        creating_new: bool,
+    },
+    InitialImportBackup {
+        backup_path: String,
+        passphrase: String,
+    },
     LoginMessage(LoginMessage),
 
     Navigate(NavItem),
@@ -76,10 +85,23 @@ pub enum AppMessage {
     SettingsMessage(SettingsMessage),
 
     CreateWallet(String, WalletNetwork),
+    ImportWalletFromMnemonic {
+        name: String,
+        network: WalletNetwork,
+        mnemonic: String,
+    },
     DeleteWallet(usize),
     SelectWallet(usize),
     RefreshHistory,
     DeriveAddresses(u32),
+    RevealMnemonic {
+        wallet_index: usize,
+        passphrase: String,
+    },
+    VerifyMnemonicBackup {
+        wallet_index: usize,
+        checks: Vec<(usize, String)>,
+    },
 
     EstimateSendFee {
         amount_sat: u64,
@@ -93,8 +115,7 @@ pub enum AppMessage {
         new_passphrase: String,
     },
     ExportWalletBackup(String),
-    ImportWalletBackup(String),
-    ClearAllData,
+    ClearAllData(String),
 }
 
 impl App {
@@ -112,6 +133,7 @@ impl App {
             Self {
                 state: AppState::Login,
                 storage_passphrase: None,
+                user_nickname: None,
                 wallets: Vec::new(),
                 selected_wallet: 0,
                 login_view,
@@ -136,29 +158,83 @@ impl App {
 
     pub fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
-            AppMessage::Login(passphrase) => {
+            AppMessage::Login {
+                passphrase,
+                nickname,
+                creating_new,
+            } => {
                 self.status = None;
                 self.error = None;
 
                 match Storage::new() {
                     Ok(storage) => {
                         let had_existing_state = storage.has_existing_state();
+                        if had_existing_state && creating_new {
+                            let message = "Ứng dụng đã có dữ liệu. Vui lòng đăng nhập bằng passphrase hiện tại.".to_string();
+                            self.error = Some(message.clone());
+                            self.login_view.set_error(message);
+                            return Task::none();
+                        }
+
                         match storage.load_state(&passphrase) {
-                            Ok(state) => {
+                            Ok(mut state) => {
+                                if !had_existing_state {
+                                    if !creating_new {
+                                        let message = "Chưa có dữ liệu. Vui lòng tạo passphrase mới hoặc dùng Import backup ở màn hình này.".to_string();
+                                        self.error = Some(message.clone());
+                                        self.login_view.set_error(message);
+                                        return Task::none();
+                                    }
+
+                                    let normalized_nickname =
+                                        normalize_nickname(nickname.as_deref()).ok_or_else(|| {
+                                            "Vui lòng nhập nickname hợp lệ".to_string()
+                                        });
+
+                                    match normalized_nickname {
+                                        Ok(value) => {
+                                            state.profile.nickname = Some(value);
+                                            if let Err(err) =
+                                                storage.save_state(&state, &passphrase)
+                                            {
+                                                let message = format!(
+                                                    "Không thể khởi tạo dữ liệu mới: {err}"
+                                                );
+                                                self.error = Some(message.clone());
+                                                self.login_view.set_error(message);
+                                                return Task::none();
+                                            }
+                                        }
+                                        Err(message) => {
+                                            self.error = Some(message.clone());
+                                            self.login_view.set_error(message);
+                                            return Task::none();
+                                        }
+                                    }
+                                }
+
+                                self.user_nickname =
+                                    normalize_nickname(state.profile.nickname.as_deref());
                                 self.storage_passphrase = Some(passphrase);
                                 self.wallets = state.wallets;
                                 self.state = AppState::Main;
-                                self.selected_wallet =
-                                    self.selected_wallet.min(self.wallets.len().saturating_sub(1));
+                                self.selected_wallet = self
+                                    .selected_wallet
+                                    .min(self.wallets.len().saturating_sub(1));
                                 self.update_dashboard();
                                 self.login_view.clear_error();
 
                                 if had_existing_state {
-                                    self.status =
-                                        Some(format!("Loaded {} wallet(s)", self.wallets.len()));
+                                    self.status = Some(format!(
+                                        "Welcome back, {}. Loaded {} wallet(s)",
+                                        self.display_name(),
+                                        self.wallets.len()
+                                    ));
                                 } else {
-                                    self.status =
-                                        Some("Welcome! Create your first wallet.".to_string());
+                                    self.status = Some(format!(
+                                        "Welcome, {}! Create your first wallet.",
+                                        self.display_name()
+                                    ));
                                 }
                             }
                             Err(err) => {
@@ -170,6 +246,75 @@ impl App {
                     }
                     Err(err) => {
                         self.error = Some(format!("Error initializing storage: {err}"));
+                    }
+                }
+
+                Task::none()
+            }
+
+            AppMessage::InitialImportBackup {
+                backup_path,
+                passphrase,
+            } => {
+                self.status = None;
+                self.error = None;
+
+                if passphrase.trim().is_empty() {
+                    let message = "Passphrase không được để trống".to_string();
+                    self.error = Some(message.clone());
+                    self.login_view.set_error(message);
+                    return Task::none();
+                }
+
+                let import_path = resolve_user_path(&backup_path);
+
+                match Storage::new() {
+                    Ok(storage) => {
+                        if storage.has_existing_state() {
+                            let message = "Ứng dụng đã có dữ liệu. Chỉ import backup từ màn hình này khi chưa tạo passphrase.".to_string();
+                            self.error = Some(message.clone());
+                            self.login_view.set_error(message);
+                            return Task::none();
+                        }
+
+                        match storage.import_backup(&import_path, &passphrase) {
+                            Ok(state) => {
+                                if let Err(err) = storage.save_state(&state, &passphrase) {
+                                    let message =
+                                        format!("Không thể lưu dữ liệu backup vào app: {err}");
+                                    self.error = Some(message.clone());
+                                    self.login_view.set_error(message);
+                                    return Task::none();
+                                }
+
+                                self.user_nickname =
+                                    normalize_nickname(state.profile.nickname.as_deref());
+                                self.storage_passphrase = Some(passphrase);
+                                self.wallets = state.wallets;
+                                self.state = AppState::Main;
+                                self.selected_wallet = self
+                                    .selected_wallet
+                                    .min(self.wallets.len().saturating_sub(1));
+                                self.update_dashboard();
+                                self.login_view.clear_error();
+                                self.status = Some(format!(
+                                    "Imported {} wallet(s) from {}",
+                                    self.wallets.len(),
+                                    import_path.display()
+                                ));
+                                self.error = None;
+                            }
+                            Err(err) => {
+                                let message = format!("Import backup thất bại: {err}");
+                                self.error = Some(message.clone());
+                                self.login_view.set_error(message);
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        let message = format!("Error initializing storage: {err}");
+                        self.error = Some(message.clone());
+                        self.login_view.set_error(message);
                     }
                 }
 
@@ -244,11 +389,43 @@ impl App {
                         self.save_state();
                         self.update_dashboard();
                         self.wallets_view = WalletsView::new();
-                        self.status = Some(format!("Created wallet '{name}' successfully"));
+                        self.wallets_view.set_info(
+                            "Ví mới đã tạo. Hãy backup mnemonic ngay và hoàn thành bài test.",
+                        );
+                        self.status = Some(format!(
+                            "Created wallet '{name}' successfully. Backup mnemonic is required."
+                        ));
                         self.error = None;
                     }
                     Err(err) => {
                         self.error = Some(format!("Error creating wallet: {err}"));
+                    }
+                }
+                Task::none()
+            }
+
+            AppMessage::ImportWalletFromMnemonic {
+                name,
+                network,
+                mnemonic,
+            } => {
+                match Wallet::from_mnemonic(&name, network, &mnemonic) {
+                    Ok(wallet) => {
+                        self.wallets.push(wallet.entry);
+                        self.selected_wallet = self.wallets.len() - 1;
+                        self.save_state();
+                        self.update_dashboard();
+                        self.wallets_view = WalletsView::new();
+                        self.wallets_view.set_info(
+                            "Import mnemonic thành công. Ví này đã được đánh dấu backup.",
+                        );
+                        self.status = Some(format!("Imported wallet '{name}' from mnemonic"));
+                        self.error = None;
+                    }
+                    Err(err) => {
+                        self.wallets_view
+                            .set_error(format!("Import mnemonic thất bại: {err}"));
+                        self.error = Some(format!("Import mnemonic thất bại: {err}"));
                     }
                 }
                 Task::none()
@@ -296,7 +473,8 @@ impl App {
                         Ok(addresses) => {
                             *wallet_entry = wallet.entry;
                             self.save_state();
-                            self.status = Some(format!("Derived {} new address(es)", addresses.len()));
+                            self.status =
+                                Some(format!("Derived {} new address(es)", addresses.len()));
                             self.error = None;
                         }
                         Err(err) => {
@@ -306,6 +484,125 @@ impl App {
                 } else {
                     self.error = Some("No wallet selected".to_string());
                 }
+                Task::none()
+            }
+
+            AppMessage::RevealMnemonic {
+                wallet_index,
+                passphrase,
+            } => {
+                let active_passphrase = match &self.storage_passphrase {
+                    Some(value) => value.clone(),
+                    None => {
+                        self.wallets_view
+                            .set_error("Không có session đăng nhập hợp lệ");
+                        return Task::none();
+                    }
+                };
+
+                if wallet_index >= self.wallets.len() {
+                    self.wallets_view.set_error("Wallet không tồn tại");
+                    return Task::none();
+                }
+
+                if passphrase != active_passphrase {
+                    self.wallets_view
+                        .set_error("Passphrase không đúng, không thể hiển thị mnemonic");
+                    return Task::none();
+                }
+
+                let wallet_name = self.wallets[wallet_index].name.clone();
+                if self.wallets[wallet_index].mnemonic.is_none() {
+                    self.wallets_view
+                        .set_error("Ví này không có mnemonic để hiển thị");
+                    return Task::none();
+                }
+
+                self.wallets_view.mark_mnemonic_revealed(wallet_index);
+                self.status = Some(format!("Mnemonic unlocked for wallet '{wallet_name}'"));
+                self.error = None;
+                Task::none()
+            }
+
+            AppMessage::VerifyMnemonicBackup {
+                wallet_index,
+                checks,
+            } => {
+                if wallet_index >= self.wallets.len() {
+                    self.wallets_view.set_error("Wallet không tồn tại");
+                    return Task::none();
+                }
+
+                let verification = {
+                    let wallet = &self.wallets[wallet_index];
+                    let mnemonic = match &wallet.mnemonic {
+                        Some(value) => value,
+                        None => {
+                            self.wallets_view
+                                .set_error("Ví này không có mnemonic để xác thực backup");
+                            return Task::none();
+                        }
+                    };
+
+                    let words: Vec<&str> = mnemonic.split_whitespace().collect();
+                    if words.is_empty() {
+                        self.wallets_view.set_error("Mnemonic không hợp lệ");
+                        return Task::none();
+                    }
+
+                    if checks.is_empty() {
+                        self.wallets_view.set_error("Thiếu dữ liệu bài test backup");
+                        return Task::none();
+                    }
+
+                    let mut wrong_positions = Vec::new();
+                    for (position, input_word) in &checks {
+                        let pos = *position;
+                        if pos == 0 || pos > words.len() {
+                            self.wallets_view
+                                .set_error("Vị trí từ trong bài test không hợp lệ");
+                            return Task::none();
+                        }
+
+                        let expected = words[pos - 1];
+                        if !expected.eq_ignore_ascii_case(input_word.trim()) {
+                            wrong_positions.push(pos);
+                        }
+                    }
+
+                    if wrong_positions.is_empty() {
+                        Ok(())
+                    } else {
+                        Err(wrong_positions)
+                    }
+                };
+
+                match verification {
+                    Ok(()) => {
+                        let wallet_name = self.wallets[wallet_index].name.clone();
+                        if let Some(wallet) = self.wallets.get_mut(wallet_index) {
+                            wallet.mnemonic_backed_up = true;
+                        }
+
+                        self.save_state();
+                        self.wallets_view.mark_backup_verified(wallet_index);
+                        self.status = Some(format!(
+                            "Wallet '{wallet_name}' passed mnemonic backup test"
+                        ));
+                        self.error = None;
+                    }
+                    Err(wrong_positions) => {
+                        self.wallets_view.set_error(format!(
+                            "Bài test chưa đúng ở vị trí: {}",
+                            wrong_positions
+                                .iter()
+                                .map(usize::to_string)
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        ));
+                    }
+                }
+
                 Task::none()
             }
 
@@ -369,8 +666,9 @@ impl App {
                             {
                                 Ok(value) => value,
                                 Err(err) => {
-                                    self.send_view
-                                        .set_error(format!("Không thể estimate fee tự động: {err}"));
+                                    self.send_view.set_error(format!(
+                                        "Không thể estimate fee tự động: {err}"
+                                    ));
                                     return Task::none();
                                 }
                             },
@@ -444,8 +742,7 @@ impl App {
                         Ok(_) => {
                             self.storage_passphrase = Some(new_passphrase);
                             self.settings_view.clear_sensitive_inputs();
-                            self.settings_view
-                                .set_success("Đổi passphrase thành công");
+                            self.settings_view.set_success("Đổi passphrase thành công");
                             self.status = Some("Passphrase updated successfully".to_string());
                             self.error = None;
                         }
@@ -474,6 +771,9 @@ impl App {
 
                 let export_path = resolve_user_path(&raw_path);
                 let state = PersistedState {
+                    profile: UserProfile {
+                        nickname: self.user_nickname.clone(),
+                    },
                     wallets: self.wallets.clone(),
                 };
 
@@ -481,8 +781,10 @@ impl App {
                     Ok(storage) => {
                         match storage.export_encrypted_backup(&state, &passphrase, &export_path) {
                             Ok(_) => {
-                                let message =
-                                    format!("Exported encrypted backup to {}", export_path.display());
+                                let message = format!(
+                                    "Exported encrypted backup to {}",
+                                    export_path.display()
+                                );
                                 self.settings_view.set_success(message.clone());
                                 self.status = Some(message);
                                 self.error = None;
@@ -502,8 +804,8 @@ impl App {
                 Task::none()
             }
 
-            AppMessage::ImportWalletBackup(raw_path) => {
-                let passphrase = match &self.storage_passphrase {
+            AppMessage::ClearAllData(passphrase) => {
+                let active_passphrase = match &self.storage_passphrase {
                     Some(value) => value.clone(),
                     None => {
                         self.settings_view
@@ -512,46 +814,17 @@ impl App {
                     }
                 };
 
-                let import_path = resolve_user_path(&raw_path);
-
-                match Storage::new() {
-                    Ok(storage) => match storage.import_backup(&import_path, &passphrase) {
-                        Ok(state) => {
-                            self.wallets = state.wallets;
-                            self.selected_wallet =
-                                self.selected_wallet.min(self.wallets.len().saturating_sub(1));
-                            self.save_state();
-                            self.update_dashboard();
-                            let message = format!(
-                                "Imported {} wallet(s) from {}",
-                                self.wallets.len(),
-                                import_path.display()
-                            );
-                            self.settings_view.set_success(message.clone());
-                            self.status = Some(message);
-                            self.error = None;
-                        }
-                        Err(err) => {
-                            self.settings_view
-                                .set_error(format!("Import thất bại: {err}"));
-                        }
-                    },
-                    Err(err) => {
-                        self.settings_view
-                            .set_error(format!("Không thể mở storage: {err}"));
-                    }
+                if passphrase != active_passphrase {
+                    self.settings_view
+                        .set_error("Passphrase hiện tại không đúng");
+                    return Task::none();
                 }
 
-                Task::none()
-            }
-
-            AppMessage::ClearAllData => {
                 match Storage::new() {
                     Ok(storage) => match storage.clear_all_data() {
                         Ok(_) => {
                             self.reset_to_login(true);
-                            self.login_view
-                                .set_mode(LoginMode::NewWallet);
+                            self.login_view.set_mode(LoginMode::NewWallet);
                             self.login_view
                                 .set_error("Đã xóa toàn bộ dữ liệu cũ. Hãy tạo passphrase mới.");
                         }
@@ -588,10 +861,13 @@ impl App {
                         .wallets_view
                         .view(&self.wallets, self.selected_wallet)
                         .map(AppMessage::WalletsMessage),
-                    NavItem::Send => self.send_view.view(selected_wallet).map(AppMessage::SendMessage),
+                    NavItem::Send => self
+                        .send_view
+                        .view(&self.wallets, self.selected_wallet)
+                        .map(AppMessage::SendMessage),
                     NavItem::Receive => self
                         .receive_view
-                        .view(selected_wallet)
+                        .view(&self.wallets, self.selected_wallet)
                         .map(AppMessage::ReceiveMessage),
                     NavItem::History => self
                         .history_view
@@ -622,9 +898,18 @@ impl App {
                     container(Space::with_height(0))
                 };
 
+                let greeting_bar = container(
+                    text(format!("Xin chào, {}", self.display_name()))
+                        .size(14)
+                        .style(crate::theme::text_color(
+                            crate::theme::Colors::TEXT_SECONDARY,
+                        )),
+                )
+                .padding(8);
+
                 row![
                     sidebar,
-                    column![status_bar, error_bar, main_content,].width(Length::Fill)
+                    column![greeting_bar, status_bar, error_bar, main_content,].width(Length::Fill)
                 ]
                 .width(Length::Fill)
                 .height(Length::Fill)
@@ -706,6 +991,9 @@ impl App {
         match Storage::new() {
             Ok(storage) => {
                 let state = PersistedState {
+                    profile: UserProfile {
+                        nickname: self.user_nickname.clone(),
+                    },
                     wallets: self.wallets.clone(),
                 };
                 if let Err(err) = storage.save_state(&state, &passphrase) {
@@ -721,6 +1009,7 @@ impl App {
     fn reset_to_login(&mut self, allow_create_passphrase: bool) {
         self.state = AppState::Login;
         self.storage_passphrase = None;
+        self.user_nickname = None;
         self.wallets.clear();
         self.selected_wallet = 0;
         self.current_page = NavItem::Dashboard;
@@ -738,6 +1027,10 @@ impl App {
         self.history_view = HistoryView::new();
         self.settings_view = SettingsView::new();
     }
+
+    fn display_name(&self) -> &str {
+        self.user_nickname.as_deref().unwrap_or("bạn")
+    }
 }
 
 fn short_txid(txid: &str) -> String {
@@ -754,4 +1047,10 @@ fn resolve_user_path(raw_path: &str) -> PathBuf {
     }
 
     PathBuf::from(trimmed)
+}
+
+fn normalize_nickname(raw: Option<&str>) -> Option<String> {
+    raw.map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
 }

@@ -1,9 +1,9 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use argon2::{Algorithm, Argon2, Params, Version};
-use base64::{Engine as _, engine::general_purpose::STANDARD_NO_PAD};
+use base64::{engine::general_purpose::STANDARD_NO_PAD, Engine as _};
 use chacha20poly1305::{
-    ChaCha20Poly1305, Key, Nonce,
     aead::{Aead, KeyInit},
+    ChaCha20Poly1305, Key, Nonce,
 };
 use getrandom::fill;
 use serde::{Deserialize, Serialize};

@@ -3,16 +3,17 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use bip39::{Language, Mnemonic};
 use bitcoin::{
-    Address, Amount, CompressedPublicKey, Network, OutPoint, PrivateKey, ScriptBuf, Sequence,
-    Transaction, TxIn, TxOut, Txid, Witness, absolute,
+    absolute,
     bip32::{ChildNumber, DerivationPath, Xpriv, Xpub},
     consensus,
     key::Secp256k1,
     sighash::{EcdsaSighashType, SighashCache},
     transaction::Version,
+    Address, Amount, CompressedPublicKey, Network, OutPoint, PrivateKey, ScriptBuf, Sequence,
+    Transaction, TxIn, TxOut, Txid, Witness,
 };
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
@@ -26,11 +27,19 @@ impl Wallet {
         address::create_new_wallet(name, network)
     }
 
-    pub fn from_mnemonic(name: &str, network: WalletNetwork, mnemonic_phrase: &str) -> Result<Self> {
+    pub fn from_mnemonic(
+        name: &str,
+        network: WalletNetwork,
+        mnemonic_phrase: &str,
+    ) -> Result<Self> {
         address::import_wallet_from_mnemonic(name, network, mnemonic_phrase)
     }
 
-    pub fn from_account_xprv(name: &str, network: WalletNetwork, account_xprv: &str) -> Result<Self> {
+    pub fn from_account_xprv(
+        name: &str,
+        network: WalletNetwork,
+        account_xprv: &str,
+    ) -> Result<Self> {
         address::import_wallet_from_account_xprv(name, network, account_xprv)
     }
 
@@ -49,7 +58,13 @@ impl Wallet {
         fee_sat: u64,
         options: TxBuildOptions,
     ) -> Result<BuildTxResult> {
-        tx::create_transaction_with_options(&mut self.entry, to_address, amount_sat, fee_sat, options)
+        tx::create_transaction_with_options(
+            &mut self.entry,
+            to_address,
+            amount_sat,
+            fee_sat,
+            options,
+        )
     }
 
     pub fn estimate_auto_fee_for_amount(
@@ -176,6 +191,8 @@ pub struct WalletEntry {
     pub name: String,
     pub network: WalletNetwork,
     pub mnemonic: Option<String>,
+    #[serde(default)]
+    pub mnemonic_backed_up: bool,
     pub account_xprv: String,
     pub account_xpub: String,
     pub next_index: u32,

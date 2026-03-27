@@ -54,8 +54,8 @@ pub fn create_transaction_with_options(
                 .ok_or_else(|| anyhow!("change index {} không tồn tại trong ví", index))?,
         };
 
-        let checked_change = Address::from_str(&change_address)?
-            .require_network(entry.network.bitcoin_network())?;
+        let checked_change =
+            Address::from_str(&change_address)?.require_network(entry.network.bitcoin_network())?;
 
         tx_outs.push(TxOut {
             value: Amount::from_sat(change),

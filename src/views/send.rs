@@ -1,9 +1,15 @@
 use iced::{
-    widget::{button, column, container, radio, row, scrollable, text, text_input, Space},
+    widget::{
+        button, column, container, pick_list, radio, row, scrollable, text, text_input, Space,
+    },
     Alignment, Element, Length,
 };
+use std::fmt;
 
-use crate::theme::{card_style, primary_button_style, secondary_button_style, text_color, Colors};
+use crate::theme::{
+    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    secondary_button_style, text_color, Colors,
+};
 use crate::wallet::{ChangeStrategy, FeeMode, InputSource, WalletEntry};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,6 +20,7 @@ pub enum SimpleFeeMode {
 
 #[derive(Debug, Clone)]
 pub enum SendMessage {
+    SelectWallet(usize),
     ToAddressChanged(String),
     AmountChanged(String),
     FeeModeChanged(SimpleFeeMode),
@@ -74,6 +81,12 @@ impl SendView {
 
     pub fn update(&mut self, message: SendMessage) -> Option<crate::app::AppMessage> {
         match message {
+            SendMessage::SelectWallet(index) => {
+                self.error = None;
+                self.success = None;
+                self.estimated_fee = None;
+                Some(crate::app::AppMessage::SelectWallet(index))
+            }
             SendMessage::ToAddressChanged(addr) => {
                 self.to_address = addr;
                 self.error = None;
@@ -120,8 +133,7 @@ impl SendView {
             }
             SendMessage::EstimateFee => {
                 if self.use_all_funds {
-                    self.error =
-                        Some("Send all funds không cần estimate fee trước".to_string());
+                    self.error = Some("Send all funds không cần estimate fee trước".to_string());
                     return None;
                 }
 
@@ -224,10 +236,34 @@ impl SendView {
         }
     }
 
-    pub fn view(&self, wallet: Option<&WalletEntry>) -> Element<'_, SendMessage> {
+    pub fn view<'a>(
+        &'a self,
+        wallets: &'a [WalletEntry],
+        selected_wallet: usize,
+    ) -> Element<'a, SendMessage> {
+        let wallet_options = wallet_choices(wallets);
+        let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
+        let wallet = wallets.get(selected_wallet);
+
         let title = text("Send BTC")
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
+
+        let wallet_selector = column![
+            text("From Wallet")
+                .size(14)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+            Space::with_height(4),
+            pick_list(wallet_options, selected_wallet_option, |choice| {
+                SendMessage::SelectWallet(choice.index)
+            })
+            .placeholder("Chọn ví để gửi BTC...")
+            .width(Length::Fill)
+            .padding(12)
+            .style(pick_list_style())
+            .menu_style(pick_list_menu_style()),
+        ]
+        .spacing(4);
 
         let balance_text = if let Some(wallet) = wallet {
             let balance: i64 = wallet.history.iter().map(|tx| tx.amount_sat).sum();
@@ -416,6 +452,8 @@ impl SendView {
         let content = column![
             title,
             Space::with_height(8),
+            wallet_selector,
+            Space::with_height(8),
             balance_text,
             Space::with_height(24),
             to_input,
@@ -445,6 +483,36 @@ impl SendView {
             .height(Length::Fill)
             .into()
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct WalletChoice {
+    index: usize,
+    label: String,
+}
+
+impl fmt::Display for WalletChoice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.label)
+    }
+}
+
+fn wallet_choices(wallets: &[WalletEntry]) -> Vec<WalletChoice> {
+    wallets
+        .iter()
+        .enumerate()
+        .map(|(index, wallet)| WalletChoice {
+            index,
+            label: format!("{} ({})", wallet.name, wallet.network.as_str()),
+        })
+        .collect()
+}
+
+fn selected_wallet_choice(wallets: &[WalletEntry], selected_wallet: usize) -> Option<WalletChoice> {
+    wallets.get(selected_wallet).map(|wallet| WalletChoice {
+        index: selected_wallet,
+        label: format!("{} ({})", wallet.name, wallet.network.as_str()),
+    })
 }
 
 fn parse_u64_required(raw: &str, field: &str) -> Result<u64, String> {

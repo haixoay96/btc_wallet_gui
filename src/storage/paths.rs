@@ -1,7 +1,4 @@
-use std::{
-    env,
-    path::PathBuf,
-};
+use std::{env, path::PathBuf};
 
 use anyhow::{Context, Result};
 use directories::ProjectDirs;
@@ -22,14 +19,15 @@ pub struct StoragePaths {
 
 impl StoragePaths {
     pub fn resolve() -> Result<Self> {
-        let data_dir =
-            if let Some(project_dirs) = ProjectDirs::from(APP_QUALIFIER, APP_ORGANIZATION, APP_NAME) {
-                project_dirs.data_local_dir().to_path_buf()
-            } else {
-                env::current_dir()
-                    .context("Không lấy được current directory")?
-                    .join(APP_NAME)
-            };
+        let data_dir = if let Some(project_dirs) =
+            ProjectDirs::from(APP_QUALIFIER, APP_ORGANIZATION, APP_NAME)
+        {
+            project_dirs.data_local_dir().to_path_buf()
+        } else {
+            env::current_dir()
+                .context("Không lấy được current directory")?
+                .join(APP_NAME)
+        };
 
         let encrypted_state_file = data_dir.join(ENCRYPTED_DATA_FILE);
         let mut legacy_candidates = vec![data_dir.join(LEGACY_DATA_FILE)];

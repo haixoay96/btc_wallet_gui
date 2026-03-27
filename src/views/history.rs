@@ -1,9 +1,9 @@
+use crate::theme::{card_style, primary_button_style, secondary_button_style, text_color, Colors};
+use crate::wallet::{TxDirection, TxRecord, WalletEntry};
 use iced::{
     widget::{button, column, container, row, text, Space},
     Alignment, Element, Length,
 };
-use crate::theme::{Colors, card_style, primary_button_style, secondary_button_style, text_color};
-use crate::wallet::{WalletEntry, TxRecord, TxDirection};
 
 #[derive(Debug, Clone)]
 pub enum HistoryMessage {
@@ -33,9 +33,7 @@ impl HistoryView {
 
     pub fn update(&mut self, message: HistoryMessage) -> Option<crate::app::AppMessage> {
         match message {
-            HistoryMessage::Refresh => {
-                Some(crate::app::AppMessage::RefreshHistory)
-            }
+            HistoryMessage::Refresh => Some(crate::app::AppMessage::RefreshHistory),
             HistoryMessage::FilterAll => {
                 self.filter = Filter::All;
                 None
@@ -63,17 +61,29 @@ impl HistoryView {
             button(text("All").size(12))
                 .on_press(HistoryMessage::FilterAll)
                 .padding(8)
-                .style(if self.filter == Filter::All { primary_button_style() } else { secondary_button_style() }),
+                .style(if self.filter == Filter::All {
+                    primary_button_style()
+                } else {
+                    secondary_button_style()
+                }),
             Space::with_width(8),
             button(text("Incoming").size(12))
                 .on_press(HistoryMessage::FilterIncoming)
                 .padding(8)
-                .style(if self.filter == Filter::Incoming { primary_button_style() } else { secondary_button_style() }),
+                .style(if self.filter == Filter::Incoming {
+                    primary_button_style()
+                } else {
+                    secondary_button_style()
+                }),
             Space::with_width(8),
             button(text("Outgoing").size(12))
                 .on_press(HistoryMessage::FilterOutgoing)
                 .padding(8)
-                .style(if self.filter == Filter::Outgoing { primary_button_style() } else { secondary_button_style() }),
+                .style(if self.filter == Filter::Outgoing {
+                    primary_button_style()
+                } else {
+                    secondary_button_style()
+                }),
             Space::with_width(Length::Fill),
             button(text("🔄 Refresh").size(12))
                 .on_press(HistoryMessage::Refresh)
@@ -84,7 +94,9 @@ impl HistoryView {
         content = content.push(filter_row);
 
         if let Some(wallet) = wallet {
-            let filtered_txs: Vec<&TxRecord> = wallet.history.iter()
+            let filtered_txs: Vec<&TxRecord> = wallet
+                .history
+                .iter()
                 .filter(|tx| match self.filter {
                     Filter::All => true,
                     Filter::Incoming => matches!(tx.direction, TxDirection::Incoming),
@@ -98,17 +110,17 @@ impl HistoryView {
                     container(
                         text("No transactions found")
                             .size(16)
-                            .style(text_color(Colors::TEXT_MUTED))
+                            .style(text_color(Colors::TEXT_MUTED)),
                     )
                     .padding(40)
-                    .center_x(Length::Fill)
+                    .center_x(Length::Fill),
                 );
             } else {
                 content = content.push(Space::with_height(16));
                 content = content.push(
                     text(format!("{} transactions", filtered_txs.len()))
                         .size(14)
-                        .style(text_color(Colors::TEXT_SECONDARY))
+                        .style(text_color(Colors::TEXT_SECONDARY)),
                 );
                 content = content.push(Space::with_height(8));
 
@@ -136,17 +148,30 @@ impl HistoryView {
                             row![
                                 text(direction_icon).size(16),
                                 Space::with_width(8),
-                                text(txid_short).size(12).style(text_color(Colors::TEXT_PRIMARY)),
+                                text(txid_short)
+                                    .size(12)
+                                    .style(text_color(Colors::TEXT_PRIMARY)),
                                 Space::with_width(Length::Fill),
                                 text(format!("{}{:.8} BTC", amount_sign, amount_btc.abs()))
                                     .size(14)
                                     .style(text_color(amount_color)),
-                            ].align_y(Alignment::Center),
+                            ]
+                            .align_y(Alignment::Center),
                             Space::with_height(4),
                             row![
-                                text(if tx.confirmed { "✓ Confirmed" } else { "⏳ Pending" })
-                                    .size(10)
-                                    .style(text_color(if tx.confirmed { Colors::SUCCESS } else { Colors::WARNING })),
+                                text(if tx.confirmed {
+                                    "✓ Confirmed"
+                                } else {
+                                    "⏳ Pending"
+                                })
+                                .size(10)
+                                .style(text_color(
+                                    if tx.confirmed {
+                                        Colors::SUCCESS
+                                    } else {
+                                        Colors::WARNING
+                                    }
+                                )),
                                 Space::with_width(16),
                                 if let Some(fee) = tx.fee_sat {
                                     text(format!("Fee: {} sat", fee))
@@ -163,9 +188,10 @@ impl HistoryView {
                                 } else {
                                     text("")
                                 },
-                            ].align_y(Alignment::Center),
+                            ]
+                            .align_y(Alignment::Center),
                         ]
-                        .spacing(4)
+                        .spacing(4),
                     )
                     .style(card_style())
                     .padding(12)
@@ -181,10 +207,10 @@ impl HistoryView {
                 container(
                     text("Please select a wallet first")
                         .size(18)
-                        .style(text_color(Colors::ERROR))
+                        .style(text_color(Colors::ERROR)),
                 )
                 .padding(40)
-                .center_x(Length::Fill)
+                .center_x(Length::Fill),
             );
         }
 

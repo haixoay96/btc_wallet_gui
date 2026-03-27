@@ -1,9 +1,22 @@
+use std::{env, fmt, path::PathBuf};
+
 use iced::{
-    widget::{button, column, container, scrollable, text, text_input, Space},
+    widget::{button, column, container, pick_list, scrollable, text, text_input, Space},
     Element, Length,
 };
 
-use crate::theme::{card_style, primary_button_style, secondary_button_style, text_color, Colors};
+use crate::theme::{
+    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    secondary_button_style, text_color, Colors,
+};
+
+const BACKUP_LOCATIONS: [BackupLocation; 5] = [
+    BackupLocation::Desktop,
+    BackupLocation::Downloads,
+    BackupLocation::Documents,
+    BackupLocation::Home,
+    BackupLocation::CurrentDirectory,
+];
 
 #[derive(Debug, Clone)]
 pub enum SettingsMessage {
@@ -12,14 +25,36 @@ pub enum SettingsMessage {
     NewPassphraseChanged(String),
     ConfirmPassphraseChanged(String),
     SubmitPassphraseChange,
+    ExportLocationChanged(BackupLocation),
     ExportPathChanged(String),
-    ImportPathChanged(String),
     ExportWallet,
-    ImportWallet,
     ToggleAbout,
     ToggleClearDataConfirm,
+    ClearDataPassphraseChanged(String),
     ConfirmClearData,
     CancelClearData,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BackupLocation {
+    Home,
+    Desktop,
+    Documents,
+    Downloads,
+    CurrentDirectory,
+}
+
+impl fmt::Display for BackupLocation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let label = match self {
+            BackupLocation::Home => "Home",
+            BackupLocation::Desktop => "Desktop",
+            BackupLocation::Documents => "Documents",
+            BackupLocation::Downloads => "Downloads",
+            BackupLocation::CurrentDirectory => "Current Folder",
+        };
+        f.write_str(label)
+    }
 }
 
 pub struct SettingsView {
@@ -27,25 +62,28 @@ pub struct SettingsView {
     current_passphrase: String,
     new_passphrase: String,
     confirm_passphrase: String,
+    export_location: BackupLocation,
     export_path: String,
-    import_path: String,
     show_about: bool,
     show_clear_data_confirm: bool,
+    clear_data_passphrase: String,
     error: Option<String>,
     success: Option<String>,
 }
 
 impl SettingsView {
     pub fn new() -> Self {
+        let export_location = BackupLocation::Desktop;
         Self {
             show_change_passphrase: false,
             current_passphrase: String::new(),
             new_passphrase: String::new(),
             confirm_passphrase: String::new(),
-            export_path: "./wallet_backup.enc".to_string(),
-            import_path: "./wallet_backup.enc".to_string(),
+            export_location,
+            export_path: default_export_path(export_location),
             show_about: false,
             show_clear_data_confirm: false,
+            clear_data_passphrase: String::new(),
             error: None,
             success: None,
         }
@@ -113,12 +151,15 @@ impl SettingsView {
                     new_passphrase: self.new_passphrase.clone(),
                 })
             }
-            SettingsMessage::ExportPathChanged(path) => {
-                self.export_path = path;
+            SettingsMessage::ExportLocationChanged(location) => {
+                self.export_location = location;
+                self.export_path = default_export_path(location);
+                self.error = None;
                 None
             }
-            SettingsMessage::ImportPathChanged(path) => {
-                self.import_path = path;
+            SettingsMessage::ExportPathChanged(path) => {
+                self.export_path = path;
+                self.error = None;
                 None
             }
             SettingsMessage::ExportWallet => {
@@ -132,35 +173,40 @@ impl SettingsView {
                 self.success = None;
                 Some(crate::app::AppMessage::ExportWalletBackup(path.to_string()))
             }
-            SettingsMessage::ImportWallet => {
-                let path = self.import_path.trim();
-                if path.is_empty() {
-                    self.error = Some("Vui lòng nhập đường dẫn import".to_string());
-                    return None;
-                }
-
-                self.error = None;
-                self.success = None;
-                Some(crate::app::AppMessage::ImportWalletBackup(path.to_string()))
-            }
             SettingsMessage::ToggleAbout => {
                 self.show_about = !self.show_about;
                 None
             }
             SettingsMessage::ToggleClearDataConfirm => {
                 self.show_clear_data_confirm = !self.show_clear_data_confirm;
+                if !self.show_clear_data_confirm {
+                    self.clear_data_passphrase.clear();
+                }
                 self.error = None;
                 self.success = None;
                 None
             }
+            SettingsMessage::ClearDataPassphraseChanged(value) => {
+                self.clear_data_passphrase = value;
+                self.error = None;
+                None
+            }
             SettingsMessage::ConfirmClearData => {
+                if self.clear_data_passphrase.trim().is_empty() {
+                    self.error = Some("Vui lòng nhập passphrase hiện tại để xác nhận".to_string());
+                    return None;
+                }
+
                 self.show_clear_data_confirm = false;
                 self.error = None;
                 self.success = None;
-                Some(crate::app::AppMessage::ClearAllData)
+                Some(crate::app::AppMessage::ClearAllData(
+                    self.clear_data_passphrase.clone(),
+                ))
             }
             SettingsMessage::CancelClearData => {
                 self.show_clear_data_confirm = false;
+                self.clear_data_passphrase.clear();
                 None
             }
         }
@@ -180,15 +226,13 @@ impl SettingsView {
             .style(secondary_button_style());
 
         content = content.push(
-            container(
-                column![
-                    text("Security")
-                        .size(18)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
-                    Space::with_height(12),
-                    change_passphrase_btn,
-                ],
-            )
+            container(column![
+                text("Security")
+                    .size(18)
+                    .style(text_color(Colors::TEXT_PRIMARY)),
+                Space::with_height(12),
+                change_passphrase_btn,
+            ])
             .style(card_style())
             .padding(16)
             .width(Length::Fill),
@@ -235,79 +279,68 @@ impl SettingsView {
             .spacing(2);
 
             content = content.push(
-                container(
-                    column![
-                        current_input,
-                        Space::with_height(12),
-                        new_input,
-                        Space::with_height(12),
-                        confirm_input,
-                        Space::with_height(12),
-                        button(text("Update Passphrase").size(14))
-                            .on_press(SettingsMessage::SubmitPassphraseChange)
-                            .padding(12)
-                            .style(primary_button_style()),
-                    ],
-                )
+                container(column![
+                    current_input,
+                    Space::with_height(12),
+                    new_input,
+                    Space::with_height(12),
+                    confirm_input,
+                    Space::with_height(12),
+                    button(text("Update Passphrase").size(14))
+                        .on_press(SettingsMessage::SubmitPassphraseChange)
+                        .padding(12)
+                        .style(primary_button_style()),
+                ])
                 .style(card_style())
                 .padding(16)
                 .width(Length::Fill),
             );
         }
 
-        let export_section = container(
-            column![
-                text("Export Backup")
-                    .size(18)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
-                Space::with_height(8),
-                text("Backup sẽ được mã hóa bằng passphrase hiện tại")
-                    .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
-                Space::with_height(8),
-                text_input("Path to backup file...", &self.export_path)
-                    .on_input(SettingsMessage::ExportPathChanged)
-                    .padding(10)
-                    .size(14),
-                Space::with_height(8),
-                button(text("Export Wallet Backup").size(14))
-                    .on_press(SettingsMessage::ExportWallet)
-                    .padding(12)
-                    .style(secondary_button_style()),
-            ],
-        )
+        let export_section = container(column![
+            text("Export Backup")
+                .size(18)
+                .style(text_color(Colors::TEXT_PRIMARY)),
+            Space::with_height(8),
+            text("Backup sẽ được mã hóa bằng passphrase hiện tại")
+                .size(12)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+            text("Khuyến nghị: ưu tiên backup mnemonic cho từng wallet thay vì backup toàn app.")
+                .size(12)
+                .style(text_color(Colors::WARNING)),
+            text("Import backup chỉ hỗ trợ ở màn hình khởi tạo khi app chưa có passphrase.")
+                .size(12)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+            Space::with_height(10),
+            text("Chọn thư mục lưu backup")
+                .size(12)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+            Space::with_height(4),
+            pick_list(
+                BACKUP_LOCATIONS,
+                Some(self.export_location),
+                SettingsMessage::ExportLocationChanged
+            )
+            .width(Length::Fill)
+            .padding(10)
+            .style(pick_list_style())
+            .menu_style(pick_list_menu_style()),
+            Space::with_height(8),
+            text_input("Path to backup file...", &self.export_path)
+                .on_input(SettingsMessage::ExportPathChanged)
+                .padding(10)
+                .size(14),
+            Space::with_height(8),
+            button(text("Export Wallet Backup").size(14))
+                .on_press(SettingsMessage::ExportWallet)
+                .padding(12)
+                .style(secondary_button_style()),
+        ])
         .style(card_style())
         .padding(16)
         .width(Length::Fill);
 
         content = content.push(export_section);
-
-        let import_section = container(
-            column![
-                text("Import Backup")
-                    .size(18)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
-                Space::with_height(8),
-                text("Import sẽ ghi đè danh sách wallet hiện tại")
-                    .size(12)
-                    .style(text_color(Colors::WARNING)),
-                Space::with_height(8),
-                text_input("Path to backup file...", &self.import_path)
-                    .on_input(SettingsMessage::ImportPathChanged)
-                    .padding(10)
-                    .size(14),
-                Space::with_height(8),
-                button(text("Import Wallet Backup").size(14))
-                    .on_press(SettingsMessage::ImportWallet)
-                    .padding(12)
-                    .style(secondary_button_style()),
-            ],
-        )
-        .style(card_style())
-        .padding(16)
-        .width(Length::Fill);
-
-        content = content.push(import_section);
 
         let clear_data_button = button(text("Clear All Wallet Data").size(14))
             .on_press(SettingsMessage::ToggleClearDataConfirm)
@@ -333,6 +366,12 @@ impl SettingsView {
                     text("Xác nhận xóa toàn bộ dữ liệu?")
                         .size(13)
                         .style(text_color(Colors::ERROR)),
+                    Space::with_height(8),
+                    text_input("Nhập passphrase hiện tại...", &self.clear_data_passphrase)
+                        .on_input(SettingsMessage::ClearDataPassphraseChanged)
+                        .secure(true)
+                        .padding(10)
+                        .size(13),
                     Space::with_height(8),
                     button(text("Xóa toàn bộ ngay").size(13))
                         .on_press(SettingsMessage::ConfirmClearData)
@@ -372,9 +411,21 @@ impl SettingsView {
 
         if self.show_about {
             info_col = info_col
-                .push(text("Bitcoin Wallet GUI v0.1.0").size(12).style(text_color(Colors::TEXT_MUTED)))
-                .push(text("Built with iced.rs").size(12).style(text_color(Colors::TEXT_MUTED)))
-                .push(text("Storage: encrypted backup (ChaCha20-Poly1305 + Argon2id)").size(12).style(text_color(Colors::TEXT_MUTED)));
+                .push(
+                    text("Bitcoin Wallet GUI v0.1.0")
+                        .size(12)
+                        .style(text_color(Colors::TEXT_MUTED)),
+                )
+                .push(
+                    text("Built with iced.rs")
+                        .size(12)
+                        .style(text_color(Colors::TEXT_MUTED)),
+                )
+                .push(
+                    text("Storage: encrypted backup (ChaCha20-Poly1305 + Argon2id)")
+                        .size(12)
+                        .style(text_color(Colors::TEXT_MUTED)),
+                );
         }
 
         content = content.push(
@@ -385,11 +436,7 @@ impl SettingsView {
         );
 
         if let Some(err) = &self.error {
-            content = content.push(
-                text(err.as_str())
-                    .size(13)
-                    .style(text_color(Colors::ERROR)),
-            );
+            content = content.push(text(err.as_str()).size(13).style(text_color(Colors::ERROR)));
         }
 
         if let Some(succ) = &self.success {
@@ -405,4 +452,29 @@ impl SettingsView {
             .height(Length::Fill)
             .into()
     }
+}
+
+fn default_export_path(location: BackupLocation) -> String {
+    location_dir(location)
+        .join("wallet_backup.enc")
+        .to_string_lossy()
+        .to_string()
+}
+
+fn location_dir(location: BackupLocation) -> PathBuf {
+    match location {
+        BackupLocation::Home => home_dir(),
+        BackupLocation::Desktop => home_dir().join("Desktop"),
+        BackupLocation::Documents => home_dir().join("Documents"),
+        BackupLocation::Downloads => home_dir().join("Downloads"),
+        BackupLocation::CurrentDirectory => {
+            env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+        }
+    }
+}
+
+fn home_dir() -> PathBuf {
+    env::var_os("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."))
 }

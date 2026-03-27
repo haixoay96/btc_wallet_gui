@@ -2,7 +2,7 @@ use super::*;
 
 pub fn create_new_wallet(name: &str, network: WalletNetwork) -> Result<Wallet> {
     let mnemonic = Mnemonic::generate_in(Language::English, 12)?;
-    create_wallet_from_mnemonic(name, network, mnemonic)
+    create_wallet_from_mnemonic(name, network, mnemonic, false)
 }
 
 pub fn import_wallet_from_mnemonic(
@@ -12,7 +12,7 @@ pub fn import_wallet_from_mnemonic(
 ) -> Result<Wallet> {
     let mnemonic = Mnemonic::parse_in_normalized(Language::English, mnemonic_phrase)
         .context("Mnemonic không hợp lệ")?;
-    create_wallet_from_mnemonic(name, network, mnemonic)
+    create_wallet_from_mnemonic(name, network, mnemonic, true)
 }
 
 pub fn import_wallet_from_account_xprv(
@@ -28,6 +28,7 @@ pub fn import_wallet_from_account_xprv(
         name: name.trim().to_string(),
         network,
         mnemonic: None,
+        mnemonic_backed_up: true,
         account_xprv: parsed_xprv.to_string(),
         account_xpub: account_xpub.to_string(),
         next_index: 0,
@@ -43,6 +44,7 @@ fn create_wallet_from_mnemonic(
     name: &str,
     network: WalletNetwork,
     mnemonic: Mnemonic,
+    mnemonic_backed_up: bool,
 ) -> Result<Wallet> {
     let secp = Secp256k1::new();
     let seed = mnemonic.to_seed_normalized("");
@@ -61,6 +63,7 @@ fn create_wallet_from_mnemonic(
         name: name.trim().to_string(),
         network,
         mnemonic: Some(mnemonic.to_string()),
+        mnemonic_backed_up,
         account_xprv: account_xprv.to_string(),
         account_xpub: account_xpub.to_string(),
         next_index: 0,
