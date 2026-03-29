@@ -1,15 +1,16 @@
 use iced::{clipboard, Task};
 
 use crate::i18n::t;
+use crate::utils::{
+    address_count_text, default_mnemonic_pdf_filename, default_slip39_directory_name,
+    ensure_pdf_extension, export_mnemonic_to_pdf, export_slip39_shares_to_pdf_directory,
+    pick_mnemonic_pdf_path, pick_slip39_export_directory,
+};
 use crate::views::receive::{ReceiveEvent, ReceiveMessage};
 use crate::views::wallets::{WalletsEvent, WalletsMessage, WalletsView};
 use crate::wallet::{Wallet, WalletNetwork};
 
-use super::{
-    address_count_text, default_mnemonic_pdf_filename, default_slip39_directory_name,
-    ensure_pdf_extension, export_mnemonic_to_pdf, export_slip39_shares_to_pdf_directory,
-    pick_mnemonic_pdf_path, pick_slip39_export_directory, App, AppMessage,
-};
+use super::{App, AppMessage};
 
 impl App {
     pub fn handle_wallets_message(&mut self, msg: WalletsMessage) -> Task<AppMessage> {

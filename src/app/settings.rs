@@ -4,7 +4,7 @@ use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, Storage, UserProfile};
 use crate::views::settings::{SettingsEvent, SettingsMessage};
 
-use super::{resolve_user_path, App, AppMessage, LoginMode};
+use super::*;
 
 impl App {
     pub fn handle_settings_message(&mut self, msg: SettingsMessage) -> Task<AppMessage> {

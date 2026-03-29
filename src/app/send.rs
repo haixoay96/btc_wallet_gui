@@ -4,7 +4,7 @@ use crate::i18n::t;
 use crate::views::send::{SendEvent, SendMessage};
 use crate::wallet::{FeeMode, TxBuildOptions, Wallet};
 
-use super::{short_txid, App, AppMessage, SendRequest};
+use super::*;
 
 impl App {
     pub fn handle_send_message(&mut self, msg: SendMessage) -> Task<AppMessage> {
