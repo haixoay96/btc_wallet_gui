@@ -39,6 +39,15 @@ pub enum SettingsMessage {
     CancelClearData,
 }
 
+#[derive(Debug, Clone)]
+pub enum SettingsEvent {
+    ChangeLanguage(AppLanguage),
+    BrowseExportPath,
+    ChangePassphrase { current: String, new_passphrase: String },
+    ExportWallet(String),
+    ClearAllData(String),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BackupLocation {
     Home,
@@ -114,12 +123,12 @@ impl SettingsView {
         self.error = None;
     }
 
-    pub fn update(&mut self, message: SettingsMessage) -> Option<crate::app::AppMessage> {
+    pub fn update(&mut self, message: SettingsMessage) -> Option<SettingsEvent> {
         match message {
             SettingsMessage::LanguageChanged(language) => {
                 self.error = None;
                 self.success = None;
-                Some(crate::app::AppMessage::ChangeLanguage(language))
+                Some(SettingsEvent::ChangeLanguage(language))
             }
             SettingsMessage::ToggleChangePassphrase => {
                 self.show_change_passphrase = !self.show_change_passphrase;
@@ -178,10 +187,7 @@ impl SettingsView {
 
                 self.error = None;
                 self.success = None;
-                Some(crate::app::AppMessage::ChangePassphrase {
-                    current: self.current_passphrase.clone(),
-                    new_passphrase: self.new_passphrase.clone(),
-                })
+                Some(SettingsEvent::ChangePassphrase { current: self.current_passphrase.clone(), new_passphrase: self.new_passphrase.clone() })
             }
             SettingsMessage::ExportLocationChanged(location) => {
                 self.export_location = location;
@@ -194,9 +200,7 @@ impl SettingsView {
                 self.error = None;
                 None
             }
-            SettingsMessage::BrowseExportPath => Some(
-                crate::app::AppMessage::PickExportBackupPath(self.export_path.clone()),
-            ),
+            SettingsMessage::BrowseExportPath => Some(SettingsEvent::BrowseExportPath),
             SettingsMessage::ExportWallet => {
                 let path = self.export_path.trim();
                 if path.is_empty() {
@@ -208,7 +212,7 @@ impl SettingsView {
 
                 self.error = None;
                 self.success = None;
-                Some(crate::app::AppMessage::ExportWalletBackup(path.to_string()))
+                Some(SettingsEvent::ExportWallet(path.to_string()))
             }
             SettingsMessage::ToggleAbout => {
                 self.show_about = !self.show_about;
@@ -243,9 +247,7 @@ impl SettingsView {
                 self.show_clear_data_confirm = false;
                 self.error = None;
                 self.success = None;
-                Some(crate::app::AppMessage::ClearAllData(
-                    self.clear_data_passphrase.clone(),
-                ))
+                Some(SettingsEvent::ClearAllData(self.clear_data_passphrase.clone()))
             }
             SettingsMessage::CancelClearData => {
                 self.show_clear_data_confirm = false;

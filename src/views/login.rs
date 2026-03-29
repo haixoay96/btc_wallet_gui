@@ -23,6 +23,15 @@ pub enum LoginMessage {
     SetMode(LoginMode),
 }
 
+#[derive(Debug, Clone)]
+pub enum LoginEvent {
+    ChangeLanguage(AppLanguage),
+    BrowseBackupPath,
+    SubmitExisting { passphrase: String },
+    SubmitNew { passphrase: String, nickname: String },
+    SubmitImport { backup_path: String, passphrase: String },
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LoginMode {
     ExistingWallet,
@@ -84,11 +93,11 @@ impl LoginView {
         self.error = None;
     }
 
-    pub fn update(&mut self, message: LoginMessage) -> Option<crate::app::AppMessage> {
+    pub fn update(&mut self, message: LoginMessage) -> Option<LoginEvent> {
         match message {
             LoginMessage::LanguageChanged(language) => {
                 self.error = None;
-                Some(crate::app::AppMessage::ChangeLanguage(language))
+                Some(LoginEvent::ChangeLanguage(language))
             }
             LoginMessage::NicknameChanged(value) => {
                 self.nickname = value;
@@ -110,7 +119,7 @@ impl LoginView {
                 self.error = None;
                 None
             }
-            LoginMessage::BrowseBackupPath => Some(crate::app::AppMessage::PickImportBackupPath),
+            LoginMessage::BrowseBackupPath => Some(LoginEvent::BrowseBackupPath),
             LoginMessage::Submit => {
                 if self.passphrase.trim().is_empty() {
                     self.error = Some(
@@ -124,11 +133,7 @@ impl LoginView {
                 }
 
                 match self.mode {
-                    LoginMode::ExistingWallet => Some(crate::app::AppMessage::Login {
-                        passphrase: self.passphrase.clone(),
-                        nickname: None,
-                        creating_new: false,
-                    }),
+                    LoginMode::ExistingWallet => Some(LoginEvent::SubmitExisting { passphrase: self.passphrase.clone() }),
                     LoginMode::NewWallet => {
                         if self.nickname.trim().is_empty() {
                             self.error = Some(
@@ -152,11 +157,7 @@ impl LoginView {
                             return None;
                         }
 
-                        Some(crate::app::AppMessage::Login {
-                            passphrase: self.passphrase.clone(),
-                            nickname: Some(self.nickname.trim().to_string()),
-                            creating_new: true,
-                        })
+                        Some(LoginEvent::SubmitNew { passphrase: self.passphrase.clone(), nickname: self.nickname.trim().to_string() })
                     }
                     LoginMode::ImportBackup => {
                         if self.backup_path.trim().is_empty() {
@@ -170,10 +171,7 @@ impl LoginView {
                             return None;
                         }
 
-                        Some(crate::app::AppMessage::InitialImportBackup {
-                            backup_path: self.backup_path.trim().to_string(),
-                            passphrase: self.passphrase.clone(),
-                        })
+                        Some(LoginEvent::SubmitImport { backup_path: self.backup_path.trim().to_string(), passphrase: self.passphrase.clone() })
                     }
                 }
             }

@@ -35,6 +35,13 @@ pub enum SendMessage {
     ClearForm,
 }
 
+#[derive(Debug, Clone)]
+pub enum SendEvent {
+    SelectWallet(usize),
+    EstimateSendFee { amount_sat: u64, input_source: crate::wallet::InputSource },
+    SendTransaction(crate::app::SendRequest),
+}
+
 pub struct SendView {
     to_address: String,
     amount: String,
@@ -80,13 +87,13 @@ impl SendView {
         self.error = None;
     }
 
-    pub fn update(&mut self, message: SendMessage) -> Option<crate::app::AppMessage> {
+    pub fn update(&mut self, message: SendMessage) -> Option<SendEvent> {
         match message {
             SendMessage::SelectWallet(index) => {
                 self.error = None;
                 self.success = None;
                 self.estimated_fee = None;
-                Some(crate::app::AppMessage::SelectWallet(index))
+                Some(SendEvent::SelectWallet(index))
             }
             SendMessage::ToAddressChanged(addr) => {
                 self.to_address = addr;
@@ -162,10 +169,7 @@ impl SendView {
 
                 self.error = None;
                 self.success = None;
-                Some(crate::app::AppMessage::EstimateSendFee {
-                    amount_sat,
-                    input_source,
-                })
+                Some(SendEvent::EstimateSendFee { amount_sat, input_source })
             }
             SendMessage::Send => {
                 if self.to_address.trim().is_empty() {
@@ -223,17 +227,15 @@ impl SendView {
                 self.error = None;
                 self.success = None;
 
-                Some(crate::app::AppMessage::SendTransaction(
-                    crate::app::SendRequest {
-                        to_address: self.to_address.trim().to_string(),
-                        amount_sat,
-                        fee_mode,
-                        use_all_funds: self.use_all_funds,
-                        input_source,
-                        change_strategy,
-                        broadcast: self.broadcast,
-                    },
-                ))
+                Some(SendEvent::SendTransaction(crate::app::SendRequest {
+                    to_address: self.to_address.trim().to_string(),
+                    amount_sat,
+                    fee_mode,
+                    use_all_funds: self.use_all_funds,
+                    input_source,
+                    change_strategy,
+                    broadcast: self.broadcast,
+                }))
             }
             SendMessage::ClearForm => {
                 self.to_address.clear();

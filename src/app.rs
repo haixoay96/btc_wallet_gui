@@ -16,13 +16,13 @@ use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, Storage, UserProfile};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
-    history::{HistoryMessage, HistoryView},
-    login::{LoginMessage, LoginMode, LoginView},
-    receive::{ReceiveMessage, ReceiveView},
-    send::{SendMessage, SendView},
-    settings::{SettingsMessage, SettingsView},
-    sidebar::{NavItem, Sidebar, SidebarMessage},
-    wallets::{WalletsMessage, WalletsView},
+    history::{HistoryMessage, HistoryView, HistoryEvent},
+    login::{LoginMessage, LoginMode, LoginView, LoginEvent},
+    receive::{ReceiveMessage, ReceiveView, ReceiveEvent},
+    send::{SendMessage, SendView, SendEvent},
+    settings::{SettingsMessage, SettingsView, SettingsEvent},
+    sidebar::{NavItem, Sidebar, SidebarMessage, SidebarEvent},
+    wallets::{WalletsMessage, WalletsView, WalletsEvent},
 };
 use crate::wallet::{
     ChangeStrategy, FeeMode, InputSource, TxBuildOptions, Wallet, WalletEntry, WalletNetwork,
@@ -424,8 +424,36 @@ impl App {
             }
 
             AppMessage::LoginMessage(msg) => {
-                if let Some(app_msg) = self.login_view.update(msg) {
-                    return self.update(app_msg);
+                if let Some(event) = self.login_view.update(msg) {
+                    match event {
+                        LoginEvent::ChangeLanguage(language) => {
+                            self.language = language;
+                            set_current_language(language);
+                            self.save_language_preference();
+                        }
+                        LoginEvent::BrowseBackupPath => {
+                            if let Some(path) = pick_import_backup_path() {
+                                self.login_view.set_backup_path(path.to_string_lossy().to_string());
+                            }
+                        }
+                        LoginEvent::SubmitExisting { passphrase } => {
+                            return self.update(AppMessage::Login {
+                                passphrase,
+                                nickname: None,
+                                creating_new: false,
+                            });
+                        }
+                        LoginEvent::SubmitNew { passphrase, nickname } => {
+                            return self.update(AppMessage::Login {
+                                passphrase,
+                                nickname: Some(nickname),
+                                creating_new: true,
+                            });
+                        }
+                        LoginEvent::SubmitImport { backup_path, passphrase } => {
+                            return self.update(AppMessage::InitialImportBackup { backup_path, passphrase });
+                        }
+                    }
                 }
                 Task::none()
             }
@@ -437,8 +465,14 @@ impl App {
             }
 
             AppMessage::SidebarMessage(msg) => {
-                let app_msg = self.sidebar.update(msg);
-                self.update(app_msg)
+                let event = self.sidebar.update(msg);
+                match event {
+                    SidebarEvent::Navigate(page) => {
+                        self.current_page = page;
+                        self.sidebar.set_active(page);
+                    }
+                }
+                Task::none()
             }
 
             AppMessage::DashboardMessage(msg) => {
@@ -449,36 +483,84 @@ impl App {
             }
 
             AppMessage::WalletsMessage(msg) => {
-                if let Some(app_msg) = self.wallets_view.update(msg) {
-                    return self.update(app_msg);
+                if let Some(event) = self.wallets_view.update(msg) {
+                    match event {
+                        WalletsEvent::CreateWallet(name, network) => {
+                            return self.update(AppMessage::CreateWallet(name, network));
+                        }
+                        WalletsEvent::ImportWalletFromMnemonic { name, network, mnemonic } => {
+                            return self.update(AppMessage::ImportWalletFromMnemonic { name, network, mnemonic });
+                        }
+                        WalletsEvent::ImportWalletFromSlip39 { name, network, shares, slip39_passphrase } => {
+                            return self.update(AppMessage::ImportWalletFromSlip39 { name, network, shares, slip39_passphrase });
+                        }
+                        WalletsEvent::SelectWallet(index) => {
+                            return self.update(AppMessage::SelectWallet(index));
+                        }
+                        WalletsEvent::DeleteWallet(index) => {
+                            return self.update(AppMessage::DeleteWallet(index));
+                        }
+                        WalletsEvent::RevealMnemonic { wallet_index, passphrase } => {
+                            return self.update(AppMessage::RevealMnemonic { wallet_index, passphrase });
+                        }
+                        WalletsEvent::VerifyMnemonicBackup { wallet_index, checks } => {
+                            return self.update(AppMessage::VerifyMnemonicBackup { wallet_index, checks });
+                        }
+                        WalletsEvent::ExportMnemonicPdf(index) => {
+                            return self.update(AppMessage::ExportMnemonicPdf(index));
+                        }
+                        WalletsEvent::ExportWalletSlip39 { wallet_index, threshold, share_count, slip39_passphrase } => {
+                            return self.update(AppMessage::ExportWalletSlip39 { wallet_index, threshold, share_count, slip39_passphrase });
+                        }
+                    }
                 }
                 Task::none()
             }
 
             AppMessage::SendMessage(msg) => {
-                if let Some(app_msg) = self.send_view.update(msg) {
-                    return self.update(app_msg);
+                if let Some(event) = self.send_view.update(msg) {
+                    match event {
+                        SendEvent::SelectWallet(index) => return self.update(AppMessage::SelectWallet(index)),
+                        SendEvent::EstimateSendFee { amount_sat, input_source } => return self.update(AppMessage::EstimateSendFee { amount_sat, input_source }),
+                        SendEvent::SendTransaction(req) => return self.update(AppMessage::SendTransaction(req)),
+                    }
                 }
                 Task::none()
             }
 
             AppMessage::ReceiveMessage(msg) => {
-                if let Some(app_msg) = self.receive_view.update(msg) {
-                    return self.update(app_msg);
+                if let Some(event) = self.receive_view.update(msg) {
+                    match event {
+                        ReceiveEvent::SelectWallet(index) => return self.update(AppMessage::SelectWallet(index)),
+                        ReceiveEvent::CopyAddress(addr) => return self.update(AppMessage::CopyAddress(addr)),
+                        ReceiveEvent::DeriveAddresses(count) => return self.update(AppMessage::DeriveAddresses(count)),
+                    }
                 }
                 Task::none()
             }
 
             AppMessage::HistoryMessage(msg) => {
-                if let Some(app_msg) = self.history_view.update(msg) {
-                    return self.update(app_msg);
+                if let Some(event) = self.history_view.update(msg) {
+                    match event {
+                        HistoryEvent::Refresh => return self.update(AppMessage::RefreshHistory),
+                    }
                 }
                 Task::none()
             }
 
             AppMessage::SettingsMessage(msg) => {
-                if let Some(app_msg) = self.settings_view.update(msg) {
-                    return self.update(app_msg);
+                if let Some(event) = self.settings_view.update(msg) {
+                    match event {
+                        SettingsEvent::ChangeLanguage(language) => return self.update(AppMessage::ChangeLanguage(language)),
+                        SettingsEvent::BrowseExportPath => {
+                            if let Some(path) = pick_export_backup_path("") {
+                                self.settings_view.set_export_path(path.to_string_lossy().to_string());
+                            }
+                        }
+                        SettingsEvent::ChangePassphrase { current, new_passphrase } => return self.update(AppMessage::ChangePassphrase { current, new_passphrase }),
+                        SettingsEvent::ExportWallet(path) => return self.update(AppMessage::ExportWalletBackup(path)),
+                        SettingsEvent::ClearAllData(passphrase) => return self.update(AppMessage::ClearAllData(passphrase)),
+                    }
                 }
                 Task::none()
             }

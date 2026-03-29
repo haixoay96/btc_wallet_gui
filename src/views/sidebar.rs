@@ -55,6 +55,11 @@ pub enum SidebarMessage {
     Navigate(NavItem),
 }
 
+#[derive(Debug, Clone)]
+pub enum SidebarEvent {
+    Navigate(NavItem),
+}
+
 pub struct Sidebar {
     active: NavItem,
 }
@@ -70,11 +75,11 @@ impl Sidebar {
         self.active = item;
     }
 
-    pub fn update(&mut self, message: SidebarMessage) -> crate::app::AppMessage {
+    pub fn update(&mut self, message: SidebarMessage) -> SidebarEvent {
         match message {
             SidebarMessage::Navigate(item) => {
                 self.active = item;
-                crate::app::AppMessage::Navigate(item)
+                SidebarEvent::Navigate(item)
             }
         }
     }

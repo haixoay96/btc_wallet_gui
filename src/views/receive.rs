@@ -25,6 +25,13 @@ pub enum ReceiveMessage {
     SelectAddress(usize),
 }
 
+#[derive(Debug, Clone)]
+pub enum ReceiveEvent {
+    SelectWallet(usize),
+    CopyAddress(String),
+    DeriveAddresses(u32),
+}
+
 pub struct ReceiveView {
     selected_index: usize,
     copied: bool,
@@ -46,17 +53,17 @@ impl ReceiveView {
         }
     }
 
-    pub fn update(&mut self, message: ReceiveMessage) -> Option<crate::app::AppMessage> {
+    pub fn update(&mut self, message: ReceiveMessage) -> Option<ReceiveEvent> {
         match message {
             ReceiveMessage::SelectWallet(index) => {
                 self.selected_index = 0;
                 self.copied = false;
                 self.clear_qr_state();
-                Some(crate::app::AppMessage::SelectWallet(index))
+                Some(ReceiveEvent::SelectWallet(index))
             }
             ReceiveMessage::CopyAddress(addr) => {
                 self.copied = true;
-                Some(crate::app::AppMessage::CopyAddress(addr))
+                Some(ReceiveEvent::CopyAddress(addr))
             }
             ReceiveMessage::ToggleQrCode(address) => {
                 let is_same_address = self.qr_address.as_deref() == Some(address.as_str());
@@ -86,7 +93,7 @@ impl ReceiveView {
             ReceiveMessage::DeriveNewAddress => {
                 self.copied = false;
                 self.clear_qr_state();
-                Some(crate::app::AppMessage::DeriveAddresses(1))
+                Some(ReceiveEvent::DeriveAddresses(1))
             }
             ReceiveMessage::SelectAddress(index) => {
                 self.selected_index = index;

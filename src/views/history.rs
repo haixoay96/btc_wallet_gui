@@ -14,6 +14,11 @@ pub enum HistoryMessage {
     FilterOutgoing,
 }
 
+#[derive(Debug, Clone)]
+pub enum HistoryEvent {
+    Refresh,
+}
+
 pub struct HistoryView {
     filter: Filter,
 }
@@ -32,9 +37,9 @@ impl HistoryView {
         }
     }
 
-    pub fn update(&mut self, message: HistoryMessage) -> Option<crate::app::AppMessage> {
+    pub fn update(&mut self, message: HistoryMessage) -> Option<HistoryEvent> {
         match message {
-            HistoryMessage::Refresh => Some(crate::app::AppMessage::RefreshHistory),
+            HistoryMessage::Refresh => Some(HistoryEvent::Refresh),
             HistoryMessage::FilterAll => {
                 self.filter = Filter::All;
                 None

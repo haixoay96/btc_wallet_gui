@@ -54,6 +54,19 @@ pub enum WalletsMessage {
     DismissWalletNotice,
 }
 
+#[derive(Debug, Clone)]
+pub enum WalletsEvent {
+    CreateWallet(String, crate::wallet::WalletNetwork),
+    ImportWalletFromMnemonic { name: String, network: crate::wallet::WalletNetwork, mnemonic: String },
+    ImportWalletFromSlip39 { name: String, network: crate::wallet::WalletNetwork, shares: Vec<String>, slip39_passphrase: String },
+    SelectWallet(usize),
+    DeleteWallet(usize),
+    RevealMnemonic { wallet_index: usize, passphrase: String },
+    VerifyMnemonicBackup { wallet_index: usize, checks: Vec<(usize, String)> },
+    ExportMnemonicPdf(usize),
+    ExportWalletSlip39 { wallet_index: usize, threshold: u8, share_count: u8, slip39_passphrase: String },
+}
+
 pub struct WalletsView {
     create_name: String,
     create_network: WalletNetwork,
@@ -147,7 +160,7 @@ impl WalletsView {
         self.revealed_wallet_index = Some(wallet_index);
     }
 
-    pub fn update(&mut self, message: WalletsMessage) -> Option<crate::app::AppMessage> {
+    pub fn update(&mut self, message: WalletsMessage) -> Option<WalletsEvent> {
         match message {
             WalletsMessage::ToggleCreateForm => {
                 self.show_create_form = !self.show_create_form;
@@ -166,7 +179,7 @@ impl WalletsView {
                 self.create_name.clear();
                 self.show_create_form = false;
                 self.error = None;
-                Some(crate::app::AppMessage::CreateWallet(name, network))
+                Some(WalletsEvent::CreateWallet(name, network))
             }
             WalletsMessage::NameChanged(name) => {
                 self.create_name = name;
@@ -269,11 +282,7 @@ impl WalletsView {
                 self.show_import_mnemonic_form = false;
                 self.error = None;
 
-                Some(crate::app::AppMessage::ImportWalletFromMnemonic {
-                    name,
-                    network,
-                    mnemonic,
-                })
+                Some(WalletsEvent::ImportWalletFromMnemonic { name, network, mnemonic })
             }
             WalletsMessage::ImportWalletFromSlip39 => {
                 if self.import_name.trim().is_empty() {
@@ -317,12 +326,7 @@ impl WalletsView {
                 self.show_import_mnemonic_form = false;
                 self.error = None;
 
-                Some(crate::app::AppMessage::ImportWalletFromSlip39 {
-                    name,
-                    network,
-                    shares,
-                    slip39_passphrase,
-                })
+                Some(WalletsEvent::ImportWalletFromSlip39 { name, network, shares, slip39_passphrase })
             }
             WalletsMessage::SelectWallet(index) => {
                 self.revealed_wallet_index = None;
@@ -333,7 +337,7 @@ impl WalletsView {
                 self.show_create_form = false;
                 self.show_import_mnemonic_form = false;
                 self.error = None;
-                Some(crate::app::AppMessage::SelectWallet(index))
+                Some(WalletsEvent::SelectWallet(index))
             }
             WalletsMessage::DeleteWallet(index) => {
                 self.confirm_delete_index = Some(index);
@@ -341,7 +345,7 @@ impl WalletsView {
             }
             WalletsMessage::ConfirmDelete(index) => {
                 self.confirm_delete_index = None;
-                Some(crate::app::AppMessage::DeleteWallet(index))
+                Some(WalletsEvent::DeleteWallet(index))
             }
             WalletsMessage::CancelDelete => {
                 self.confirm_delete_index = None;
@@ -376,10 +380,7 @@ impl WalletsView {
                 }
 
                 self.error = None;
-                Some(crate::app::AppMessage::RevealMnemonic {
-                    wallet_index,
-                    passphrase: self.mnemonic_passphrase.clone(),
-                })
+                Some(WalletsEvent::RevealMnemonic { wallet_index, passphrase: self.mnemonic_passphrase.clone() })
             }
             WalletsMessage::ToggleBackupTest {
                 wallet_index,
@@ -421,7 +422,7 @@ impl WalletsView {
                     return None;
                 }
                 self.error = None;
-                Some(crate::app::AppMessage::ExportMnemonicPdf(wallet_index))
+                Some(WalletsEvent::ExportMnemonicPdf(wallet_index))
             }
             WalletsMessage::Slip39ExportThresholdChanged(value) => {
                 self.slip39_export_threshold = value;
@@ -513,12 +514,7 @@ impl WalletsView {
                 }
 
                 self.error = None;
-                Some(crate::app::AppMessage::ExportWalletSlip39 {
-                    wallet_index,
-                    threshold,
-                    share_count,
-                    slip39_passphrase: self.slip39_export_passphrase.clone(),
-                })
+                Some(WalletsEvent::ExportWalletSlip39 { wallet_index, threshold, share_count, slip39_passphrase: self.slip39_export_passphrase.clone() })
             }
             WalletsMessage::BackupWordChanged(field_index, value) => {
                 if let Some(slot) = self.backup_test_answers.get_mut(field_index) {
@@ -561,10 +557,7 @@ impl WalletsView {
                     .zip(self.backup_test_answers.iter().cloned())
                     .collect::<Vec<_>>();
 
-                Some(crate::app::AppMessage::VerifyMnemonicBackup {
-                    wallet_index,
-                    checks,
-                })
+                Some(WalletsEvent::VerifyMnemonicBackup { wallet_index, checks })
             }
             WalletsMessage::DismissWalletNotice => {
                 self.notice_wallet_index = None;
