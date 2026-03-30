@@ -5,7 +5,7 @@ mod wallet;
 
 use iced::{
     widget::{column, container, row, text, Space},
-    Element, Length, Task,
+    Element, Length, Padding, Task,
 };
 
 use crate::i18n::{set_current_language, t, AppLanguage};
@@ -13,6 +13,7 @@ use crate::storage::{PersistedState, Storage, UserProfile};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::{HistoryMessage, HistoryView, HistoryEvent},
+    language_selector::LanguageSelector,
     login::{LoginMessage, LoginMode, LoginView},
     receive::{ReceiveMessage, ReceiveView},
     send::{SendMessage, SendView},
@@ -57,6 +58,7 @@ pub struct App {
     pub receive_view: ReceiveView,
     pub history_view: HistoryView,
     pub settings_view: SettingsView,
+    pub language_selector: LanguageSelector,
 
     pub current_page: NavItem,
     pub status: Option<String>,
@@ -73,6 +75,7 @@ pub enum AppMessage {
     ReceiveMessage(ReceiveMessage),
     HistoryMessage(HistoryMessage),
     SettingsMessage(SettingsMessage),
+    LanguageChanged(AppLanguage),
 }
 
 impl App {
@@ -111,6 +114,7 @@ impl App {
                 receive_view: ReceiveView::new(),
                 history_view: HistoryView::new(),
                 settings_view: SettingsView::new(),
+                language_selector: LanguageSelector::new(),
                 current_page: NavItem::Dashboard,
                 status: None,
                 error: None,
@@ -159,17 +163,21 @@ impl App {
             }
 
             AppMessage::SettingsMessage(msg) => self.handle_settings_message(msg),
+
+            AppMessage::LanguageChanged(language) => self.handle_change_language(language),
         }
     }
 
     pub fn view(&self) -> Element<'_, AppMessage> {
         match self.state {
-            AppState::Login => container(self.login_view.view().map(AppMessage::LoginMessage))
+            AppState::Login => {
+                container(
+                    self.login_view.view().map(AppMessage::LoginMessage),
+                )
                 .width(Length::Fill)
                 .height(Length::Fill)
-                .center_x(Length::Fill)
-                .center_y(Length::Fill)
-                .into(),
+                .into()
+            },
             AppState::Main => {
                 let sidebar = self.sidebar.view().map(AppMessage::SidebarMessage);
                 let selected_wallet = self.wallets.get(self.selected_wallet);
@@ -217,22 +225,31 @@ impl App {
                     container(Space::with_height(0))
                 };
 
-                let greeting_bar = container(
-                    text(format!(
-                        "{} {}",
-                        t("Xin chào,", "Hello,"),
-                        self.display_name()
-                    ))
-                    .size(14)
-                    .style(crate::theme::text_color(
-                        crate::theme::Colors::TEXT_SECONDARY,
-                    )),
+                let language_picker = self
+                    .language_selector
+                    .view(AppMessage::LanguageChanged);
+
+                let header_bar = container(
+                    row![
+                        text(format!(
+                            "{} {}",
+                            t("Xin chào,", "Hello,"),
+                            self.display_name()
+                        ))
+                        .size(14)
+                        .style(crate::theme::text_color(
+                            crate::theme::Colors::TEXT_SECONDARY,
+                        )),
+                        Space::with_width(Length::Fill),
+                        language_picker,
+                    ]
+                    .align_y(iced::Alignment::Center),
                 )
                 .padding(8);
 
                 row![
                     sidebar,
-                    column![greeting_bar, status_bar, error_bar, main_content,].width(Length::Fill)
+                    column![header_bar, status_bar, error_bar, main_content,].width(Length::Fill)
                 ]
                 .width(Length::Fill)
                 .height(Length::Fill)
@@ -369,6 +386,7 @@ impl App {
         self.receive_view = ReceiveView::new();
         self.history_view = HistoryView::new();
         self.settings_view = SettingsView::new();
+        self.language_selector = LanguageSelector::new();
     }
 
     pub fn display_name(&self) -> &str {

@@ -1,15 +1,13 @@
 use iced::{
-    widget::{button, column, container, pick_list, row, text, text_input, Space},
+    widget::{button, column, container, row, text, text_input, Space},
     Alignment, Element, Length, Padding,
 };
 
-use crate::i18n::{current_language, t, AppLanguage};
+use crate::i18n::{t, AppLanguage};
 use crate::theme::{
-    card_style, input_style, pick_list_menu_style, pick_list_style, primary_button_style,
-    secondary_button_style, text_color, Colors,
+    card_style, input_style, primary_button_style, secondary_button_style, text_color, Colors,
 };
-
-const APP_LANGUAGES: [AppLanguage; 2] = AppLanguage::ALL;
+use crate::views::language_selector::LanguageSelector;
 
 #[derive(Debug, Clone)]
 pub enum LoginMessage {
@@ -47,6 +45,7 @@ pub struct LoginView {
     mode: LoginMode,
     can_create_new_passphrase: bool,
     error: Option<String>,
+    language_selector: LanguageSelector,
 }
 
 impl LoginView {
@@ -59,6 +58,7 @@ impl LoginView {
             mode: LoginMode::ExistingWallet,
             can_create_new_passphrase: true,
             error: None,
+            language_selector: LanguageSelector::new(),
         }
     }
 
@@ -193,24 +193,20 @@ impl LoginView {
     }
 
     pub fn view(&self) -> Element<'_, LoginMessage> {
-        let language_selector = row![
-            Space::with_width(Length::Fill),
-            text(t("Ngôn ngữ", "Language"))
-                .size(13)
-                .style(text_color(Colors::TEXT_SECONDARY)),
-            Space::with_width(8),
-            pick_list(
-                APP_LANGUAGES,
-                Some(current_language()),
-                LoginMessage::LanguageChanged
-            )
-            .placeholder(t("Chọn ngôn ngữ", "Select language"))
-            .style(pick_list_style())
-            .menu_style(pick_list_menu_style())
-            .padding([6, 10]),
-        ]
-        .align_y(Alignment::Center)
-        .width(Length::Fill);
+        let language_picker = self
+            .language_selector
+            .view(LoginMessage::LanguageChanged);
+
+        // Header bar with language selector on top-right (similar to main view)
+        let header_bar = container(
+            row![
+                Space::with_width(Length::Fill),
+                language_picker,
+            ]
+            .align_y(Alignment::Center),
+        )
+        .width(Length::Fill)
+        .padding(Padding::from([8, 16]));
 
         let logo = text("₿")
             .size(64)
@@ -348,9 +344,7 @@ impl LoginView {
             text("")
         };
 
-        let content = column![
-            language_selector,
-            Space::with_height(24),
+        let login_content = column![
             logo_container,
             Space::with_height(8),
             title,
@@ -378,13 +372,26 @@ impl LoginView {
         .spacing(0)
         .align_x(Alignment::Center);
 
-        container(content)
+        let login_container = container(login_content)
+            .width(Length::Fill)
+            .center_x(Length::Fill)
+            .padding(Padding::from(40));
+
+        // Main layout: header bar on top, login content centered below
+        let main_layout = column![
+            header_bar,
+            Space::with_height(Length::Fill),
+            login_container,
+            Space::with_height(Length::Fill),
+        ]
+        .width(Length::Fill)
+        .height(Length::Fill);
+
+        // Apply card_style to entire login screen
+        container(main_layout)
             .width(Length::Fill)
             .height(Length::Fill)
-            .center_x(Length::Fill)
-            .center_y(Length::Fill)
             .style(card_style())
-            .padding(Padding::from(40))
             .into()
     }
 }

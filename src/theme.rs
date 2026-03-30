@@ -102,7 +102,7 @@ pub fn card_style() -> Box<dyn Fn(&Theme) -> container::Style> {
     Box::new(|_theme: &Theme| container::Style {
         background: Some(Background::Color(Colors::BG_CARD)),
         border: Border {
-            radius: 16.0.into(),
+            radius: 0.0.into(),
             width: 1.0,
             color: Colors::BORDER,
         },

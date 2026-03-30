@@ -1,5 +1,6 @@
 pub mod dashboard;
 pub mod history;
+pub mod language_selector;
 pub mod login;
 pub mod receive;
 pub mod send;

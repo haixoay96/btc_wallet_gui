@@ -10,9 +10,6 @@ impl App {
     pub fn handle_settings_message(&mut self, msg: SettingsMessage) -> Task<AppMessage> {
         if let Some(event) = self.settings_view.update(msg) {
             match event {
-                SettingsEvent::ChangeLanguage(language) => {
-                    return self.handle_change_language(language)
-                }
                 SettingsEvent::BrowseExportPath => {
                     if let Some(path) = super::pick_export_backup_path("") {
                         self.settings_view

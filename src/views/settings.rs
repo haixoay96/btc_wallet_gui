@@ -1,19 +1,15 @@
 use iced::{
-    widget::{button, column, container, pick_list, row, scrollable, text, text_input, Space},
+    widget::{button, column, container, row, scrollable, text, text_input, Space},
     Alignment, Element, Length,
 };
 
-use crate::i18n::{current_language, t, AppLanguage};
+use crate::i18n::t;
 use crate::theme::{
-    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
-    secondary_button_style, text_color, Colors,
+    card_style, primary_button_style, secondary_button_style, text_color, Colors,
 };
-
-const APP_LANGUAGES: [AppLanguage; 2] = AppLanguage::ALL;
 
 #[derive(Debug, Clone)]
 pub enum SettingsMessage {
-    LanguageChanged(AppLanguage),
     ToggleChangePassphrase,
     CurrentPassphraseChanged(String),
     NewPassphraseChanged(String),
@@ -31,7 +27,6 @@ pub enum SettingsMessage {
 
 #[derive(Debug, Clone)]
 pub enum SettingsEvent {
-    ChangeLanguage(AppLanguage),
     BrowseExportPath,
     ChangePassphrase { current: String, new_passphrase: String },
     ExportWallet(String),
@@ -90,11 +85,6 @@ impl SettingsView {
 
     pub fn update(&mut self, message: SettingsMessage) -> Option<SettingsEvent> {
         match message {
-            SettingsMessage::LanguageChanged(language) => {
-                self.error = None;
-                self.success = None;
-                Some(SettingsEvent::ChangeLanguage(language))
-            }
             SettingsMessage::ToggleChangePassphrase => {
                 self.show_change_passphrase = !self.show_change_passphrase;
                 self.error = None;
@@ -222,30 +212,6 @@ impl SettingsView {
             .style(text_color(Colors::TEXT_PRIMARY));
 
         let mut content = column![title].spacing(20).padding(32);
-
-        let language_section = container(
-            column![
-                text(t("Ngôn ngữ", "Language"))
-                    .size(18)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
-                Space::with_height(8),
-                pick_list(
-                    APP_LANGUAGES,
-                    Some(current_language()),
-                    SettingsMessage::LanguageChanged
-                )
-                .width(Length::Fill)
-                .padding(10)
-                .style(pick_list_style())
-                .menu_style(pick_list_menu_style()),
-            ]
-            .spacing(8),
-        )
-        .style(card_style())
-        .padding(16)
-        .width(Length::Fill);
-
-        content = content.push(language_section);
 
         let change_passphrase_btn = button(text(t("Đổi passphrase", "Change Passphrase")).size(16))
             .on_press(SettingsMessage::ToggleChangePassphrase)
