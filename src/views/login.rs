@@ -212,6 +212,13 @@ impl LoginView {
         .align_y(Alignment::Center)
         .width(Length::Fill);
 
+        let logo = text("₿")
+            .size(64)
+            .style(text_color(Colors::ACCENT_PURPLE));
+
+        let logo_container = container(logo)
+            .center_x(Length::Fill);
+
         let title = text(t("Ví Bitcoin", "Bitcoin Wallet"))
             .size(36)
             .style(text_color(Colors::TEXT_PRIMARY));
@@ -344,6 +351,8 @@ impl LoginView {
         let content = column![
             language_selector,
             Space::with_height(24),
+            logo_container,
+            Space::with_height(8),
             title,
             Space::with_height(8),
             subtitle,
