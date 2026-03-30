@@ -1,23 +1,10 @@
 mod api_types;
-mod build_tx_result;
-mod change_strategy;
-mod fee_mode;
-mod history;
-mod input_source;
-mod spendable_utxo;
 mod structure;
-mod tx;
-mod tx_build_options;
-mod wallet_network;
 
-pub use change_strategy::ChangeStrategy;
-pub use fee_mode::FeeMode;
-pub use input_source::InputSource;
-pub use structure::{TxDirection, TxRecord, Wallet};
-
-// Backward compatibility alias
-pub use tx_build_options::TxBuildOptions;
-pub use wallet_network::WalletNetwork;
+pub use structure::{
+    ChangeStrategy, FeeMode, InputSource, TxBuildOptions,
+    TxDirection, TxRecord, Wallet, WalletNetwork,
+};
 
 
 pub(super) const DEFAULT_GAP_LIMIT: u32 = 5;
