@@ -1,5 +1,3 @@
-use std::{env, fmt, path::PathBuf};
-
 use iced::{
     widget::{button, column, container, pick_list, row, scrollable, text, text_input, Space},
     Alignment, Element, Length,
@@ -11,13 +9,6 @@ use crate::theme::{
     secondary_button_style, text_color, Colors,
 };
 
-const BACKUP_LOCATIONS: [BackupLocation; 5] = [
-    BackupLocation::Desktop,
-    BackupLocation::Downloads,
-    BackupLocation::Documents,
-    BackupLocation::Home,
-    BackupLocation::CurrentDirectory,
-];
 const APP_LANGUAGES: [AppLanguage; 2] = AppLanguage::ALL;
 
 #[derive(Debug, Clone)]
@@ -28,7 +19,6 @@ pub enum SettingsMessage {
     NewPassphraseChanged(String),
     ConfirmPassphraseChanged(String),
     SubmitPassphraseChange,
-    ExportLocationChanged(BackupLocation),
     ExportPathChanged(String),
     BrowseExportPath,
     ExportWallet,
@@ -48,34 +38,11 @@ pub enum SettingsEvent {
     ClearAllData(String),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BackupLocation {
-    Home,
-    Desktop,
-    Documents,
-    Downloads,
-    CurrentDirectory,
-}
-
-impl fmt::Display for BackupLocation {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let label = match self {
-            BackupLocation::Home => t("Thư mục Home", "Home"),
-            BackupLocation::Desktop => t("Desktop", "Desktop"),
-            BackupLocation::Documents => t("Documents", "Documents"),
-            BackupLocation::Downloads => t("Downloads", "Downloads"),
-            BackupLocation::CurrentDirectory => t("Thư mục hiện tại", "Current Folder"),
-        };
-        f.write_str(label)
-    }
-}
-
 pub struct SettingsView {
     show_change_passphrase: bool,
     current_passphrase: String,
     new_passphrase: String,
     confirm_passphrase: String,
-    export_location: BackupLocation,
     export_path: String,
     show_about: bool,
     show_clear_data_confirm: bool,
@@ -86,14 +53,12 @@ pub struct SettingsView {
 
 impl SettingsView {
     pub fn new() -> Self {
-        let export_location = BackupLocation::Desktop;
         Self {
             show_change_passphrase: false,
             current_passphrase: String::new(),
             new_passphrase: String::new(),
             confirm_passphrase: String::new(),
-            export_location,
-            export_path: default_export_path(export_location),
+            export_path: String::new(),
             show_about: false,
             show_clear_data_confirm: false,
             clear_data_passphrase: String::new(),
@@ -188,12 +153,6 @@ impl SettingsView {
                 self.error = None;
                 self.success = None;
                 Some(SettingsEvent::ChangePassphrase { current: self.current_passphrase.clone(), new_passphrase: self.new_passphrase.clone() })
-            }
-            SettingsMessage::ExportLocationChanged(location) => {
-                self.export_location = location;
-                self.export_path = default_export_path(location);
-                self.error = None;
-                None
             }
             SettingsMessage::ExportPathChanged(path) => {
                 self.export_path = path;
@@ -399,20 +358,6 @@ impl SettingsView {
                 .size(12)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(10),
-            text(t("Chọn thư mục lưu backup", "Choose backup directory"))
-                .size(12)
-                .style(text_color(Colors::TEXT_SECONDARY)),
-            Space::with_height(4),
-            pick_list(
-                BACKUP_LOCATIONS,
-                Some(self.export_location),
-                SettingsMessage::ExportLocationChanged
-            )
-            .width(Length::Fill)
-            .padding(10)
-            .style(pick_list_style())
-            .menu_style(pick_list_menu_style()),
-            Space::with_height(8),
             row![
                 text_input(
                     t("Đường dẫn file backup...", "Path to backup file..."),
@@ -566,27 +511,3 @@ impl SettingsView {
     }
 }
 
-fn default_export_path(location: BackupLocation) -> String {
-    location_dir(location)
-        .join("wallet_backup.enc")
-        .to_string_lossy()
-        .to_string()
-}
-
-fn location_dir(location: BackupLocation) -> PathBuf {
-    match location {
-        BackupLocation::Home => home_dir(),
-        BackupLocation::Desktop => home_dir().join("Desktop"),
-        BackupLocation::Documents => home_dir().join("Documents"),
-        BackupLocation::Downloads => home_dir().join("Downloads"),
-        BackupLocation::CurrentDirectory => {
-            env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-        }
-    }
-}
-
-fn home_dir() -> PathBuf {
-    env::var_os("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("."))
-}

@@ -29,12 +29,12 @@ impl NavItem {
 
     pub fn icon(self) -> &'static str {
         match self {
-            Self::Dashboard => "📊",
-            Self::Wallets => "👛",
-            Self::Send => "📤",
-            Self::Receive => "📥",
-            Self::History => "📜",
-            Self::Settings => "⚙️",
+            Self::Dashboard => t("T", "D"),
+            Self::Wallets => t("V", "W"),
+            Self::Send => t("G", "S"),
+            Self::Receive => t("N", "R"),
+            Self::History => t("L", "H"),
+            Self::Settings => t("C", "S"),
         }
     }
 
@@ -96,7 +96,7 @@ impl Sidebar {
                 .into_iter()
                 .map(|item| {
                     let is_active = self.active == item;
-                    let icon = text(item.icon()).size(24);
+                    let icon = text(item.icon()).size(18);
                     let title = text(item.title()).size(14);
 
                     let style = if is_active {
