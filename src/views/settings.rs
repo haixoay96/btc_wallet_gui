@@ -1,6 +1,6 @@
 use iced::{
-    widget::{button, column, container, row, scrollable, text, text_input, Space},
-    Alignment, Element, Length,
+    widget::{button, column, container, scrollable, text, text_input, Space},
+    Element, Length,
 };
 
 use crate::i18n::t;
@@ -16,8 +16,6 @@ pub enum SettingsMessage {
     NewPassphraseChanged(String),
     ConfirmPassphraseChanged(String),
     SubmitPassphraseChange,
-    ExportPathChanged(String),
-    BrowseExportPath,
     ExportWallet,
     ToggleAbout,
     ToggleClearDataConfirm,
@@ -28,9 +26,8 @@ pub enum SettingsMessage {
 
 #[derive(Debug, Clone)]
 pub enum SettingsEvent {
-    BrowseExportPath,
     ChangePassphrase { current: String, new_passphrase: String },
-    ExportWallet(String),
+    ExportWallet,
     ClearAllData(String),
 }
 
@@ -39,7 +36,6 @@ pub struct SettingsView {
     current_passphrase: String,
     new_passphrase: String,
     confirm_passphrase: String,
-    export_path: String,
     show_about: bool,
     show_clear_data_confirm: bool,
     clear_data_passphrase: String,
@@ -54,7 +50,6 @@ impl SettingsView {
             current_passphrase: String::new(),
             new_passphrase: String::new(),
             confirm_passphrase: String::new(),
-            export_path: String::new(),
             show_about: false,
             show_clear_data_confirm: false,
             clear_data_passphrase: String::new(),
@@ -77,11 +72,6 @@ impl SettingsView {
         self.current_passphrase.clear();
         self.new_passphrase.clear();
         self.confirm_passphrase.clear();
-    }
-
-    pub fn set_export_path(&mut self, path: String) {
-        self.export_path = path;
-        self.error = None;
     }
 
     pub fn update(&mut self, message: SettingsMessage) -> Option<SettingsEvent> {
@@ -145,24 +135,10 @@ impl SettingsView {
                 self.success = None;
                 Some(SettingsEvent::ChangePassphrase { current: self.current_passphrase.clone(), new_passphrase: self.new_passphrase.clone() })
             }
-            SettingsMessage::ExportPathChanged(path) => {
-                self.export_path = path;
-                self.error = None;
-                None
-            }
-            SettingsMessage::BrowseExportPath => Some(SettingsEvent::BrowseExportPath),
             SettingsMessage::ExportWallet => {
-                let path = self.export_path.trim();
-                if path.is_empty() {
-                    self.error = Some(
-                        t("Vui lòng nhập đường dẫn export", "Please enter export path").to_string(),
-                    );
-                    return None;
-                }
-
                 self.error = None;
                 self.success = None;
-                Some(SettingsEvent::ExportWallet(path.to_string()))
+                Some(SettingsEvent::ExportWallet)
             }
             SettingsMessage::ToggleAbout => {
                 self.show_about = !self.show_about;
@@ -217,7 +193,6 @@ impl SettingsView {
         let change_passphrase_btn = button(text(t("Đổi passphrase", "Change Passphrase")).size(16))
             .on_press(SettingsMessage::ToggleChangePassphrase)
             .padding(12)
-            .width(Length::Fill)
             .style(secondary_button_style());
 
         content = content.push(
@@ -325,23 +300,6 @@ impl SettingsView {
                 .size(12)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(10),
-            row![
-                text_input(
-                    t("Đường dẫn file backup...", "Path to backup file..."),
-                    &self.export_path
-                )
-                    .on_input(SettingsMessage::ExportPathChanged)
-                    .padding(10)
-                    .size(14)
-                    .width(Length::Fill),
-                Space::with_width(8),
-                button(text(t("Chọn nơi lưu", "Browse")).size(14))
-                    .on_press(SettingsMessage::BrowseExportPath)
-                    .padding(10)
-                    .style(secondary_button_style()),
-            ]
-            .align_y(Alignment::Center),
-            Space::with_height(8),
             button(text(t("Xuất backup ví", "Export Wallet Backup")).size(14))
                 .on_press(SettingsMessage::ExportWallet)
                 .padding(12)
@@ -418,7 +376,6 @@ impl SettingsView {
         let about_btn = button(text(t("Giới thiệu", "About")).size(16))
             .on_press(SettingsMessage::ToggleAbout)
             .padding(12)
-            .width(Length::Fill)
             .style(info_style());
 
         let mut info_col = column![
