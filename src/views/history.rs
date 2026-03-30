@@ -1,6 +1,6 @@
 use crate::i18n::t;
 use crate::theme::{card_style, primary_button_style, secondary_button_style, text_color, Colors};
-use crate::wallet::{TxDirection, TxRecord, WalletEntry};
+use crate::wallet::{TxDirection, TxRecord, Wallet};
 use iced::{
     widget::{button, column, container, row, text, Space},
     Alignment, Element, Length,
@@ -55,7 +55,7 @@ impl HistoryView {
         }
     }
 
-    pub fn view(&self, wallet: Option<&WalletEntry>) -> Element<'_, HistoryMessage> {
+    pub fn view(&self, wallet: Option<&Wallet>) -> Element<'_, HistoryMessage> {
         let title = text(t("Lịch sử giao dịch", "Transaction History"))
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));

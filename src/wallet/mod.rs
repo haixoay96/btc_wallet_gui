@@ -1,18 +1,3 @@
-use std::collections::{HashMap, HashSet};
-
-use anyhow::{Context, Result};
-use bitcoin::{
-    absolute,
-    bip32::{ChildNumber, DerivationPath, Xpriv, Xpub},
-    consensus,
-    key::Secp256k1,
-    sighash::{EcdsaSighashType, SighashCache},
-    transaction::Version,
-    Address, Amount, CompressedPublicKey, OutPoint, PrivateKey, ScriptBuf, Sequence, Transaction,
-    TxIn, TxOut, Txid, Witness,
-};
-use reqwest::blocking::Client;
-
 mod api_types;
 mod build_tx_result;
 mod change_strategy;
@@ -25,16 +10,12 @@ mod tx;
 mod tx_build_options;
 mod wallet_network;
 
-pub use api_types::*;
-pub use build_tx_result::BuildTxResult;
 pub use change_strategy::ChangeStrategy;
 pub use fee_mode::FeeMode;
 pub use input_source::InputSource;
-pub use spendable_utxo::SpendableUtxo;
-pub use structure::{AddressEntry, TxDirection, TxRecord, Wallet};
+pub use structure::{TxDirection, TxRecord, Wallet};
 
 // Backward compatibility alias
-pub type WalletEntry = Wallet;
 pub use tx_build_options::TxBuildOptions;
 pub use wallet_network::WalletNetwork;
 

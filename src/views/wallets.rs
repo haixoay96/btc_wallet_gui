@@ -8,7 +8,7 @@ use crate::theme::{
     card_style, danger_button_style, primary_button_style, secondary_button_style, text_color,
     Colors,
 };
-use crate::wallet::{WalletEntry, WalletNetwork};
+use crate::wallet::{Wallet, WalletNetwork};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImportMode {
@@ -570,7 +570,7 @@ impl WalletsView {
 
     pub fn view<'a>(
         &'a self,
-        wallets: &'a [WalletEntry],
+        wallets: &'a [Wallet],
         selected: usize,
     ) -> Element<'a, WalletsMessage> {
         let title = text(t("Ví", "Wallets"))
@@ -1017,7 +1017,7 @@ impl WalletsView {
     fn backup_panel<'a>(
         &'a self,
         selected_index: usize,
-        wallet: &'a WalletEntry,
+        wallet: &'a Wallet,
     ) -> Element<'a, WalletsMessage> {
         let needs_backup = wallet.mnemonic.is_some() && !wallet.mnemonic_backed_up;
 

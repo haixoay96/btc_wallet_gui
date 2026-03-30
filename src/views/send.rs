@@ -11,7 +11,7 @@ use crate::theme::{
     card_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, text_color, Colors,
 };
-use crate::wallet::{ChangeStrategy, FeeMode, InputSource, WalletEntry};
+use crate::wallet::{ChangeStrategy, FeeMode, InputSource, Wallet};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimpleFeeMode {
@@ -255,7 +255,7 @@ impl SendView {
 
     pub fn view<'a>(
         &'a self,
-        wallets: &'a [WalletEntry],
+        wallets: &'a [Wallet],
         selected_wallet: usize,
     ) -> Element<'a, SendMessage> {
         let wallet_options = wallet_choices(wallets);
@@ -557,7 +557,7 @@ impl fmt::Display for WalletChoice {
     }
 }
 
-fn wallet_choices(wallets: &[WalletEntry]) -> Vec<WalletChoice> {
+fn wallet_choices(wallets: &[Wallet]) -> Vec<WalletChoice> {
     wallets
         .iter()
         .enumerate()
@@ -568,7 +568,7 @@ fn wallet_choices(wallets: &[WalletEntry]) -> Vec<WalletChoice> {
         .collect()
 }
 
-fn selected_wallet_choice(wallets: &[WalletEntry], selected_wallet: usize) -> Option<WalletChoice> {
+fn selected_wallet_choice(wallets: &[Wallet], selected_wallet: usize) -> Option<WalletChoice> {
     wallets.get(selected_wallet).map(|wallet| WalletChoice {
         index: selected_wallet,
         label: format!("{} ({})", wallet.name, wallet.network.as_str()),

@@ -9,7 +9,7 @@ mod paths;
 use self::encryption::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
 use self::paths::StoragePaths;
 use crate::i18n::AppLanguage;
-use crate::wallet::WalletEntry;
+use crate::wallet::Wallet;
 
 
 
@@ -26,7 +26,7 @@ pub struct PersistedState {
     #[serde(default)]
     pub profile: UserProfile,
     #[serde(default)]
-    pub wallets: Vec<WalletEntry>,
+    pub wallets: Vec<Wallet>,
 }
 #[derive(Debug)]
 pub struct Storage {
