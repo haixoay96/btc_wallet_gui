@@ -5,7 +5,8 @@ use iced::{
 
 use crate::i18n::{t, AppLanguage};
 use crate::theme::{
-    card_style, input_style, primary_button_style, secondary_button_style, text_color, Colors,
+    card_style, gradient_button_style, input_style, primary_button_style, secondary_button_style,
+    text_color, Colors,
 };
 use crate::views::language_selector::LanguageSelector;
 
@@ -366,7 +367,7 @@ impl LoginView {
             button(text(action_label).size(16))
                 .on_press(LoginMessage::Submit)
                 .padding(12)
-                .style(primary_button_style()),
+                .style(gradient_button_style()),
             Space::with_height(24),
         ]
         .spacing(0)

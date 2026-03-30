@@ -5,7 +5,8 @@ use iced::{
 
 use crate::i18n::t;
 use crate::theme::{
-    card_style, primary_button_style, secondary_button_style, text_color, Colors,
+    card_style, info_style, primary_button_style, secondary_button_style, text_color,
+    warning_style, Colors,
 };
 
 #[derive(Debug, Clone)]
@@ -356,7 +357,7 @@ impl SettingsView {
             button(text(t("Xóa toàn bộ dữ liệu ví", "Clear All Wallet Data")).size(14))
                 .on_press(SettingsMessage::ToggleClearDataConfirm)
                 .padding(12)
-                .style(secondary_button_style());
+                .style(warning_style());
 
         let mut clear_data_col = column![
             text(t("Vùng nguy hiểm", "Danger Zone"))
@@ -418,7 +419,7 @@ impl SettingsView {
             .on_press(SettingsMessage::ToggleAbout)
             .padding(12)
             .width(Length::Fill)
-            .style(secondary_button_style());
+            .style(info_style());
 
         let mut info_col = column![
             text(t("Thông tin", "Information"))

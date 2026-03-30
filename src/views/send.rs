@@ -8,7 +8,7 @@ use std::fmt;
 
 use crate::i18n::t;
 use crate::theme::{
-    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    card_style, info_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, text_color, Colors,
 };
 use crate::wallet::{ChangeStrategy, FeeMode, InputSource, Wallet};
@@ -415,7 +415,7 @@ impl SendView {
         let estimate_btn = button(text(t("Ước tính phí", "Estimate Fee")).size(14))
             .on_press(SendMessage::EstimateFee)
             .padding(10)
-            .style(secondary_button_style());
+            .style(info_style());
 
         let advanced_section = column![
             text(t(
