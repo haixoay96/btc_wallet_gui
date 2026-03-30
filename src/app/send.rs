@@ -1,10 +1,11 @@
 use iced::Task;
 
 use crate::i18n::t;
+use crate::utils::short_txid;
 use crate::views::send::{SendEvent, SendMessage};
 use crate::wallet::{FeeMode, TxBuildOptions, Wallet};
 
-use super::*;
+use super::{App, AppMessage, SendRequest};
 
 impl App {
     pub fn handle_send_message(&mut self, msg: SendMessage) -> Task<AppMessage> {
@@ -23,10 +24,7 @@ impl App {
         amount_sat: u64,
         input_source: crate::wallet::InputSource,
     ) -> Task<AppMessage> {
-        if let Some(wallet_entry) = self.wallets.get(self.selected_wallet) {
-            let wallet = Wallet {
-                entry: wallet_entry.clone(),
-            };
+        if let Some(wallet) = self.wallets.get(self.selected_wallet) {
             match wallet.estimate_auto_fee_for_amount(amount_sat, &input_source) {
                 Ok(fee) => {
                     self.send_view.set_estimated_fee(fee);
@@ -51,11 +49,7 @@ impl App {
     }
 
     pub fn handle_send_transaction(&mut self, request: SendRequest) -> Task<AppMessage> {
-        if let Some(wallet_entry) = self.wallets.get_mut(self.selected_wallet) {
-            let mut wallet = Wallet {
-                entry: wallet_entry.clone(),
-            };
-
+        if let Some(wallet) = self.wallets.get_mut(self.selected_wallet) {
             let tx_options = TxBuildOptions {
                 broadcast: request.broadcast,
                 input_source: request.input_source.clone(),
@@ -109,7 +103,6 @@ impl App {
 
             match result {
                 Ok(tx_result) => {
-                    *wallet_entry = wallet.entry;
                     self.save_state();
                     self.update_dashboard();
 

@@ -68,7 +68,7 @@ impl App {
     pub fn handle_create_wallet(&mut self, name: String, network: WalletNetwork) -> Task<AppMessage> {
         match Wallet::new(&name, network) {
             Ok(wallet) => {
-                self.wallets.push(wallet.entry);
+                self.wallets.push(wallet);
                 self.selected_wallet = self.wallets.len() - 1;
                 self.save_state();
                 self.update_dashboard();
@@ -102,7 +102,7 @@ impl App {
     ) -> Task<AppMessage> {
         match Wallet::from_mnemonic(&name, network, &mnemonic) {
             Ok(wallet) => {
-                self.wallets.push(wallet.entry);
+                self.wallets.push(wallet);
                 self.selected_wallet = self.wallets.len() - 1;
                 self.save_state();
                 self.update_dashboard();
@@ -139,7 +139,7 @@ impl App {
     ) -> Task<AppMessage> {
         match Wallet::from_slip39_shares(&name, network, &shares, &slip39_passphrase) {
             Ok(wallet) => {
-                self.wallets.push(wallet.entry);
+                self.wallets.push(wallet);
                 self.selected_wallet = self.wallets.len() - 1;
                 self.save_state();
                 self.update_dashboard();
@@ -200,13 +200,9 @@ impl App {
     }
 
     pub fn handle_derive_addresses(&mut self, count: u32) -> Task<AppMessage> {
-        if let Some(wallet_entry) = self.wallets.get_mut(self.selected_wallet) {
-            let mut wallet = Wallet {
-                entry: wallet_entry.clone(),
-            };
+        if let Some(wallet) = self.wallets.get_mut(self.selected_wallet) {
             match wallet.derive_next_addresses(count) {
                 Ok(addresses) => {
-                    *wallet_entry = wallet.entry;
                     self.save_state();
                     self.status = Some(format!(
                         "{} {}",

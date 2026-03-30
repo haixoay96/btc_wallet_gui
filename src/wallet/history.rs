@@ -1,19 +1,26 @@
-use super::address::derive_next_addresses;
-use super::*;
+use std::collections::{HashMap, HashSet};
 
-pub fn refresh_history(entry: &mut WalletEntry) -> Result<usize> {
-    if entry.addresses.is_empty() {
-        derive_next_addresses(entry, DEFAULT_GAP_LIMIT)?;
+use anyhow::{Context, Result};
+use reqwest::blocking::Client;
+
+use super::api_types::ApiTx;
+use super::structure::{TxDirection, TxRecord, Wallet};
+use super::wallet_network::WalletNetwork;
+use super::DEFAULT_GAP_LIMIT;
+
+pub fn refresh_history(wallet: &mut Wallet) -> Result<usize> {
+    if wallet.addresses.is_empty() {
+        wallet.derive_next_addresses(DEFAULT_GAP_LIMIT)?;
     }
 
     let client = Client::new();
-    let base_url = entry.network.blockstream_base_url();
+    let base_url = wallet.network.blockstream_base_url();
     let own_addresses: HashSet<String> =
-        entry.addresses.iter().map(|a| a.address.clone()).collect();
+        wallet.addresses.iter().map(|a| a.address.clone()).collect();
 
     let mut tx_map: HashMap<String, TxRecord> = HashMap::new();
 
-    for addr in &entry.addresses {
+    for addr in &wallet.addresses {
         let url = format!("{base_url}/address/{}/txs", addr.address);
         let txs: Vec<ApiTx> = client
             .get(&url)
@@ -89,6 +96,6 @@ pub fn refresh_history(entry: &mut WalletEntry) -> Result<usize> {
     });
 
     let count = history.len();
-    entry.history = history;
+    wallet.history = history;
     Ok(count)
 }

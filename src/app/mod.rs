@@ -21,7 +21,7 @@ use crate::views::{
     wallets::{WalletsMessage, WalletsView},
 };
 use crate::wallet::{
-    ChangeStrategy, FeeMode, InputSource, Wallet, WalletEntry,
+    ChangeStrategy, FeeMode, InputSource, Wallet,
 };
 
 #[derive(Debug, Clone)]
@@ -46,7 +46,7 @@ pub struct App {
     pub storage_passphrase: Option<String>,
     pub language: AppLanguage,
     pub user_nickname: Option<String>,
-    pub wallets: Vec<WalletEntry>,
+    pub wallets: Vec<Wallet>,
     pub selected_wallet: usize,
 
     pub login_view: LoginView,
@@ -245,19 +245,13 @@ impl App {
         let total: i64 = self
             .wallets
             .iter()
-            .map(|entry| {
-                let wallet = Wallet { entry: entry.clone() };
-                wallet.balance()
-            })
+            .map(|wallet| wallet.balance())
             .sum();
 
         let confirmed: i64 = self
             .wallets
             .iter()
-            .map(|entry| {
-                let wallet = Wallet { entry: entry.clone() };
-                wallet.confirmed_balance()
-            })
+            .map(|wallet| wallet.confirmed_balance())
             .sum();
 
         self.dashboard
@@ -274,18 +268,14 @@ impl App {
         let mut refreshed_txs = 0usize;
         let mut errors = Vec::new();
 
-        for wallet_entry in &mut self.wallets {
-            let mut wallet = Wallet {
-                entry: wallet_entry.clone(),
-            };
+        for wallet in &mut self.wallets {
             match wallet.refresh_history() {
                 Ok(count) => {
-                    *wallet_entry = wallet.entry;
                     refreshed_wallets += 1;
                     refreshed_txs += count;
                 }
                 Err(err) => {
-                    errors.push(format!("{}: {}", wallet_entry.name, err));
+                    errors.push(format!("{}: {}", wallet.name, err));
                 }
             }
         }

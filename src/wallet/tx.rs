@@ -1,8 +1,34 @@
-use super::address::{derive_address_and_keys, derive_next_addresses};
-use super::*;
+use std::collections::{HashMap, HashSet};
+use std::str::FromStr;
+
+use anyhow::{anyhow, Context, Result};
+use bitcoin::{
+    absolute,
+    bip32::Xpriv,
+    consensus,
+    key::Secp256k1,
+    sighash::{EcdsaSighashType, SighashCache},
+    transaction::Version,
+    Address, Amount, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid, Witness,
+};
+use reqwest::blocking::Client;
+
+use super::api_types::{ApiAddressUtxo, ApiTx};
+use super::build_tx_result::BuildTxResult;
+use super::change_strategy::ChangeStrategy;
+use super::fee_mode::FeeMode;
+use super::input_source::InputSource;
+use super::spendable_utxo::SpendableUtxo;
+use super::structure::{TxDirection, TxRecord, Wallet};
+use super::tx_build_options::TxBuildOptions;
+use super::wallet_network::WalletNetwork;
+use super::{
+    DEFAULT_AUTO_FEE_RATE_SAT_VB, DEFAULT_GAP_LIMIT, DUST_LIMIT_SAT, ESTIMATE_OVERHEAD_VB,
+    ESTIMATE_P2WPKH_INPUT_VB, ESTIMATE_P2WPKH_OUTPUT_VB,
+};
 
 pub fn create_transaction_with_options(
-    entry: &mut WalletEntry,
+    wallet: &mut Wallet,
     to_address: &str,
     amount_sat: u64,
     fee_sat: u64,
@@ -12,16 +38,16 @@ pub fn create_transaction_with_options(
         return Err(anyhow!("amount_sat phải > 0"));
     }
 
-    if entry.addresses.is_empty() {
-        derive_next_addresses(entry, DEFAULT_GAP_LIMIT)?;
+    if wallet.addresses.is_empty() {
+        wallet.derive_next_addresses(DEFAULT_GAP_LIMIT)?;
     }
 
     let unchecked = Address::from_str(to_address).context("Địa chỉ nhận không hợp lệ")?;
     let to_address = unchecked
-        .require_network(entry.network.bitcoin_network())
+        .require_network(wallet.network.bitcoin_network())
         .context("Địa chỉ nhận không đúng network của ví")?;
 
-    let mut utxos = collect_spendable_utxos_by_source(entry, &options.input_source)?;
+    let mut utxos = collect_spendable_utxos_by_source(wallet, &options.input_source)?;
     utxos.sort_by_key(|u| u.value);
     utxos.reverse();
 
@@ -42,11 +68,11 @@ pub fn create_transaction_with_options(
 
     if change >= DUST_LIMIT_SAT {
         let change_address = match options.change_strategy {
-            ChangeStrategy::NewAddress => derive_next_addresses(entry, 1)?
+            ChangeStrategy::NewAddress => wallet.derive_next_addresses(1)?
                 .into_iter()
                 .next()
                 .ok_or_else(|| anyhow!("Không tạo được change address"))?,
-            ChangeStrategy::ExistingIndex(index) => entry
+            ChangeStrategy::ExistingIndex(index) => wallet
                 .addresses
                 .iter()
                 .find(|addr| addr.index == index)
@@ -55,7 +81,7 @@ pub fn create_transaction_with_options(
         };
 
         let checked_change =
-            Address::from_str(&change_address)?.require_network(entry.network.bitcoin_network())?;
+            Address::from_str(&change_address)?.require_network(wallet.network.bitcoin_network())?;
 
         tx_outs.push(TxOut {
             value: Amount::from_sat(change),
@@ -81,16 +107,16 @@ pub fn create_transaction_with_options(
         output: tx_outs,
     };
 
-    sign_transaction(entry, &selected, &mut tx)?;
+    sign_transaction(wallet, &selected, &mut tx)?;
 
     let raw_hex = consensus::encode::serialize_hex(&tx);
     let txid = tx.compute_txid().to_string();
 
     if options.broadcast {
-        broadcast_transaction(entry.network, &raw_hex)?;
+        broadcast_transaction(wallet.network, &raw_hex)?;
     }
 
-    entry.history.insert(
+    wallet.history.insert(
         0,
         TxRecord {
             txid: txid.clone(),
@@ -110,7 +136,7 @@ pub fn create_transaction_with_options(
 }
 
 pub fn estimate_auto_fee_for_amount(
-    entry: &WalletEntry,
+    wallet: &Wallet,
     amount_sat: u64,
     input_source: &InputSource,
 ) -> Result<u64> {
@@ -118,7 +144,7 @@ pub fn estimate_auto_fee_for_amount(
         return Err(anyhow!("amount_sat phải > 0"));
     }
 
-    let mut utxos = collect_spendable_utxos_by_source(entry, input_source)?;
+    let mut utxos = collect_spendable_utxos_by_source(wallet, input_source)?;
     utxos.sort_by_key(|u| u.value);
     utxos.reverse();
 
@@ -131,7 +157,7 @@ pub fn estimate_auto_fee_for_amount(
             .checked_add(utxo.value)
             .ok_or_else(|| anyhow!("Tổng UTXO bị overflow"))?;
 
-        let fee_no_change = estimate_auto_fee_sat(entry.network, selected_count, 1)?;
+        let fee_no_change = estimate_auto_fee_sat(wallet.network, selected_count, 1)?;
         if let Some(target_no_change) = amount_sat.checked_add(fee_no_change) {
             if total_input >= target_no_change {
                 let change_no_change = total_input - target_no_change;
@@ -141,7 +167,7 @@ pub fn estimate_auto_fee_for_amount(
             }
         }
 
-        let fee_change = estimate_auto_fee_sat(entry.network, selected_count, 2)?;
+        let fee_change = estimate_auto_fee_sat(wallet.network, selected_count, 2)?;
         if let Some(target_change) = amount_sat.checked_add(fee_change) {
             if total_input >= target_change {
                 let change = total_input - target_change;
@@ -158,21 +184,21 @@ pub fn estimate_auto_fee_for_amount(
 }
 
 pub fn create_send_all_transaction_with_options(
-    entry: &mut WalletEntry,
+    wallet: &mut Wallet,
     to_address: &str,
     fee_mode: FeeMode,
     options: TxBuildOptions,
 ) -> Result<BuildTxResult> {
-    if entry.addresses.is_empty() {
-        derive_next_addresses(entry, DEFAULT_GAP_LIMIT)?;
+    if wallet.addresses.is_empty() {
+        wallet.derive_next_addresses(DEFAULT_GAP_LIMIT)?;
     }
 
     let unchecked = Address::from_str(to_address).context("Địa chỉ nhận không hợp lệ")?;
     let to_address = unchecked
-        .require_network(entry.network.bitcoin_network())
+        .require_network(wallet.network.bitcoin_network())
         .context("Địa chỉ nhận không đúng network của ví")?;
 
-    let mut utxos = collect_spendable_utxos_by_source(entry, &options.input_source)?;
+    let mut utxos = collect_spendable_utxos_by_source(wallet, &options.input_source)?;
     utxos.sort_by_key(|u| u.value);
     utxos.reverse();
 
@@ -187,7 +213,7 @@ pub fn create_send_all_transaction_with_options(
 
     let fee_sat = match fee_mode {
         FeeMode::FixedSat(value) => value,
-        FeeMode::Auto => estimate_auto_fee_sat(entry.network, utxos.len(), 1)?,
+        FeeMode::Auto => estimate_auto_fee_sat(wallet.network, utxos.len(), 1)?,
     };
 
     if total_input <= fee_sat {
@@ -227,16 +253,16 @@ pub fn create_send_all_transaction_with_options(
         }],
     };
 
-    sign_transaction(entry, &utxos, &mut tx)?;
+    sign_transaction(wallet, &utxos, &mut tx)?;
 
     let raw_hex = consensus::encode::serialize_hex(&tx);
     let txid = tx.compute_txid().to_string();
 
     if options.broadcast {
-        broadcast_transaction(entry.network, &raw_hex)?;
+        broadcast_transaction(wallet.network, &raw_hex)?;
     }
 
-    entry.history.insert(
+    wallet.history.insert(
         0,
         TxRecord {
             txid: txid.clone(),
@@ -256,16 +282,16 @@ pub fn create_send_all_transaction_with_options(
 }
 
 fn collect_spendable_utxos_by_source(
-    entry: &WalletEntry,
+    wallet: &Wallet,
     input_source: &InputSource,
 ) -> Result<Vec<SpendableUtxo>> {
-    let known_indices = entry
+    let known_indices = wallet
         .addresses
         .iter()
         .map(|addr| addr.index)
         .collect::<HashSet<_>>();
 
-    let mut utxos = collect_wallet_utxos(entry)?;
+    let mut utxos = collect_wallet_utxos(wallet)?;
 
     match input_source {
         InputSource::All => {}
@@ -414,12 +440,12 @@ fn broadcast_transaction(network: WalletNetwork, raw_hex: &str) -> Result<String
     Ok(txid)
 }
 
-fn collect_wallet_utxos(entry: &WalletEntry) -> Result<Vec<SpendableUtxo>> {
+fn collect_wallet_utxos(wallet: &Wallet) -> Result<Vec<SpendableUtxo>> {
     let client = Client::new();
-    let base_url = entry.network.blockstream_base_url();
+    let base_url = wallet.network.blockstream_base_url();
     let mut utxos = Vec::new();
 
-    for addr in &entry.addresses {
+    for addr in &wallet.addresses {
         let url = format!("{base_url}/address/{}/utxo", addr.address);
         let rows: Vec<ApiAddressUtxo> = client
             .get(&url)
@@ -431,7 +457,7 @@ fn collect_wallet_utxos(entry: &WalletEntry) -> Result<Vec<SpendableUtxo>> {
             .with_context(|| format!("Không parse được UTXO của {}", addr.address))?;
 
         let checked_address =
-            Address::from_str(&addr.address)?.require_network(entry.network.bitcoin_network())?;
+            Address::from_str(&addr.address)?.require_network(wallet.network.bitcoin_network())?;
 
         for row in rows {
             utxos.push(SpendableUtxo {
@@ -449,16 +475,16 @@ fn collect_wallet_utxos(entry: &WalletEntry) -> Result<Vec<SpendableUtxo>> {
 }
 
 fn sign_transaction(
-    entry: &WalletEntry,
+    wallet: &Wallet,
     selected_utxos: &[SpendableUtxo],
     tx: &mut Transaction,
 ) -> Result<()> {
     let secp = Secp256k1::new();
-    let account_xprv = Xpriv::from_str(&entry.account_xprv)?;
+    let account_xprv = Xpriv::from_str(&wallet.account_xprv)?;
 
     for (input_index, utxo) in selected_utxos.iter().enumerate() {
         let (_, private_key, public_key) =
-            derive_address_and_keys(&secp, &account_xprv, entry.network, utxo.address_index)?;
+            Wallet::derive_address_and_keys(&secp, &account_xprv, wallet.network, utxo.address_index)?;
 
         let script_code = ScriptBuf::new_p2pkh(&public_key.pubkey_hash());
 
