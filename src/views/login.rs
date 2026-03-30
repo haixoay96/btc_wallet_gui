@@ -16,7 +16,6 @@ pub enum LoginMessage {
     NicknameChanged(String),
     PassphraseChanged(String),
     ConfirmPassphraseChanged(String),
-    BackupPathChanged(String),
     BrowseBackupPath,
     Submit,
     SetMode(LoginMode),
@@ -65,12 +64,16 @@ impl LoginView {
 
     pub fn set_can_create_new_passphrase(&mut self, can_create: bool) {
         self.can_create_new_passphrase = can_create;
-        if !can_create {
+        if can_create {
+            // No passphrase exists yet, default to NewWallet mode
+            self.mode = LoginMode::NewWallet;
+        } else {
+            // Passphrase exists, use ExistingWallet mode
             self.mode = LoginMode::ExistingWallet;
-            self.nickname.clear();
-            self.confirm_passphrase.clear();
-            self.backup_path.clear();
         }
+        self.nickname.clear();
+        self.confirm_passphrase.clear();
+        self.backup_path.clear();
     }
 
     pub fn set_mode(&mut self, mode: LoginMode) {
@@ -112,11 +115,6 @@ impl LoginView {
             }
             LoginMessage::ConfirmPassphraseChanged(value) => {
                 self.confirm_passphrase = value;
-                self.error = None;
-                None
-            }
-            LoginMessage::BackupPathChanged(value) => {
-                self.backup_path = value;
                 self.error = None;
                 None
             }
@@ -235,12 +233,8 @@ impl LoginView {
         .style(text_color(Colors::TEXT_SECONDARY));
 
         let mode_switcher: Element<'_, LoginMessage> = if self.can_create_new_passphrase {
+            // When no passphrase exists, show only NewWallet and ImportBackup options
             row![
-                mode_button(
-                    t("Đăng nhập", "Login").to_string(),
-                    self.mode == LoginMode::ExistingWallet
-                )
-                .on_press(LoginMessage::SetMode(LoginMode::ExistingWallet)),
                 mode_button(
                     t("Tạo passphrase mới", "Create new passphrase").to_string(),
                     self.mode == LoginMode::NewWallet
@@ -256,7 +250,17 @@ impl LoginView {
             .align_y(Alignment::Center)
             .into()
         } else {
-            Space::with_height(0).into()
+            // When passphrase exists, show only Login option
+            row![
+                mode_button(
+                    t("Đăng nhập", "Login").to_string(),
+                    self.mode == LoginMode::ExistingWallet
+                )
+                .on_press(LoginMessage::SetMode(LoginMode::ExistingWallet)),
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center)
+            .into()
         };
 
         let nickname_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
@@ -298,35 +302,25 @@ impl LoginView {
         };
 
         let backup_path_input: Element<'_, LoginMessage> = if self.mode == LoginMode::ImportBackup {
-            column![
-                text(t("Đường dẫn file backup", "Backup File Path"))
-                    .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
-                Space::with_height(4),
-                row![
-                    text_input(
-                        t(
-                            "Ví dụ: ~/Downloads/wallet_backup.enc",
-                            "Example: ~/Downloads/wallet_backup.enc"
-                        ),
-                        &self.backup_path
-                    )
-                    .on_input(LoginMessage::BackupPathChanged)
-                    .on_submit(LoginMessage::Submit)
+            let mut col = column![
+                button(text(t("Chọn file backup", "Choose backup file")).size(14))
+                    .on_press(LoginMessage::BrowseBackupPath)
                     .padding(12)
-                    .size(16)
-                    .style(input_style())
-                    .width(Length::Fill),
-                    Space::with_width(8),
-                    button(text(t("Chọn file", "Choose file")).size(14))
-                        .on_press(LoginMessage::BrowseBackupPath)
-                        .padding(12)
-                        .style(secondary_button_style()),
-                ]
-                .align_y(Alignment::Center),
+                    .style(secondary_button_style()),
             ]
-            .spacing(2)
-            .into()
+            .spacing(8)
+            .align_x(Alignment::Center);
+
+            // Show file path if selected
+            if !self.backup_path.trim().is_empty() {
+                col = col.push(
+                    text(format!("📄 {}", self.backup_path))
+                        .size(13)
+                        .style(text_color(Colors::TEXT_SECONDARY))
+                );
+            }
+
+            col.into()
         } else {
             Space::with_height(0).into()
         };
