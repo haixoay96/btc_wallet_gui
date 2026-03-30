@@ -106,16 +106,6 @@ pub enum TxDirection {
     SelfTransfer,
 }
 
-impl TxDirection {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Incoming => "in",
-            Self::Outgoing => "out",
-            Self::SelfTransfer => "self",
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Wallet {
     pub name: String,
@@ -159,16 +149,7 @@ impl WalletNetwork {
             Self::Testnet => "https://blockstream.info/testnet/api",
         }
     }
-
-    pub fn parse(value: &str) -> Result<Self> {
-        match value.trim().to_ascii_lowercase().as_str() {
-            "mainnet" | "main" | "bitcoin" | "btc" => Ok(Self::Mainnet),
-            "testnet" | "test" | "tb" => Ok(Self::Testnet),
-            _ => Err(anyhow!(
-                "Network không hợp lệ: {value}. Dùng mainnet hoặc testnet"
-            )),
-        }
-    }
+  
 }
 
 impl Wallet {

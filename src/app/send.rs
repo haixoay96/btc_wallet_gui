@@ -3,7 +3,7 @@ use iced::Task;
 use crate::i18n::t;
 use crate::utils::short_txid;
 use crate::views::send::{SendEvent, SendMessage};
-use crate::wallet::{FeeMode, TxBuildOptions, Wallet};
+use crate::wallet::{FeeMode, TxBuildOptions};
 
 use super::{App, AppMessage, SendRequest};
 
