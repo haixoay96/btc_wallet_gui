@@ -4,187 +4,191 @@
 
 ## 0. Cập nhật gần đây
 
-- **Cập nhật giao diện Login:**
-  - Khi chưa có passphrase: chỉ hiện 2 tab "Tạo passphrase mới" và "Import backup" (ẩn tab "Đăng nhập").
-  - Import backup: chỉ hiện nút "Chọn file backup" (bỏ ô nhập đường dẫn thủ công), hiển thị đường dẫn file sau khi chọn.
-  - Nút "Chọn file backup" nhỏ gọn, không chiếm toàn bộ chiều ngang.
-- **Cập nhật Settings:**
-  - Xuất backup: bấm nút → mở dialog chọn nơi lưu ngay (giống export mnemonic).
-  - Các nút trong Settings có kích thước vừa đủ nội dung, không full width.
-- Thêm chọn ngôn ngữ ngay trên màn hình Login (không cần đăng nhập trước).
-- Ngôn ngữ đã chọn được ghi nhớ cho lần mở app sau.
-- Mặc định lần chạy đầu tiên: English.
+### Giao diện Login (Màn hình khởi động)
+- **Khi chưa có passphrase:** Chỉ hiện 2 tab "Tạo passphrase mới" và "Import backup" (ẩn tab "Đăng nhập" vì chưa có dữ liệu)
+- **Import backup:** Chỉ hiện nút "Chọn file backup" (bỏ ô nhập đường dẫn thủ công), hiển thị đường dẫn file sau khi chọn
+- **Nút "Chọn file backup":** Nhỏ gọn, vừa đủ nội dung
+- **Chọn ngôn ngữ:** Có sẵn ngay tại màn hình Login, không cần đăng nhập trước
+
+### Giao diện Settings (Cài đặt)
+- **Xuất backup:** Bấm nút → mở dialog chọn nơi lưu ngay (giống export mnemonic), không cần nhập path thủ công
+- **Kích thước nút:** Các nút vừa đủ nội dung, không chiếm toàn bộ chiều ngang
+
+### Hệ thống ngôn ngữ
+- Hỗ trợ English và Tiếng Việt
+- Ngôn ngữ đã chọn được lưu lại, hiển thị đúng khi mở app lần sau
+- Mặc định lần chạy đầu tiên: English
 
 ## 1. Tính năng chính
 
-- Đăng nhập bằng passphrase.
-- Tạo dữ liệu ví mới với passphrase + nickname.
-- Import backup khi app chưa có dữ liệu.
-- Chọn ngôn ngữ ngay tại Login hoặc trong Settings.
-- Dashboard tổng quan số dư (tổng, confirmed, số lượng ví).
-- Quản lý nhiều ví: tạo, chọn, xóa.
-- Import ví từ:
-  - BIP39 mnemonic.
-  - SLIP-0039 shares.
-- Send BTC:
-  - Chọn ví gửi.
-  - Fee auto/fixed.
-  - Send-all.
-  - Tùy chọn nâng cao input/change.
-- Receive BTC:
-  - Chọn ví nhận.
-  - Derive địa chỉ mới.
-  - Copy địa chỉ.
-  - Hiển thị QR code trong popup overlay.
-- History giao dịch có filter All/Incoming/Outgoing.
-- Settings:
-  - Đổi passphrase.
-  - Export backup mã hóa toàn app.
-  - Clear toàn bộ dữ liệu (yêu cầu passphrase hiện tại).
-  - Chọn ngôn ngữ ứng dụng.
-- Mnemonic backup:
-  - Yêu cầu nhập passphrase để xem mnemonic.
-  - Bài test xác nhận backup.
-  - Cảnh báo ví chưa backup.
-  - Export mnemonic ra PDF.
-- SLIP-0039:
-  - Tách mnemonic thành nhiều shares theo ngưỡng K/N.
-  - Export thành thư mục PDF (mỗi share một file).
+### Đăng nhập & Khởi tạo
+- Đăng nhập bằng passphrase (khi đã có dữ liệu)
+- Tạo dữ liệu ví mới với passphrase + nickname (khi chưa có dữ liệu)
+- Import backup khi app chưa có dữ liệu
 
-## 2. Đa ngôn ngữ
+### Quản lý ví
+- Tạo ví mới (chọn network: Testnet/Mainnet)
+- Import ví từ BIP39 mnemonic
+- Import ví từ SLIP-0039 shares
+- Xóa ví
+- Xem danh sách tất cả ví
 
-- Hỗ trợ:
-  - English
-  - Tiếng Việt
-- Mặc định lần mở ứng dụng đầu tiên: `English`.
-- Đổi ngôn ngữ ở:
-  - Login screen.
-  - `Settings`.
-- Ngôn ngữ đã chọn được lưu lại để màn hình khởi động/login lần sau hiển thị đúng ngôn ngữ đó.
+### Gửi BTC (Send)
+- Chọn ví gửi
+- Nhập địa chỉ nhận và số lượng
+- Chọn chế độ phí: Auto hoặc Fixed
+- Tùy chọn gửi toàn bộ số dư (Send-all)
+- Tùy chọn nâng cao: input source, change address
 
-## 3. Các loại ví hỗ trợ
+### Nhận BTC (Receive)
+- Chọn ví nhận
+- Tạo địa chỉ mới
+- Copy địa chỉ
+- Hiển thị QR code trong popup overlay
 
-Hiện tại app hỗ trợ các workflow ví sau:
+### Lịch sử giao dịch
+- Xem lịch sử theo ví đang chọn
+- Lọc: All / Incoming / Outgoing
 
-- Ví HD tạo mới trong app:
-  - Sinh mnemonic.
-  - Derive nhiều địa chỉ nhận.
-  - Theo dõi lịch sử, số dư, gửi/nhận.
-- Ví import từ BIP39 mnemonic:
-  - Dùng lại seed phrase chuẩn để phục hồi ví.
-  - Được đánh dấu đã có backup.
-- Ví import từ SLIP-0039 shares:
-  - Khôi phục mnemonic từ đủ số mảnh theo ngưỡng K.
-  - Sau khi khôi phục sẽ hoạt động như ví bình thường.
+### Backup & Mnemonic
+- Xem mnemonic (yêu cầu nhập passphrase)
+- Bài test xác nhận backup
+- Cảnh báo ví chưa backup
+- Export mnemonic ra PDF
+- Tách mnemonic thành SLIP-0039 shares (K/N)
+- Export shares thành nhiều file PDF
 
-Network:
+### Cài đặt (Settings)
+- Đổi passphrase
+- Chọn ngôn ngữ ứng dụng
+- Export backup mã hóa toàn app
+- Clear toàn bộ dữ liệu (yêu cầu passphrase hiện tại)
 
-- `Testnet`
-- `Mainnet`
-
-## 4. Giải thích thêm về SLIP-0039 (tách mnemonic thành nhiều mảnh)
-
-SLIP-0039 giúp tăng an toàn backup bằng cách chia bí mật thành nhiều mảnh.
-
-- Bạn chọn mô hình `K/N`.
-  - Ví dụ `2/3`: tạo 3 mảnh, cần bất kỳ 2 mảnh để khôi phục.
-- Mỗi mảnh là một cụm từ riêng (share).
-- Một mảnh đơn lẻ (khi K > 1) không đủ để khôi phục toàn bộ ví.
-- App cho export các share thành nhiều file PDF trong cùng 1 thư mục.
-
-Khuyến nghị:
-
-- Không lưu tất cả share cùng một nơi.
-- Tách share ra các vị trí vật lý khác nhau.
-- Bảo vệ thêm bằng passphrase SLIP-0039 nếu cần.
-- Vẫn nên kiểm tra quy trình khôi phục định kỳ trên môi trường an toàn.
-
-## 5. Hướng dẫn sử dụng nhanh theo màn hình
+## 2. Hướng dẫn sử dụng theo màn hình
 
 ### Login / Startup
 
-- Nếu app chưa có dữ liệu:
-  - Tạo passphrase mới, nhập nickname.
-  - Hoặc import backup.
-- Nếu app đã có dữ liệu:
-  - Đăng nhập bằng passphrase hiện có.
-- Có thể đổi ngôn ngữ ngay tại màn hình này trước khi thao tác tiếp.
+**Khi app chưa có dữ liệu:**
+- Tab "Tạo passphrase mới": Nhập nickname + passphrase để tạo ví mới
+- Tab "Import backup": Chọn file backup → nhập passphrase để khôi phục
 
-### Wallets
+**Khi app đã có dữ liệu:**
+- Tab "Đăng nhập": Nhập passphrase để truy cập
 
-- Tạo ví mới (chọn network).
-- Import ví từ mnemonic hoặc từ SLIP-0039 shares.
+### Dashboard
+- Xem tổng quan số dư (tổng, confirmed)
+- Số lượng ví
+- Nút làm mới dữ liệu
+
+### Wallets (Quản lý ví)
+- Tạo ví mới
+- Import ví từ mnemonic hoặc SLIP-0039 shares
+- Chọn ví để xem chi tiết
 - Với ví có mnemonic:
-  - Nhập passphrase để hiện mnemonic.
-  - Thực hiện bài test backup.
-  - Export mnemonic PDF nếu cần.
-  - Có thể tách mnemonic thành SLIP-0039 shares để backup phân mảnh.
+  - Xem mnemonic (cần passphrase)
+  - Thực hiện bài test backup
+  - Export mnemonic PDF
+  - Tách thành SLIP-0039 shares
 
-### Send
+### Send (Gửi BTC)
+- Chọn ví gửi từ danh sách
+- Xem số dư khả dụng
+- Nhập địa chỉ nhận
+- Nhập số lượng (hoặc bật Send-all)
+- Chọn chế độ phí
+- Gửi giao dịch
 
-- Chọn ví gửi.
-- Nhập địa chỉ nhận + amount.
-- Chọn fee mode:
-  - Auto (có thể estimate).
-  - Fixed.
-- Có thể bật send-all hoặc dùng advanced options.
+### Receive (Nhận BTC)
+- Chọn ví nhận
+- Tạo địa chỉ mới
+- Copy địa chỉ
+- Mở popup QR code
 
-### Receive
+### History (Lịch sử)
+- Xem lịch sử giao dịch
+- Lọc theo loại: All / Incoming / Outgoing
 
-- Chọn ví nhận.
-- Tạo địa chỉ mới nếu cần.
-- Copy địa chỉ.
-- Mở popup QR code để chia sẻ nhanh.
+### Settings (Cài đặt)
+- Bảo mật: Đổi passphrase
+- Xuất backup: Lưu file backup mã hóa
+- Thông tin: Giới thiệu ứng dụng
+- Vùng nguy hiểm: Xóa toàn bộ dữ liệu
 
-### History
+## 3. Đa ngôn ngữ
 
-- Xem lịch sử theo ví đang chọn.
-- Lọc giao dịch theo All / Incoming / Outgoing.
+- **Hỗ trợ:** English, Tiếng Việt
+- **Mặc định:** English (lần chạy đầu tiên)
+- **Đổi ngôn ngữ tại:**
+  - Màn hình Login
+  - Settings
+- **Lưu tự động:** Ngôn ngữ đã chọn được lưu lại cho lần sau
 
-### Settings
+## 4. Các loại ví hỗ trợ
 
-- Đổi passphrase.
-- Chọn ngôn ngữ.
-- Export backup mã hóa toàn app.
-- Clear toàn bộ dữ liệu app (cần passphrase hiện tại).
+### Ví HD tạo mới
+- Sinh mnemonic BIP39
+- Derive nhiều địa chỉ nhận
+- Theo dõi lịch sử, số dư
+- Gửi/nhận BTC
+
+### Ví import từ BIP39 mnemonic
+- Khôi phục từ seed phrase chuẩn
+- Đánh dấu đã có backup
+
+### Ví import từ SLIP-0039 shares
+- Khôi phục từ K/N shares
+- Hoạt động như ví bình thường sau khôi phục
+
+### Network hỗ trợ
+- Testnet
+- Mainnet
+
+## 5. SLIP-0039 (Backup phân mảnh)
+
+### Giới thiệu
+SLIP-0039 chia bí mật thành nhiều mảnh để tăng an toàn.
+
+### Cách sử dụng
+1. Chọn mô hình K/N (ví dụ: 2/3 = cần 2 trong 3 mảnh)
+2. App tạo N mảnh (shares)
+3. Mỗi mảnh là một cụm từ riêng
+4. Cần K mảnh để khôi phục
+
+### Khuyến nghị
+- Không lưu tất cả share cùng một nơi
+- Tách share ra các vị trí vật lý khác nhau
+- Bảo vệ thêm bằng passphrase SLIP-0039 nếu cần
+- Kiểm tra quy trình khôi phục định kỳ
 
 ## 6. Lưu ý an toàn
 
-- Passphrase bảo vệ dữ liệu local của app, không thay thế mnemonic backup.
-- Ai có mnemonic (hoặc đủ shares SLIP-0039) có thể khôi phục và dùng quỹ.
-- Ưu tiên backup mnemonic/share offline.
-- Không chụp màn hình mnemonic trên thiết bị không tin cậy.
+- **Passphrase:** Bảo vệ dữ liệu local, không thay thế mnemonic backup
+- **Mnemonic/Shares:** Ai có chúng có thể khôi phục và dùng quỹ
+- **Ưu tiên:** Backup mnemonic/share offline
+- **Tránh:** Chụp màn hình mnemonic trên thiết bị không tin cậy
 
 ## 7. Build và chạy ứng dụng
 
-### 7.1 Yêu cầu
+### Yêu cầu
+- Rust stable (cài bằng `rustup`)
+- Cargo (đi kèm Rust)
+- Linux: có thể cần package GUI (Wayland/X11)
 
-- Rust stable (khuyên dùng cài bằng `rustup`).
-- Cargo (đi kèm Rust).
-- Trên Linux có thể cần thêm package hệ thống cho GUI (Wayland/X11 tùy distro).
-
-### 7.2 Quick start
-
+### Quick start
 ```bash
 cargo fmt
 cargo check
 cargo run
 ```
 
-### 7.3 Build release
-
+### Build release
 ```bash
 cargo build --release
 ```
 
-Binary nằm tại:
+Binary tại: `target/release/btc_wallet_gui`
 
-```bash
-target/release/btc_wallet_gui
-```
-
-### 7.4 Kiểm tra code
-
+### Kiểm tra code
 ```bash
 cargo fmt
 cargo check
@@ -192,8 +196,26 @@ cargo check
 
 ## 8. Công nghệ sử dụng
 
-- UI: `iced`
-- Crypto storage: `ChaCha20-Poly1305` + `Argon2id`
-- Bitcoin stack: `bdk` và các thành phần liên quan
-- File picker native: `rfd`
-- PDF export: `printpdf`
+- **UI Framework:** iced
+- **Mã hóa:** ChaCha20-Poly1305 + Argon2id
+- **Bitcoin:** bdk và các thành phần liên quan
+- **File picker:** rfd (native)
+- **PDF export:** printpdf
+
+## 9. Cấu trúc project
+
+```
+src/
+├── app/           # Logic ứng dụng chính
+├── views/         # Giao diện người dùng
+├── storage/       # Lưu trữ và mã hóa
+├── wallet/        # Logic ví Bitcoin
+├── utils/         # Tiện ích hỗ trợ
+├── theme.rs       # Màu sắc và style
+├── i18n.rs        # Đa ngôn ngữ
+└── main.rs        # Điểm khởi chạy
+```
+
+## 10. License
+
+MIT License
