@@ -4,6 +4,13 @@
 
 ## 0. Cập nhật gần đây
 
+- **Cập nhật giao diện Login:**
+  - Khi chưa có passphrase: chỉ hiện 2 tab "Tạo passphrase mới" và "Import backup" (ẩn tab "Đăng nhập").
+  - Import backup: chỉ hiện nút "Chọn file backup" (bỏ ô nhập đường dẫn thủ công), hiển thị đường dẫn file sau khi chọn.
+  - Nút "Chọn file backup" nhỏ gọn, không chiếm toàn bộ chiều ngang.
+- **Cập nhật Settings:**
+  - Xuất backup: bấm nút → mở dialog chọn nơi lưu ngay (giống export mnemonic).
+  - Các nút trong Settings có kích thước vừa đủ nội dung, không full width.
 - Thêm chọn ngôn ngữ ngay trên màn hình Login (không cần đăng nhập trước).
 - Ngôn ngữ đã chọn được ghi nhớ cho lần mở app sau.
 - Mặc định lần chạy đầu tiên: English.
