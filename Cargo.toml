@@ -43,3 +43,4 @@ long_description = """
 Desktop Bitcoin wallet with mnemonic backup and SLIP-0039 support.
 Supports multiple wallets, send/receive BTC, and transaction history.
 """
+before-packaging-command = "cargo build --release"  # ← Thêm dòng này
