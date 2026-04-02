@@ -230,6 +230,38 @@ pub fn card_style() -> Box<dyn Fn(&Theme) -> container::Style> {
     })
 }
 
+/// Style for popup overlay background (semi-transparent dark)
+pub fn popup_overlay_style() -> Box<dyn Fn(&Theme) -> container::Style> {
+    Box::new(|_theme: &Theme| container::Style {
+        background: Some(Background::Color(color_with_alpha(Colors::BG_SECONDARY, 0.7))),
+        border: Border {
+            radius: 0.0.into(),
+            width: 0.0,
+            color: Color::TRANSPARENT,
+        },
+        shadow: Shadow::default(),
+        text_color: Some(Colors::TEXT_PRIMARY),
+    })
+}
+
+/// Style for popup dialog (with stronger shadow)
+pub fn popup_dialog_style() -> Box<dyn Fn(&Theme) -> container::Style> {
+    Box::new(|_theme: &Theme| container::Style {
+        background: Some(Background::Color(Colors::BG_CARD)),
+        border: Border {
+            radius: 16.0.into(),
+            width: 2.0,
+            color: Colors::ACCENT_PURPLE,
+        },
+        shadow: Shadow {
+            color: Color::from_rgba(0.0, 0.0, 0.0, 0.8),
+            offset: Vector::new(0.0, 16.0),
+            blur_radius: 48.0,
+        },
+        text_color: Some(Colors::TEXT_PRIMARY),
+    })
+}
+
 /// Style for input fields with focus state
 pub fn input_style() -> Box<dyn Fn(&Theme, text_input::Status) -> text_input::Style> {
     Box::new(|_theme: &Theme, status: text_input::Status| {

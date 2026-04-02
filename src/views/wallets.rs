@@ -1,12 +1,12 @@
 use iced::{
     widget::{button, column, container, row, scrollable, text, text_input, Space},
-    Alignment, Element, Length,
+    Alignment, Element, Length, Padding,
 };
 
 use crate::i18n::t;
 use crate::theme::{
-    card_style, danger_button_style, primary_button_style, secondary_button_style, text_color,
-    Colors,
+    card_style, danger_button_style, popup_dialog_style, popup_overlay_style,
+    primary_button_style, secondary_button_style, text_color, Colors,
 };
 use crate::wallet::{Wallet, WalletNetwork};
 
@@ -977,41 +977,56 @@ impl WalletsView {
                 .map(|wallet| wallet.name.clone())
                 .unwrap_or_default();
 
-            let dialog = container(
+            container(
                 column![
-                    text(t("Xác nhận xóa", "Confirm Delete"))
-                        .size(20)
-                        .style(text_color(Colors::ERROR)),
-                    Space::with_height(12),
-                    text(format!("{} '{wallet_name}'?", t("Xóa ví", "Delete wallet")))
-                        .size(16)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
-                    Space::with_height(16),
-                    row![
-                        button(text(t("Hủy", "Cancel")).size(14))
-                            .on_press(WalletsMessage::CancelDelete)
-                            .padding(10)
-                            .style(secondary_button_style()),
-                        Space::with_width(12),
-                        button(text(t("Xóa", "Delete")).size(14))
-                            .on_press(WalletsMessage::ConfirmDelete(index))
-                            .padding(10)
-                            .style(danger_button_style()),
-                    ],
+                    container(Space::with_height(Length::Fill))
+                        .height(Length::FillPortion(1)),
+                    container(
+                        column![
+                            text(t("Xác nhận xóa", "Confirm Delete"))
+                                .size(20)
+                                .style(text_color(Colors::ERROR)),
+                            Space::with_height(12),
+                            text(format!("{} '{wallet_name}'?", t("Xóa ví", "Delete wallet")))
+                                .size(16)
+                                .style(text_color(Colors::TEXT_PRIMARY)),
+                            Space::with_height(16),
+                            row![
+                                button(text(t("Hủy", "Cancel")).size(14))
+                                    .on_press(WalletsMessage::CancelDelete)
+                                    .padding(10)
+                                    .style(secondary_button_style()),
+                                Space::with_width(12),
+                                button(text(t("Xóa", "Delete")).size(14))
+                                    .on_press(WalletsMessage::ConfirmDelete(index))
+                                    .padding(10)
+                                    .style(danger_button_style()),
+                            ]
+                            .spacing(8),
+                        ]
+                        .spacing(0)
+                        .padding(24),
+                    )
+                    .style(popup_dialog_style())
+                    .width(Length::Fixed(420.0))
+                    .center_x(Length::Fill),
+                    container(Space::with_height(Length::Fill))
+                        .height(Length::FillPortion(3)),
                 ]
-                .spacing(8)
-                .padding(24),
+                .width(Length::Fill)
+                .height(Length::Fill),
             )
-            .style(card_style())
-            .width(Length::Fixed(420.0));
-
-            content = content.push(container(dialog).center_x(Length::Fill).padding(20));
-        }
-
-        scrollable(content)
+            .style(popup_overlay_style())
             .width(Length::Fill)
             .height(Length::Fill)
+            .padding(Padding::from([0, 60]))
             .into()
+        } else {
+            scrollable(content)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into()
+        }
     }
 
     fn backup_panel<'a>(
