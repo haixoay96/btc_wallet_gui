@@ -34,7 +34,7 @@ panic = 'abort'
 [package.metadata.packager]
 name = "Bitcoin Wallet"
 identifier = "com.btcwallet.gui"
-icons = ["icon.icns", "icon.png"]
+icons = ["icons/icon.icns", "icons/icon.png"]
 resources = ["btc_wallet_gui.desktop"]
 copyright = "Copyright (c) 2026"
 category = "Finance"
