@@ -1,0 +1,132 @@
+name: Build All Platforms
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Intel
+            os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: btc_wallet_gui_macos_intel
+          - name: macOS Apple Silicon
+            os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: btc_wallet_gui_macos_arm64
+          - name: Windows x64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: btc_wallet_gui_windows_x64
+          - name: Linux x64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: btc_wallet_gui_linux_x64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Install dependencies (Linux only)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libgtk-3-dev \
+          libwebkit2gtk-4.0-dev \
+          libappindicator3-dev \
+          librsvg2-dev \
+          patchelf
+
+    - name: Build release
+      run: cargo build --release --target ${{ matrix.target }}
+
+    - name: Package (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        cd target/${{ matrix.target }}/release
+        tar -czf ../../../${{ matrix.artifact }}.tar.gz btc_wallet_gui
+        cd ../../..
+
+    - name: Package (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cd target/${{ matrix.target }}/release
+        7z a ../../../${{ matrix.artifact }}.zip btc_wallet_gui.exe
+        cd ../../..
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact }}
+        path: |
+          ${{ matrix.artifact }}.tar.gz
+          ${{ matrix.artifact }}.zip
+
+  create-universal-macos:
+    name: Create macOS Universal Binary
+    needs: build
+    runs-on: macos-latest
+    
+    steps:
+    - name: Download Intel binary
+      uses: actions/download-artifact@v4
+      with:
+        name: btc_wallet_gui_macos_intel
+
+    - name: Download ARM64 binary
+      uses: actions/download-artifact@v4
+      with:
+        name: btc_wallet_gui_macos_arm64
+
+    - name: Extract binaries
+      run: |
+        tar -xzf btc_wallet_gui_macos_intel.tar.gz
+        mv btc_wallet_gui btc_wallet_gui_intel
+        tar -xzf btc_wallet_gui_macos_arm64.tar.gz
+        mv btc_wallet_gui btc_wallet_gui_arm64
+
+    - name: Create universal binary
+      run: |
+        lipo -create \
+          btc_wallet_gui_intel \
+          btc_wallet_gui_arm64 \
+          -output btc_wallet_gui_macos_universal
+        chmod +x btc_wallet_gui_macos_universal
+        tar -czf btc_wallet_gui_macos_universal.tar.gz btc_wallet_gui_macos_universal
+
+    - name: Upload universal binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: btc_wallet_gui_macos_universal
+        path: btc_wallet_gui_macos_universal.tar.gz
