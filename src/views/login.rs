@@ -250,17 +250,8 @@ impl LoginView {
             .align_y(Alignment::Center)
             .into()
         } else {
-            // When passphrase exists, show only Login option
-            row![
-                mode_button(
-                    t("Đăng nhập", "Login").to_string(),
-                    self.mode == LoginMode::ExistingWallet
-                )
-                .on_press(LoginMessage::SetMode(LoginMode::ExistingWallet)),
-            ]
-            .spacing(10)
-            .align_y(Alignment::Center)
-            .into()
+            // When passphrase exists, hide tab bar (only one tab)
+            Space::with_height(0).into()
         };
 
         let nickname_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
