@@ -13,6 +13,7 @@ impl App {
             match event {
                 SendEvent::SelectWallet(index) => return self.handle_select_wallet(index),
                 SendEvent::EstimateSendFee { amount_sat, input_source } => return self.handle_estimate_send_fee(amount_sat, input_source),
+                SendEvent::MaxAmount { input_source } => return self.handle_max_amount(input_source),
                 SendEvent::SendTransaction(req) => return self.handle_send_transaction(req),
             }
         }
@@ -27,7 +28,7 @@ impl App {
         if let Some(wallet) = self.wallets.get(self.selected_wallet) {
             match wallet.estimate_auto_fee_for_amount(amount_sat, &input_source) {
                 Ok(fee) => {
-                    self.send_view.set_estimated_fee(fee);
+                    self.send_view.set_fee_amount(fee);
                     self.status =
                         Some(format!("{}: {fee} sat", t("Phí ước tính", "Estimated fee")));
                     self.error = None;
@@ -37,6 +38,49 @@ impl App {
                     self.error = Some(format!(
                         "{}: {err}",
                         t("Ước tính phí thất bại", "Fee estimation failed")
+                    ));
+                }
+            }
+        } else {
+            let message = t("Chưa chọn ví", "No wallet selected").to_string();
+            self.send_view.set_error(message.clone());
+            self.error = Some(message);
+        }
+        Task::none()
+    }
+
+    pub fn handle_max_amount(
+        &mut self,
+        input_source: crate::wallet::InputSource,
+    ) -> Task<AppMessage> {
+        if let Some(wallet) = self.wallets.get(self.selected_wallet) {
+            let balance = wallet.balance();
+            if balance <= 0 {
+                let message = t("Số dư bằng 0", "Balance is zero").to_string();
+                self.send_view.set_error(message.clone());
+                self.error = Some(message);
+                return Task::none();
+            }
+
+            // Use estimate_fee_for_send_all to get accurate max amount and fee
+            match wallet.estimate_fee_for_send_all(&input_source) {
+                Ok((max_amount, fee)) => {
+                    self.send_view.set_max_amount(max_amount);
+                    self.send_view.set_fee_amount(fee);
+                    self.status = Some(format!(
+                        "{}: {} sat (- {} sat {})",
+                        t("Số lượng tối đa", "Max amount"),
+                        max_amount,
+                        fee,
+                        t("phí", "fee")
+                    ));
+                    self.error = None;
+                }
+                Err(err) => {
+                    self.send_view.set_error(err.to_string());
+                    self.error = Some(format!(
+                        "{}: {err}",
+                        t("Không thể tính số lượng tối đa", "Cannot calculate max amount")
                     ));
                 }
             }

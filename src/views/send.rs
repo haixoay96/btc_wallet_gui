@@ -1,6 +1,6 @@
 use iced::{
     widget::{
-        button, column, container, pick_list, radio, row, scrollable, text, text_input, Space,
+        button, column, container, pick_list, row, scrollable, text, text_input, Space,
     },
     Alignment, Element, Length,
 };
@@ -12,6 +12,49 @@ use crate::theme::{
     secondary_button_style, text_color, Colors,
 };
 use crate::wallet::{ChangeStrategy, FeeMode, InputSource, Wallet};
+
+fn format_btc_and_sat(amount_sat: u64) -> String {
+    let amount_btc = amount_sat as f64 / 100_000_000.0;
+    format!("{:.8} BTC ({} sat)", amount_btc, amount_sat)
+}
+
+fn parse_btc_to_sat(raw: &str, field_vi: &str, field_en: &str) -> Result<u64, String> {
+    let value = raw.trim();
+    if value.is_empty() {
+        return Err(format!(
+            "{} {}",
+            t("Vui lòng nhập", "Please enter"),
+            t(field_vi, field_en)
+        ));
+    }
+
+    let parsed = value.parse::<f64>().map_err(|_| {
+        format!(
+            "{} {}",
+            t(field_vi, field_en),
+            t("phải là số hợp lệ", "must be a valid number")
+        )
+    })?;
+
+    if parsed <= 0.0 {
+        return Err(format!(
+            "{} {}",
+            t(field_vi, field_en),
+            t("phải lớn hơn 0", "must be greater than 0")
+        ));
+    }
+
+    let amount_sat = (parsed * 100_000_000.0).round() as u64;
+    if amount_sat == 0 {
+        return Err(format!(
+            "{} {}",
+            t(field_vi, field_en),
+            t("quá nhỏ, phải >= 0.00000001 BTC", "too small, must be >= 0.00000001 BTC")
+        ));
+    }
+
+    Ok(amount_sat)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimpleFeeMode {
@@ -27,6 +70,7 @@ pub enum SendMessage {
     FeeModeChanged(SimpleFeeMode),
     FeeAmountChanged(String),
     UseAllFunds(bool),
+    MaxAmount,
     FromAddressChanged(String),
     ChangeAddressChanged(String),
     BroadcastChanged(bool),
@@ -39,6 +83,7 @@ pub enum SendMessage {
 pub enum SendEvent {
     SelectWallet(usize),
     EstimateSendFee { amount_sat: u64, input_source: crate::wallet::InputSource },
+    MaxAmount { input_source: crate::wallet::InputSource },
     SendTransaction(crate::app::SendRequest),
 }
 
@@ -78,6 +123,13 @@ impl SendView {
         self.error = None;
     }
 
+    pub fn set_fee_amount(&mut self, fee_sat: u64) {
+        let fee_btc = fee_sat as f64 / 100_000_000.0;
+        self.fee_amount = format!("{:.8}", fee_btc).trim_end_matches('0').trim_end_matches('.').to_string();
+        self.estimated_fee = Some(fee_sat);
+        self.error = None;
+    }
+
     pub fn set_error(&mut self, message: impl Into<String>) {
         self.error = Some(message.into());
     }
@@ -85,6 +137,13 @@ impl SendView {
     pub fn set_success(&mut self, message: impl Into<String>) {
         self.success = Some(message.into());
         self.error = None;
+    }
+
+    pub fn set_max_amount(&mut self, amount_sat: u64) {
+        let amount_btc = amount_sat as f64 / 100_000_000.0;
+        self.amount = format!("{:.8}", amount_btc).trim_end_matches('0').trim_end_matches('.').to_string();
+        self.error = None;
+        self.estimated_fee = None;
     }
 
     pub fn update(&mut self, message: SendMessage) -> Option<SendEvent> {
@@ -106,6 +165,16 @@ impl SendView {
                 self.estimated_fee = None;
                 None
             }
+            SendMessage::MaxAmount => {
+                self.error = None;
+                self.success = None;
+                Some(SendEvent::MaxAmount { 
+                    input_source: match parse_input_source(&self.from_address) {
+                        Ok(value) => value,
+                        Err(_) => crate::wallet::InputSource::All,
+                    }
+                })
+            }
             SendMessage::FeeModeChanged(mode) => {
                 self.fee_mode = mode;
                 self.error = None;
@@ -119,7 +188,10 @@ impl SendView {
             SendMessage::UseAllFunds(use_all) => {
                 self.use_all_funds = use_all;
                 if use_all {
+                    // Auto-fill with available balance when toggling on
                     self.estimated_fee = None;
+                    // Note: amount will be calculated when sending
+                    // User can still edit amount manually if needed
                 }
                 self.error = None;
                 None
@@ -151,7 +223,7 @@ impl SendView {
                     return None;
                 }
 
-                let amount_sat = match parse_u64_required(&self.amount, "số lượng", "amount") {
+                let amount_sat = match parse_btc_to_sat(&self.amount, "số lượng", "amount") {
                     Ok(value) => value,
                     Err(err) => {
                         self.error = Some(err);
@@ -215,7 +287,7 @@ impl SendView {
                 let amount_sat = if self.use_all_funds {
                     None
                 } else {
-                    match parse_u64_required(&self.amount, "số lượng", "amount") {
+                    match parse_btc_to_sat(&self.amount, "số lượng", "amount") {
                         Ok(value) => Some(value),
                         Err(err) => {
                             self.error = Some(err);
@@ -223,9 +295,6 @@ impl SendView {
                         }
                     }
                 };
-
-                self.error = None;
-                self.success = None;
 
                 Some(SendEvent::SendTransaction(crate::app::SendRequest {
                     to_address: self.to_address.trim().to_string(),
@@ -313,104 +382,79 @@ impl SendView {
         ]
         .spacing(4);
 
-        let use_all_toggle = row![
-            text(t("Gửi toàn bộ số dư", "Send All Funds"))
-                .size(14)
-                .style(text_color(Colors::TEXT_SECONDARY)),
-            Space::with_width(Length::Fill),
-            button(
-                text(if self.use_all_funds {
-                    t("BẬT", "ON")
-                } else {
-                    t("TẮT", "OFF")
-                })
+        let max_button = button(
+            text(t("MAX", "MAX"))
                 .size(12)
-            )
-            .on_press(SendMessage::UseAllFunds(!self.use_all_funds))
-            .padding(6)
-            .style(if self.use_all_funds {
-                primary_button_style()
-            } else {
-                secondary_button_style()
-            })
-        ]
-        .align_y(Alignment::Center);
+        )
+        .on_press(SendMessage::MaxAmount)
+        .padding(6)
+        .style(primary_button_style());
 
         let amount_input = column![
-            text(t("Số lượng (sat)", "Amount (sat)"))
+            text(t("Số lượng (BTC)", "Amount (BTC)"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
             text_input(
-                t("Nhập số satoshi...", "Enter amount in satoshis..."),
+                t("Nhập số BTC...", "Enter amount in BTC..."),
                 &self.amount
             )
             .on_input(SendMessage::AmountChanged)
             .padding(12)
-            .size(14)
+            .size(14),
+            if let Ok(amount_btc) = self.amount.trim().parse::<f64>() {
+                if amount_btc > 0.0 {
+                    let amount_sat = (amount_btc * 100_000_000.0).round() as u64;
+                    text(format!("≈ {}", format_btc_and_sat(amount_sat)))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_MUTED))
+                } else {
+                    text("")
+                }
+            } else {
+                text("")
+            }
         ]
         .spacing(4);
 
-        let fee_mode_section = column![
-            text(t("Chế độ phí", "Fee Mode"))
+        let fee_input: Element<'_, SendMessage> = column![
+            text(t("Phí (BTC)", "Fee Amount (BTC)"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
-            row![
-                radio(
-                    t("Tự động", "Auto"),
-                    SimpleFeeMode::Auto,
-                    Some(self.fee_mode),
-                    SendMessage::FeeModeChanged
-                )
-                .size(14),
-                Space::with_width(16),
-                radio(
-                    t("Cố định", "Fixed"),
-                    SimpleFeeMode::Fixed,
-                    Some(self.fee_mode),
-                    SendMessage::FeeModeChanged
-                )
-                .size(14),
-            ]
-            .spacing(8)
+            text_input(
+                t("Nhập phí BTC...", "Enter fee in BTC..."),
+                &self.fee_amount
+            )
+            .on_input(SendMessage::FeeAmountChanged)
+            .padding(12)
+            .size(14),
+            if let Ok(fee_btc) = self.fee_amount.trim().parse::<f64>() {
+                if fee_btc > 0.0 {
+                    let fee_sat = (fee_btc * 100_000_000.0).round() as u64;
+                    text(format!("≈ {}", format_btc_and_sat(fee_sat)))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_MUTED))
+                } else {
+                    text("")
+                }
+            } else {
+                text("")
+            },
+            if let Some(fee) = self.estimated_fee {
+                text(format!(
+                    "{}: {}",
+                    t("Ước tính phí", "Estimated fee"),
+                    format_btc_and_sat(fee)
+                ))
+                .size(12)
+                .style(text_color(Colors::SUCCESS))
+            } else {
+                text("")
+            }
         ]
-        .spacing(4);
-
-        let fee_input: Element<'_, SendMessage> = if self.fee_mode == SimpleFeeMode::Fixed {
-            column![
-                text(t("Phí (sat)", "Fee Amount (sat)"))
-                    .size(14)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
-                Space::with_height(4),
-                text_input(
-                    t("Nhập phí satoshi...", "Enter fee in satoshis..."),
-                    &self.fee_amount
-                )
-                .on_input(SendMessage::FeeAmountChanged)
-                .padding(12)
-                .size(14)
-            ]
-            .spacing(4)
-            .into()
-        } else if let Some(fee) = self.estimated_fee {
-            text(format!(
-                "{}: {} sat",
-                t("Ước tính phí", "Estimated fee"),
-                fee
-            ))
-            .size(14)
-            .style(text_color(Colors::SUCCESS))
-            .into()
-        } else {
-            text(t(
-                "Bấm 'Ước tính phí' khi dùng chế độ tự động",
-                "Click 'Estimate Fee' for auto mode",
-            ))
-            .size(14)
-            .style(text_color(Colors::TEXT_MUTED))
-            .into()
-        };
+        .spacing(4)
+        .into();
 
         let estimate_btn = button(text(t("Ước tính phí", "Estimate Fee")).size(14))
             .on_press(SendMessage::EstimateFee)
@@ -518,12 +562,13 @@ impl SendView {
             Space::with_height(24),
             to_input,
             Space::with_height(16),
-            use_all_toggle,
+            row![
+                amount_input,
+                Space::with_width(8),
+                max_button,
+            ]
+            .align_y(Alignment::Center),
             Space::with_height(16),
-            amount_input,
-            Space::with_height(16),
-            fee_mode_section,
-            Space::with_height(8),
             fee_input,
             Space::with_height(8),
             estimate_btn,

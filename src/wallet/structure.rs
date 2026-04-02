@@ -605,6 +605,43 @@ impl Wallet {
         ))
     }
 
+    pub fn estimate_fee_for_send_all(
+        &self,
+        input_source: &InputSource,
+    ) -> Result<(u64, u64)> {
+        let utxos = self.collect_spendable_utxos_by_source(input_source)?;
+        
+        if utxos.is_empty() {
+            return Err(anyhow!("Không có UTXO khả dụng"));
+        }
+
+        let total_input: u64 = utxos.iter().try_fold(0u64, |acc, utxo| {
+            acc.checked_add(utxo.value)
+                .ok_or_else(|| anyhow!("Tổng UTXO bị overflow"))
+        })?;
+
+        // Estimate fee for all inputs, 1 output (no change)
+        let fee = self.estimate_auto_fee_sat(utxos.len(), 1)?;
+
+        if total_input <= fee {
+            return Err(anyhow!(
+                "Không đủ số dư để trả phí. Tổng={} sat, phí={} sat",
+                total_input,
+                fee
+            ));
+        }
+
+        let max_amount = total_input - fee;
+        if max_amount < DUST_LIMIT_SAT {
+            return Err(anyhow!(
+                "Số tiền gửi sau khi trừ phí quá nhỏ ({} sat)",
+                max_amount
+            ));
+        }
+
+        Ok((max_amount, fee))
+    }
+
     pub fn create_send_all_transaction_with_options(
         &mut self,
         to_address: &str,
