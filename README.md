@@ -194,6 +194,64 @@ cargo fmt
 cargo check
 ```
 
+## 8. Build tự động với GitHub Actions
+
+### Workflow có sẵn
+
+Project đã setup GitHub Actions để build tự động cho tất cả nền tảng:
+
+- **build.yml**: Build test khi push code
+- **release.yml**: Tự động tạo release khi push tag
+
+### Cách sử dụng
+
+#### **Build test (tự động):**
+- Push code lên `main` hoặc `develop` branch
+- GitHub Actions tự động build cho macOS, Windows, Linux
+- Xem kết quả tại tab **Actions** trong GitHub repo
+
+#### **Tạo Release (tự động):**
+```bash
+# Tạo tag và push
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+GitHub Actions sẽ tự động:
+1. Build cho tất cả nền tảng
+2. Tạo macOS Universal Binary (Intel + Apple Silicon)
+3. Tạo GitHub Release với tất cả file binary
+4. Generate release notes
+
+#### **Chạy build thủ công:**
+1. Vào GitHub repo → tab **Actions**
+2. Chọn workflow **Build All Platforms**
+3. Click **Run workflow**
+
+### Kết quả build
+
+Sau khi build xong, download artifacts:
+
+| Nền tảng | File | Mô tả |
+|----------|------|--------|
+| macOS Intel | `btc_wallet_gui_macos_intel.tar.gz` | Cho MacBook Intel |
+| macOS Apple Silicon | `btc_wallet_gui_macos_arm64.tar.gz` | Cho MacBook M1/M2/M3 |
+| macOS Universal | `btc_wallet_gui_macos_universal.tar.gz` | Hỗ trợ cả Intel và ARM |
+| Windows x64 | `btc_wallet_gui_windows_x64.zip` | Cho Windows 10/11 |
+| Linux x64 | `btc_wallet_gui_linux_x64.tar.gz` | Cho Ubuntu/Debian/Fedora |
+
+### Download binary
+
+**Cách 1: Từ Actions (Build test)**
+1. Vào **Actions** → chọn workflow run
+2. Scroll xuống **Artifacts**
+3. Download file theo nền tảng
+
+**Cách 2: Từ Releases (tự động)**
+1. Vào tab **Releases**
+2. Chọn version mới nhất
+3. Download file theo nền tảng
+
 ## 8. Công nghệ sử dụng
 
 - **UI Framework:** iced
