@@ -4,6 +4,7 @@ mod settings;
 mod wallet;
 
 use iced::{
+    clipboard,
     widget::{column, container, row, text, Space},
     Element, Length, Padding, Task,
 };
@@ -154,12 +155,40 @@ impl App {
             AppMessage::ReceiveMessage(msg) => self.handle_receive_message(msg),
 
             AppMessage::HistoryMessage(msg) => {
-                if let Some(event) = self.history_view.update(msg) {
-                    match event {
-                        HistoryEvent::Refresh => self.refresh_all_wallets(),
+                match msg {
+                    HistoryMessage::CopyTxid(txid) => {
+                        return clipboard::write(txid);
+                    }
+                    HistoryMessage::OpenExplorer(url, _) => {
+                        #[cfg(target_os = "linux")]
+                        let result = std::process::Command::new("xdg-open")
+                            .arg(&url)
+                            .spawn();
+                        
+                        #[cfg(target_os = "macos")]
+                        let result = std::process::Command::new("open")
+                            .arg(&url)
+                            .spawn();
+                        
+                        #[cfg(target_os = "windows")]
+                        let result = std::process::Command::new("cmd")
+                            .args(["/C", "start", &url])
+                            .spawn();
+
+                        if let Err(e) = result {
+                            self.error = Some(format!("Không thể mở trình duyệt: {}", e));
+                        }
+                        return Task::none();
+                    }
+                    _ => {
+                        if let Some(event) = self.history_view.update(msg) {
+                            match event {
+                                HistoryEvent::Refresh => self.refresh_all_wallets(),
+                            }
+                        }
+                        Task::none()
                     }
                 }
-                Task::none()
             }
 
             AppMessage::SettingsMessage(msg) => self.handle_settings_message(msg),

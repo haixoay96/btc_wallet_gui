@@ -11,6 +11,7 @@ base64 = "0.22"
 bip39 = { version = "2.1", features = ["rand", "serde"] }
 bitcoin = { version = "0.32", features = ["serde"] }
 chacha20poly1305 = "0.10"
+chrono = "0.4"
 directories = "5.0"
 getrandom = "0.3"
 hex = "0.4"
