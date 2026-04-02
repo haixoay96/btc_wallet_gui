@@ -80,7 +80,7 @@ jobs:
 
     - name: Package (Windows)
       if: runner.os == 'Windows'
-      run: cargo packager --release --formats exe
+      run: cargo packager --release --formats nsis
 
     - name: Upload artifact (Linux)
       if: runner.os == 'Linux'
