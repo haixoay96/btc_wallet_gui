@@ -438,10 +438,12 @@ impl Wallet {
 
         let mut history: Vec<TxRecord> = tx_map.into_values().collect();
         history.sort_by(|a, b| {
-            b.block_time
-                .unwrap_or_default()
-                .cmp(&a.block_time.unwrap_or_default())
-                .then_with(|| a.txid.cmp(&b.txid))
+            match (a.block_time, b.block_time) {
+                (None, None) => a.txid.cmp(&b.txid),
+                (None, Some(_)) => std::cmp::Ordering::Less, // a (None) comes first
+                (Some(_), None) => std::cmp::Ordering::Greater, // b (None) comes first
+                (Some(a_time), Some(b_time)) => b_time.cmp(&a_time).then_with(|| a.txid.cmp(&b.txid)),
+            }
         });
 
         let count = history.len();

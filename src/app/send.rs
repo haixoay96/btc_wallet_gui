@@ -3,9 +3,10 @@ use iced::Task;
 use crate::i18n::t;
 use crate::utils::short_txid;
 use crate::views::send::{SendEvent, SendMessage};
-use crate::wallet::{FeeMode, TxBuildOptions};
+use crate::wallet::TxBuildOptions;
 
-use super::{App, AppMessage, SendRequest};
+use super::{App, AppMessage};
+use crate::views::send::SendRequest;
 
 impl App {
     pub fn handle_send_message(&mut self, msg: SendMessage) -> Task<AppMessage> {
@@ -100,50 +101,34 @@ impl App {
                 change_strategy: request.change_strategy.clone(),
             };
 
-            let result = if request.use_all_funds {
-                wallet.create_send_all_transaction_with_options(
-                    &request.to_address,
-                    request.fee_mode,
-                    tx_options,
-                )
-            } else {
-                let amount_sat = match request.amount_sat {
-                    Some(value) if value > 0 => value,
-                    _ => {
-                        self.send_view.set_error(t(
-                            "Số lượng không hợp lệ cho giao dịch thường",
-                            "Invalid amount for regular transaction",
-                        ));
-                        return Task::none();
-                    }
-                };
-
-                let fee_sat = match request.fee_mode {
-                    FeeMode::Auto => match wallet
-                        .estimate_auto_fee_for_amount(amount_sat, &request.input_source)
-                    {
-                        Ok(value) => value,
-                        Err(err) => {
-                            self.send_view.set_error(format!(
-                                "{}: {err}",
-                                t(
-                                    "Không thể ước tính phí tự động",
-                                    "Could not estimate auto fee",
-                                )
-                            ));
-                            return Task::none();
-                        }
-                    },
-                    FeeMode::FixedSat(value) => value,
-                };
-
-                wallet.create_transaction_with_options(
-                    &request.to_address,
-                    amount_sat,
-                    fee_sat,
-                    tx_options,
-                )
+            let amount_sat = match request.amount_sat {
+                Some(value) if value > 0 => value,
+                _ => {
+                    self.send_view.set_error(t(
+                        "Vui lòng nhập số lượng",
+                        "Please enter amount",
+                    ));
+                    return Task::none();
+                }
             };
+
+            let fee_sat = match request.fee_sat {
+                Some(value) if value > 0 => value,
+                _ => {
+                    self.send_view.set_error(t(
+                        "Vui lòng nhập phí hoặc bấm 'Ước tính phí'",
+                        "Please enter fee or click 'Estimate Fee'",
+                    ));
+                    return Task::none();
+                }
+            };
+
+            let result = wallet.create_transaction_with_options(
+                &request.to_address,
+                amount_sat,
+                fee_sat,
+                tx_options,
+            );
 
             match result {
                 Ok(tx_result) => {

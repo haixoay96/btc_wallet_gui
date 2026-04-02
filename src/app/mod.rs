@@ -23,24 +23,16 @@ use crate::views::{
     wallets::{WalletsMessage, WalletsView},
 };
 use crate::wallet::{
-    ChangeStrategy, FeeMode, InputSource, Wallet,
+    ChangeStrategy, InputSource, Wallet,
 };
+
+// Re-export SendRequest from views/send
+pub use crate::views::send::SendRequest;
 
 #[derive(Debug, Clone)]
 pub enum AppState {
     Login,
     Main,
-}
-
-#[derive(Debug, Clone)]
-pub struct SendRequest {
-    pub to_address: String,
-    pub amount_sat: Option<u64>,
-    pub fee_mode: FeeMode,
-    pub use_all_funds: bool,
-    pub input_source: InputSource,
-    pub change_strategy: ChangeStrategy,
-    pub broadcast: bool,
 }
 
 pub struct App {

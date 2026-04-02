@@ -11,7 +11,7 @@ use crate::theme::{
     card_style, info_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, text_color, Colors,
 };
-use crate::wallet::{ChangeStrategy, FeeMode, InputSource, Wallet};
+use crate::wallet::{ChangeStrategy, InputSource, Wallet};
 
 fn format_btc_and_sat(amount_sat: u64) -> String {
     let amount_btc = amount_sat as f64 / 100_000_000.0;
@@ -56,11 +56,6 @@ fn parse_btc_to_sat(raw: &str, field_vi: &str, field_en: &str) -> Result<u64, St
     Ok(amount_sat)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SimpleFeeMode {
-    Auto,
-}
-
 #[derive(Debug, Clone)]
 pub enum SendMessage {
     SelectWallet(usize),
@@ -77,19 +72,27 @@ pub enum SendMessage {
 }
 
 #[derive(Debug, Clone)]
+pub struct SendRequest {
+    pub to_address: String,
+    pub amount_sat: Option<u64>,
+    pub fee_sat: Option<u64>,
+    pub input_source: InputSource,
+    pub change_strategy: ChangeStrategy,
+    pub broadcast: bool,
+}
+
+#[derive(Debug, Clone)]
 pub enum SendEvent {
     SelectWallet(usize),
     EstimateSendFee { amount_sat: u64, input_source: crate::wallet::InputSource },
     MaxAmount { input_source: crate::wallet::InputSource },
-    SendTransaction(crate::app::SendRequest),
+    SendTransaction(SendRequest),
 }
 
 pub struct SendView {
     to_address: String,
     amount: String,
-    fee_mode: SimpleFeeMode,
     fee_amount: String,
-    use_all_funds: bool,
     from_address: String,
     change_address: String,
     broadcast: bool,
@@ -103,9 +106,7 @@ impl SendView {
         Self {
             to_address: String::new(),
             amount: String::new(),
-            fee_mode: SimpleFeeMode::Auto,
             fee_amount: String::new(),
-            use_all_funds: false,
             from_address: String::new(),
             change_address: String::new(),
             broadcast: false,
@@ -188,17 +189,6 @@ impl SendView {
                 None
             }
             SendMessage::EstimateFee => {
-                if self.use_all_funds {
-                    self.error = Some(
-                        t(
-                            "Send all funds không cần estimate fee trước",
-                            "Send-all does not require fee estimation",
-                        )
-                        .to_string(),
-                    );
-                    return None;
-                }
-
                 let amount_sat = match parse_btc_to_sat(&self.amount, "số lượng", "amount") {
                     Ok(value) => value,
                     Err(err) => {
@@ -247,25 +237,30 @@ impl SendView {
                     }
                 };
 
-                let fee_mode = FeeMode::Auto;
+                let amount_sat = match parse_btc_to_sat(&self.amount, "số lượng", "amount") {
+                    Ok(value) => value,
+                    Err(err) => {
+                        self.error = Some(err);
+                        return None;
+                    }
+                };
 
-                let amount_sat = if self.use_all_funds {
-                    None
-                } else {
-                    match parse_btc_to_sat(&self.amount, "số lượng", "amount") {
+                let fee_sat = if !self.fee_amount.trim().is_empty() {
+                    match parse_btc_to_sat(&self.fee_amount, "phí", "fee") {
                         Ok(value) => Some(value),
                         Err(err) => {
                             self.error = Some(err);
                             return None;
                         }
                     }
+                } else {
+                    None
                 };
 
-                Some(SendEvent::SendTransaction(crate::app::SendRequest {
+                Some(SendEvent::SendTransaction(SendRequest {
                     to_address: self.to_address.trim().to_string(),
-                    amount_sat,
-                    fee_mode,
-                    use_all_funds: self.use_all_funds,
+                    amount_sat: Some(amount_sat),
+                    fee_sat,
                     input_source,
                     change_strategy,
                     broadcast: self.broadcast,
@@ -278,7 +273,6 @@ impl SendView {
                 self.from_address.clear();
                 self.change_address.clear();
                 self.broadcast = false;
-                self.use_all_funds = false;
                 self.error = None;
                 self.success = None;
                 self.estimated_fee = None;
@@ -583,35 +577,6 @@ fn selected_wallet_choice(wallets: &[Wallet], selected_wallet: usize) -> Option<
         index: selected_wallet,
         label: format!("{} ({})", wallet.name, wallet.network.as_str()),
     })
-}
-
-fn parse_u64_required(raw: &str, field_vi: &str, field_en: &str) -> Result<u64, String> {
-    let value = raw.trim();
-    if value.is_empty() {
-        return Err(format!(
-            "{} {}",
-            t("Vui lòng nhập", "Please enter"),
-            t(field_vi, field_en)
-        ));
-    }
-
-    let parsed = value.parse::<u64>().map_err(|_| {
-        format!(
-            "{} {}",
-            t(field_vi, field_en),
-            t("phải là số nguyên dương", "must be a positive integer")
-        )
-    })?;
-
-    if parsed == 0 {
-        return Err(format!(
-            "{} {}",
-            t(field_vi, field_en),
-            t("phải lớn hơn 0", "must be greater than 0")
-        ));
-    }
-
-    Ok(parsed)
 }
 
 fn parse_input_source(raw: &str) -> Result<InputSource, String> {
