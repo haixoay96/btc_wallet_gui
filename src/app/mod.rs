@@ -156,6 +156,9 @@ impl App {
 
             AppMessage::HistoryMessage(msg) => {
                 match msg {
+                    HistoryMessage::SelectWallet(index) => {
+                        return self.handle_select_wallet(index);
+                    }
                     HistoryMessage::CopyTxid(txid) => {
                         return clipboard::write(txid);
                     }
@@ -227,7 +230,7 @@ impl App {
                         .map(AppMessage::ReceiveMessage),
                     NavItem::History => self
                         .history_view
-                        .view(selected_wallet)
+                        .view(&self.wallets, self.selected_wallet)
                         .map(AppMessage::HistoryMessage),
                     NavItem::Settings => self.settings_view.view().map(AppMessage::SettingsMessage),
                 };

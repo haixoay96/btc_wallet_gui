@@ -1,11 +1,15 @@
 use crate::i18n::t;
-use crate::theme::{card_style, primary_button_style, secondary_button_style, text_color, Colors};
+use crate::theme::{
+    card_style, pick_list_menu_style, pick_list_style, primary_button_style, secondary_button_style,
+    text_color, Colors,
+};
 use crate::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
 use chrono::DateTime;
 use iced::{
-    widget::{button, column, container, row, scrollable, text, Space},
+    widget::{button, column, container, pick_list, row, scrollable, text, Space},
     Alignment, Element, Length,
 };
+use std::fmt;
 
 fn format_timestamp(timestamp: u64) -> String {
     let datetime = DateTime::from_timestamp(timestamp as i64, 0)
@@ -20,6 +24,7 @@ fn format_btc_and_sat(amount_sat: i64) -> String {
 
 #[derive(Debug, Clone)]
 pub enum HistoryMessage {
+    SelectWallet(usize),
     Refresh,
     FilterAll,
     FilterIncoming,
@@ -53,6 +58,7 @@ impl HistoryView {
 
     pub fn update(&mut self, message: HistoryMessage) -> Option<HistoryEvent> {
         match message {
+            HistoryMessage::SelectWallet(_) => None, // Handled by app
             HistoryMessage::Refresh => Some(HistoryEvent::Refresh),
             HistoryMessage::FilterAll => {
                 self.filter = Filter::All;
@@ -71,12 +77,36 @@ impl HistoryView {
         }
     }
 
-    pub fn view(&self, wallet: Option<&Wallet>) -> Element<'_, HistoryMessage> {
+    pub fn view<'a>(
+        &'a self,
+        wallets: &'a [Wallet],
+        selected_wallet: usize,
+    ) -> Element<'a, HistoryMessage> {
+        let wallet_options = wallet_choices(wallets);
+        let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
+        let wallet = wallets.get(selected_wallet);
+
         let title = text(t("Lịch sử giao dịch", "Transaction History"))
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
 
-        let mut content = column![title].spacing(16).padding(32);
+        let wallet_selector = column![
+            text(t("Từ ví", "From Wallet"))
+                .size(14)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+            Space::with_height(4),
+            pick_list(wallet_options, selected_wallet_option, |choice| {
+                HistoryMessage::SelectWallet(choice.index)
+            })
+            .placeholder(t("Chọn ví...", "Select wallet..."))
+            .width(Length::Fill)
+            .padding(12)
+            .style(pick_list_style())
+            .menu_style(pick_list_menu_style()),
+        ]
+        .spacing(4);
+
+        let mut content = column![title, wallet_selector].spacing(16).padding(32);
 
         // Filter buttons
         let filter_row = row![
@@ -268,4 +298,34 @@ impl HistoryView {
             .height(Length::Fill)
             .into()
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct WalletChoice {
+    index: usize,
+    label: String,
+}
+
+impl fmt::Display for WalletChoice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.label)
+    }
+}
+
+fn wallet_choices(wallets: &[Wallet]) -> Vec<WalletChoice> {
+    wallets
+        .iter()
+        .enumerate()
+        .map(|(index, wallet)| WalletChoice {
+            index,
+            label: format!("{} ({})", wallet.name, wallet.network.as_str()),
+        })
+        .collect()
+}
+
+fn selected_wallet_choice(wallets: &[Wallet], selected_wallet: usize) -> Option<WalletChoice> {
+    wallets.get(selected_wallet).map(|wallet| WalletChoice {
+        index: selected_wallet,
+        label: format!("{} ({})", wallet.name, wallet.network.as_str()),
+    })
 }
