@@ -909,7 +909,7 @@ impl Wallet {
             let (_, private_key, public_key) =
                 Self::derive_address_and_keys(&secp, &account_xprv, self.network, utxo.address_index)?;
 
-            let script_code = ScriptBuf::new_p2pkh(&public_key.pubkey_hash());
+            let script_code = utxo.address.script_pubkey();
 
             let sighash = SighashCache::new(&mut *tx).p2wpkh_signature_hash(
                 input_index,
@@ -926,8 +926,6 @@ impl Wallet {
 
             tx.input[input_index].witness =
                 Witness::from_slice(&[signature_bytes.as_slice(), public_key.to_bytes().as_slice()]);
-
-            let _ = &utxo.address;
         }
 
         Ok(())
