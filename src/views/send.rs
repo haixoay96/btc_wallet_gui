@@ -59,7 +59,6 @@ fn parse_btc_to_sat(raw: &str, field_vi: &str, field_en: &str) -> Result<u64, St
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimpleFeeMode {
     Auto,
-    Fixed,
 }
 
 #[derive(Debug, Clone)]
@@ -67,9 +66,7 @@ pub enum SendMessage {
     SelectWallet(usize),
     ToAddressChanged(String),
     AmountChanged(String),
-    FeeModeChanged(SimpleFeeMode),
     FeeAmountChanged(String),
-    UseAllFunds(bool),
     MaxAmount,
     FromAddressChanged(String),
     ChangeAddressChanged(String),
@@ -116,11 +113,6 @@ impl SendView {
             error: None,
             success: None,
         }
-    }
-
-    pub fn set_estimated_fee(&mut self, fee_sat: u64) {
-        self.estimated_fee = Some(fee_sat);
-        self.error = None;
     }
 
     pub fn set_fee_amount(&mut self, fee_sat: u64) {
@@ -175,24 +167,8 @@ impl SendView {
                     }
                 })
             }
-            SendMessage::FeeModeChanged(mode) => {
-                self.fee_mode = mode;
-                self.error = None;
-                None
-            }
             SendMessage::FeeAmountChanged(fee) => {
                 self.fee_amount = fee;
-                self.error = None;
-                None
-            }
-            SendMessage::UseAllFunds(use_all) => {
-                self.use_all_funds = use_all;
-                if use_all {
-                    // Auto-fill with available balance when toggling on
-                    self.estimated_fee = None;
-                    // Note: amount will be calculated when sending
-                    // User can still edit amount manually if needed
-                }
                 self.error = None;
                 None
             }
@@ -271,18 +247,7 @@ impl SendView {
                     }
                 };
 
-                let fee_mode = match self.fee_mode {
-                    SimpleFeeMode::Auto => FeeMode::Auto,
-                    SimpleFeeMode::Fixed => {
-                        match parse_u64_required(&self.fee_amount, "phí", "fee") {
-                            Ok(value) => FeeMode::FixedSat(value),
-                            Err(err) => {
-                                self.error = Some(err);
-                                return None;
-                            }
-                        }
-                    }
-                };
+                let fee_mode = FeeMode::Auto;
 
                 let amount_sat = if self.use_all_funds {
                     None

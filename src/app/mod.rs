@@ -6,7 +6,7 @@ mod wallet;
 use iced::{
     clipboard,
     widget::{column, container, row, text, Space},
-    Element, Length, Padding, Task,
+    Element, Length, Task,
 };
 
 use crate::i18n::{set_current_language, t, AppLanguage};
@@ -159,7 +159,7 @@ impl App {
                     HistoryMessage::CopyTxid(txid) => {
                         return clipboard::write(txid);
                     }
-                    HistoryMessage::OpenExplorer(url, _) => {
+                    HistoryMessage::OpenExplorer(url) => {
                         #[cfg(target_os = "linux")]
                         let result = std::process::Command::new("xdg-open")
                             .arg(&url)

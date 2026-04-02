@@ -25,7 +25,7 @@ pub enum HistoryMessage {
     FilterIncoming,
     FilterOutgoing,
     CopyTxid(String),
-    OpenExplorer(String, WalletNetwork),
+    OpenExplorer(String),
 }
 
 #[derive(Debug, Clone)]
@@ -67,7 +67,7 @@ impl HistoryView {
                 None
             }
             HistoryMessage::CopyTxid(_) => None, // Handled by clipboard action
-            HistoryMessage::OpenExplorer(_, _) => None, // Handled by open URL action
+            HistoryMessage::OpenExplorer(_) => None, // Handled by open URL action
         }
     }
 
@@ -153,7 +153,6 @@ impl HistoryView {
                 let mut tx_list = column![];
 
                 for tx in filtered_txs.iter() {
-                    let amount_btc = tx.amount_sat as f64 / 100_000_000.0;
                     let direction_text = match tx.direction {
                         TxDirection::Incoming => t("NHẬN", "IN"),
                         TxDirection::Outgoing => t("GỬI", "OUT"),
@@ -193,7 +192,7 @@ impl HistoryView {
                                     .style(secondary_button_style()),
                                 Space::with_width(8),
                                 button(text(t("Mở", "Open")).size(12))
-                                    .on_press(HistoryMessage::OpenExplorer(explorer_url.clone(), wallet.network))
+                                    .on_press(HistoryMessage::OpenExplorer(explorer_url.clone()))
                                     .padding(8)
                                     .style(secondary_button_style()),
                                 Space::with_width(Length::Fill),
