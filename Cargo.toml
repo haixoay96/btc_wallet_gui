@@ -30,3 +30,16 @@ codegen-units = 1  # Tắt biên dịch song song để tối ưu tốt hơn
 lto = "fat"  
 strip = true  # Loại bỏ symbol dư thừa để file thực thi gọn nhẹ hơn
 panic = 'abort'
+
+[package.metadata.packager]
+name = "Bitcoin Wallet"
+identifier = "com.btcwallet.gui"
+icons = ["icons/icon.png"]
+resources = ["btc_wallet_gui.desktop"]
+copyright = "Copyright (c) 2026"
+category = "Finance"
+description = "Bitcoin Wallet GUI"
+long_description = """
+Desktop Bitcoin wallet with mnemonic backup and SLIP-0039 support.
+Supports multiple wallets, send/receive BTC, and transaction history.
+"""

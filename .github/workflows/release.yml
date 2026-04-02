@@ -37,7 +37,7 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact: btc_wallet_gui_windows_x64
           - name: Linux x64
-            os: ubuntu-latest
+            os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             artifact: btc_wallet_gui_linux_x64
 
@@ -66,35 +66,49 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y \
           libgtk-3-dev \
-          libwebkit2gtk-4.0-dev \
+          libwebkit2gtk-4.1-dev \
           libappindicator3-dev \
           librsvg2-dev \
           patchelf
 
-    - name: Build release
-      run: cargo build --release --target ${{ matrix.target }}
+    - name: Install cargo-packager
+      run: cargo install cargo-packager
 
-    - name: Package (Unix)
-      if: runner.os != 'Windows'
-      run: |
-        cd target/${{ matrix.target }}/release
-        tar -czf ../../../${{ matrix.artifact }}.tar.gz btc_wallet_gui
-        cd ../../..
+    - name: Package (Linux)
+      if: runner.os == 'Linux'
+      run: cargo packager --release --formats appimage
+
+    - name: Package (macOS)
+      if: runner.os == 'macOS'
+      run: cargo packager --release --formats app
 
     - name: Package (Windows)
       if: runner.os == 'Windows'
-      run: |
-        cd target/${{ matrix.target }}/release
-        7z a ../../../${{ matrix.artifact }}.zip btc_wallet_gui.exe
-        cd ../../..
+      run: cargo packager --release --formats exe
 
-    - name: Upload artifact
+    - name: Upload artifact (Linux)
+      if: runner.os == 'Linux'
       uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.artifact }}
         path: |
-          ${{ matrix.artifact }}.tar.gz
-          ${{ matrix.artifact }}.zip
+          target/release/**/*.AppImage
+
+    - name: Upload artifact (macOS)
+      if: runner.os == 'macOS'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact }}
+        path: |
+          target/release/**/*.app
+
+    - name: Upload artifact (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact }}
+        path: |
+          target/release/btc_wallet_gui
 
   create-universal-macos:
     name: Create macOS Universal Binary
@@ -160,10 +174,10 @@ jobs:
         prerelease: false
         generate_release_notes: true
         files: |
-          artifacts/btc_wallet_gui_macos_intel/btc_wallet_gui_macos_intel.tar.gz
-          artifacts/btc_wallet_gui_macos_arm64/btc_wallet_gui_macos_arm64.tar.gz
+          artifacts/btc_wallet_gui_macos_intel/*.app
+          artifacts/btc_wallet_gui_macos_arm64/*.app
           artifacts/btc_wallet_gui_macos_universal/btc_wallet_gui_macos_universal.tar.gz
-          artifacts/btc_wallet_gui_windows_x64/btc_wallet_gui_windows_x64.zip
-          artifacts/btc_wallet_gui_linux_x64/btc_wallet_gui_linux_x64.tar.gz
+          artifacts/btc_wallet_gui_windows_x64/btc_wallet_gui
+          artifacts/btc_wallet_gui_linux_x64/*.AppImage
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
