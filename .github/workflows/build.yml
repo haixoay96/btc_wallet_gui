@@ -3,11 +3,10 @@ name: Build All Platforms
 on:
   push:
     branches:
-      - main
-      - develop
+      - master
   pull_request:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 env:
