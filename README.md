@@ -4,6 +4,12 @@
 
 ## 0. Cập nhật gần đây
 
+### Tính năng mới (Send & History)
+- **Nhập số lượng theo BTC:** Nhập số lượng trực tiếp bằng BTC (ví dụ: 0.001), tự động chuyển đổi sang satoshi
+- **Nút MAX:** Tự động tính và điền số lượng tối đa có thể gửi (sau khi trừ phí ước tính)
+- **Tự động điền phí:** Khi ước tính phí, phí sẽ tự động được điền vào ô phí
+- **Chọn ví trong History:** Thêm dropdown chọn ví trong trang Lịch sử giao dịch
+
 ### Giao diện Login (Màn hình khởi động)
 - **Khi chưa có passphrase:** Chỉ hiện 2 tab "Tạo passphrase mới" và "Import backup" (ẩn tab "Đăng nhập" vì chưa có dữ liệu)
 - **Import backup:** Chỉ hiện nút "Chọn file backup" (bỏ ô nhập đường dẫn thủ công), hiển thị đường dẫn file sau khi chọn
@@ -35,7 +41,9 @@
 
 ### Gửi BTC (Send)
 - Chọn ví gửi
-- Nhập địa chỉ nhận và số lượng
+- Nhập địa chỉ nhận và số lượng (nhập theo đơn vị BTC, ví dụ: 0.001)
+- **Nút MAX:** Tự động tính và điền số lượng tối đa có thể gửi (sau khi trừ phí)
+- **Ước tính phí:** Tự động điền phí ước tính vào ô phí
 - Chọn chế độ phí: Auto hoặc Fixed
 - Tùy chọn gửi toàn bộ số dư (Send-all)
 - Tùy chọn nâng cao: input source, change address
@@ -47,8 +55,11 @@
 - Hiển thị QR code trong popup overlay
 
 ### Lịch sử giao dịch
+- **Chọn ví:** Dropdown chọn ví để xem lịch sử
 - Xem lịch sử theo ví đang chọn
 - Lọc: All / Incoming / Outgoing
+- Copy txid
+- Mở giao dịch trên block explorer
 
 ### Backup & Mnemonic
 - Xem mnemonic (yêu cầu nhập passphrase)
@@ -105,8 +116,10 @@
 - Mở popup QR code
 
 ### History (Lịch sử)
+- Chọn ví từ dropdown để xem lịch sử
 - Xem lịch sử giao dịch
 - Lọc theo loại: All / Incoming / Outgoing
+- Copy txid hoặc mở trên block explorer
 
 ### Settings (Cài đặt)
 - Bảo mật: Đổi passphrase
