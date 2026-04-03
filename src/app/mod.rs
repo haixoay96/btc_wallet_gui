@@ -458,10 +458,10 @@ impl App {
         }
     }
 
-    pub fn save_state(&mut self) {
+    pub fn save_state(&mut self) -> bool {
         let passphrase = match &self.storage_passphrase {
             Some(value) => value,
-            None => return,
+            None => return false,
         };
 
         match Storage::new() {
@@ -476,7 +476,7 @@ impl App {
                                 "Failed to assemble wallet state"
                             )
                         ));
-                        return;
+                        return false;
                     }
                 };
                 if let Err(err) = storage.save_state(&state, passphrase.expose_secret()) {
@@ -484,6 +484,9 @@ impl App {
                         "{}: {err}",
                         t("Không thể lưu trạng thái", "Failed to save app state")
                     ));
+                    false
+                } else {
+                    true
                 }
             }
             Err(err) => {
@@ -491,6 +494,7 @@ impl App {
                     "{}: {err}",
                     t("Không thể khởi tạo storage", "Failed to initialize storage")
                 ));
+                false
             }
         }
     }
@@ -610,7 +614,11 @@ impl App {
         match result {
             Ok(payload) => {
                 self.wallets = payload.wallets;
-                self.save_state();
+                let save_error = if self.save_state() {
+                    None
+                } else {
+                    self.error.clone()
+                };
                 self.update_dashboard();
                 self.dashboard.set_last_synced_label(Some(
                     Local::now().format("%d/%m/%Y %H:%M:%S").to_string(),
@@ -622,7 +630,7 @@ impl App {
                     payload.refreshed_txs,
                     t("giao dịch", "transaction(s)")
                 ));
-                self.error = if payload.errors.is_empty() {
+                let refresh_error = if payload.errors.is_empty() {
                     None
                 } else {
                     Some(format!(
@@ -630,6 +638,14 @@ impl App {
                         t("Một số ví làm mới lỗi", "Some wallets failed to refresh"),
                         payload.errors.join(" | ")
                     ))
+                };
+                self.error = match (save_error, refresh_error) {
+                    (Some(save_error), Some(refresh_error)) => {
+                        Some(format!("{save_error} | {refresh_error}"))
+                    }
+                    (Some(save_error), None) => Some(save_error),
+                    (None, Some(refresh_error)) => Some(refresh_error),
+                    (None, None) => None,
                 };
             }
             Err(err) => {

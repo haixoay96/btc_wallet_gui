@@ -56,7 +56,6 @@ pub enum WalletsMessage {
     Slip39ExportShareCountChanged(String),
     Slip39ExportPassphraseChanged(String),
     ExportSlip39Shares(usize),
-    ExportSlip39Encrypted(usize),
     BackupWordChanged(usize, String),
     SubmitBackupTest(usize),
     DismissWalletNotice,
@@ -95,12 +94,6 @@ pub enum WalletsEvent {
     ExportMnemonicPdf(usize),
     ExportMnemonicEncrypted(usize),
     ExportWalletSlip39 {
-        wallet_index: usize,
-        threshold: u8,
-        share_count: u8,
-        slip39_passphrase: String,
-    },
-    ExportWalletSlip39Encrypted {
         wallet_index: usize,
         threshold: u8,
         share_count: u8,
@@ -441,8 +434,8 @@ impl WalletsView {
                 if self.import_encrypted_path.trim().is_empty() {
                     self.error = Some(
                         t(
-                            "Vui lòng chọn file backup mã hóa (.enc)",
-                            "Please choose an encrypted backup file (.enc)",
+                            "Vui lòng chọn file backup mnemonic mã hóa (.enc)",
+                            "Please choose an encrypted mnemonic backup file (.enc)",
                         )
                         .to_string(),
                     );
@@ -452,8 +445,8 @@ impl WalletsView {
                 if self.import_encrypted_passphrase.trim().is_empty() {
                     self.error = Some(
                         t(
-                            "Vui lòng nhập passphrase để giải mã file .enc",
-                            "Please enter the passphrase to decrypt the .enc file",
+                            "Vui lòng nhập passphrase để giải mã mnemonic backup .enc",
+                            "Please enter the passphrase to decrypt the encrypted mnemonic backup",
                         )
                         .to_string(),
                     );
@@ -682,88 +675,6 @@ impl WalletsView {
 
                 self.error = None;
                 Some(WalletsEvent::ExportWalletSlip39 {
-                    wallet_index,
-                    threshold,
-                    share_count,
-                    slip39_passphrase: self.slip39_export_passphrase.clone(),
-                })
-            }
-            WalletsMessage::ExportSlip39Encrypted(wallet_index) => {
-                if self.revealed_wallet_index != Some(wallet_index) {
-                    self.error = Some(
-                        t(
-                            "Hãy mở mnemonic trước khi export SLIP-0039 mã hóa",
-                            "Please reveal mnemonic before exporting encrypted SLIP-0039",
-                        )
-                        .to_string(),
-                    );
-                    return None;
-                }
-                if self.backup_test_wallet_index == Some(wallet_index) {
-                    self.error = Some(
-                        t(
-                            "Không thể export SLIP-0039 mã hóa khi đang làm bài test backup",
-                            "Cannot export encrypted SLIP-0039 while backup test is in progress",
-                        )
-                        .to_string(),
-                    );
-                    return None;
-                }
-
-                let threshold =
-                    match parse_u8_field(&self.slip39_export_threshold, "Ngưỡng K", "Threshold K")
-                    {
-                        Ok(value) => value,
-                        Err(message) => {
-                            self.error = Some(message);
-                            return None;
-                        }
-                    };
-                let share_count = match parse_u8_field(
-                    &self.slip39_export_share_count,
-                    "Số lượng share N",
-                    "Total share count N",
-                ) {
-                    Ok(value) => value,
-                    Err(message) => {
-                        self.error = Some(message);
-                        return None;
-                    }
-                };
-
-                if threshold < 2 {
-                    self.error = Some(
-                        t(
-                            "Ngưỡng K nên từ 2 trở lên",
-                            "Threshold K must be at least 2",
-                        )
-                        .to_string(),
-                    );
-                    return None;
-                }
-                if share_count < threshold {
-                    self.error = Some(
-                        t(
-                            "Số lượng share N phải >= ngưỡng K",
-                            "Total share count N must be >= threshold K",
-                        )
-                        .to_string(),
-                    );
-                    return None;
-                }
-                if share_count > 16 {
-                    self.error = Some(
-                        t(
-                            "SLIP-0039 hiện hỗ trợ tối đa 16 share",
-                            "SLIP-0039 currently supports at most 16 shares",
-                        )
-                        .to_string(),
-                    );
-                    return None;
-                }
-
-                self.error = None;
-                Some(WalletsEvent::ExportWalletSlip39Encrypted {
                     wallet_index,
                     threshold,
                     share_count,
@@ -1016,7 +927,7 @@ impl WalletsView {
                     secondary_button_style()
                 });
 
-            let mode_encrypted = button(text(".enc").size(13))
+            let mode_encrypted = button(text("Mnemonic .enc").size(13))
                 .on_press(WalletsMessage::ImportModeChanged(ImportMode::Encrypted))
                 .padding(8)
                 .style(if self.import_mode == ImportMode::Encrypted {
@@ -1045,8 +956,8 @@ impl WalletsView {
                 form_content = form_content
                     .push(
                         text(t(
-                            "File .enc đã chứa tên ví và network. Bạn có thể override tên ví nếu muốn.",
-                            "The .enc file already contains the wallet name and network. You can optionally override the wallet name.",
+                            "File .enc này dùng cho mnemonic backup mã hóa, đã chứa tên ví và network. Bạn có thể override tên ví nếu muốn.",
+                            "This .enc file is for encrypted mnemonic backups and already contains the wallet name and network. You can optionally override the wallet name.",
                         ))
                         .size(12)
                         .style(text_color(Colors::TEXT_SECONDARY)),
@@ -1158,8 +1069,8 @@ impl WalletsView {
                 ImportMode::Encrypted => {
                     let browse_button = button(
                         text(t(
-                            "Chọn file backup mã hóa (.enc)",
-                            "Choose encrypted backup (.enc)",
+                            "Chọn backup mnemonic mã hóa (.enc)",
+                            "Choose encrypted mnemonic backup (.enc)",
                         ))
                         .size(13),
                     )
@@ -1168,7 +1079,10 @@ impl WalletsView {
                     .style(secondary_button_style());
 
                     let encrypted_path_input = text_input(
-                        t("Đường dẫn file .enc...", "Path to .enc file..."),
+                        t(
+                            "Đường dẫn file mnemonic .enc...",
+                            "Path to encrypted mnemonic .enc file...",
+                        ),
                         &self.import_encrypted_path,
                     )
                     .on_input(WalletsMessage::ImportEncryptedPathChanged)
@@ -1177,8 +1091,8 @@ impl WalletsView {
 
                     let passphrase_input = text_input(
                         t(
-                            "Passphrase đã dùng khi export .enc...",
-                            "Passphrase used when exporting the .enc file...",
+                            "Passphrase đã dùng khi export mnemonic .enc...",
+                            "Passphrase used when exporting the mnemonic .enc file...",
                         ),
                         &self.import_encrypted_passphrase,
                     )
@@ -1187,11 +1101,12 @@ impl WalletsView {
                     .padding(12)
                     .size(14);
 
-                    let import_btn =
-                        button(text(t("Import từ file .enc", "Import from .enc file")).size(14))
-                            .on_press(WalletsMessage::ImportWalletFromEncrypted)
-                            .padding(10)
-                            .style(primary_button_style());
+                    let import_btn = button(
+                        text(t("Import từ mnemonic .enc", "Import from mnemonic .enc")).size(14),
+                    )
+                    .on_press(WalletsMessage::ImportWalletFromEncrypted)
+                    .padding(10)
+                    .style(primary_button_style());
 
                     form_content = form_content
                         .push(Space::with_height(8))
@@ -1200,8 +1115,8 @@ impl WalletsView {
                         .push(passphrase_input)
                         .push(
                             text(t(
-                                "Nếu để trống tên ví override, app sẽ dùng tên ví lưu trong backup mã hóa.",
-                                "If the wallet name override is empty, the app will use the wallet name stored in the encrypted backup.",
+                                "Nếu để trống tên ví override, app sẽ dùng tên ví lưu trong mnemonic backup mã hóa.",
+                                "If the wallet name override is empty, the app will use the wallet name stored in the encrypted mnemonic backup.",
                             ))
                             .size(12)
                             .style(text_color(Colors::TEXT_SECONDARY)),
@@ -1607,19 +1522,11 @@ impl WalletsView {
                             .padding(10)
                             .style(secondary_button_style()),
                             text(t(
-                                "Hoặc gói toàn bộ shares vào một file .enc, mã hóa bằng passphrase ứng dụng hiện tại.",
-                                "Or pack all shares into a single .enc file encrypted with the current app passphrase.",
+                                "Nếu cần backup tổng toàn ứng dụng, hãy dùng Encrypted App Backup trong Settings thay vì gói shares vào .enc.",
+                                "If you need a full app backup, use Encrypted App Backup in Settings instead of packing the shares into .enc.",
                             ))
                             .size(12)
                             .style(text_color(Colors::TEXT_SECONDARY)),
-                            button(text(t(
-                                "Export SLIP-0039 mã hóa (.enc)",
-                                "Export encrypted SLIP-0039 (.enc)",
-                            ))
-                            .size(13))
-                            .on_press(WalletsMessage::ExportSlip39Encrypted(selected_index))
-                            .padding(10)
-                            .style(primary_button_style()),
                         ]
                             .spacing(8),
                         )

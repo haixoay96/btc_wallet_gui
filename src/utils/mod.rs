@@ -71,8 +71,8 @@ pub fn pick_import_backup_path() -> Option<PathBuf> {
 pub fn pick_encrypted_secret_import_path() -> Option<PathBuf> {
     rfd::FileDialog::new()
         .set_title(t(
-            "Chọn file backup mã hóa (.enc)",
-            "Choose encrypted backup file (.enc)",
+            "Chọn file mnemonic backup mã hóa (.enc)",
+            "Choose encrypted mnemonic backup file (.enc)",
         ))
         .add_filter(t("File mã hóa", "Encrypted file"), &["enc"])
         .pick_file()
@@ -140,19 +140,6 @@ pub fn default_slip39_directory_name(wallet_name: &str, threshold: u8, share_cou
     )
 }
 
-pub fn default_slip39_encrypted_filename(
-    wallet_name: &str,
-    threshold: u8,
-    share_count: u8,
-) -> String {
-    format!(
-        "{}_slip39_{}of{}.enc",
-        sanitize_filename(wallet_name),
-        threshold,
-        share_count
-    )
-}
-
 pub fn sanitize_filename(raw: &str) -> String {
     let mut result = String::with_capacity(raw.len());
     for ch in raw.chars() {
@@ -213,14 +200,6 @@ pub struct Slip39PdfExport<'a> {
     pub has_slip39_passphrase: bool,
 }
 
-pub struct Slip39EncryptedExport<'a> {
-    pub wallet_name: &'a str,
-    pub network: &'a str,
-    pub threshold: u8,
-    pub share_count: u8,
-    pub slip39_passphrase: &'a str,
-}
-
 #[derive(Serialize)]
 struct EncryptedSecretExport {
     format: &'static str,
@@ -249,16 +228,6 @@ struct StoredMnemonicEncryptedPayload {
     wallet_name: String,
     network: String,
     mnemonic: String,
-}
-
-#[derive(Serialize)]
-struct Slip39EncryptedPayload<'a> {
-    wallet_name: &'a str,
-    network: &'a str,
-    threshold: u8,
-    share_count: u8,
-    slip39_passphrase: &'a str,
-    shares: &'a [String],
 }
 
 #[derive(Deserialize)]
@@ -403,32 +372,6 @@ pub fn export_slip39_shares_to_pdf_directory(
     }
 
     Ok(export_dir)
-}
-
-pub fn export_slip39_shares_to_encrypted_file(
-    path: &Path,
-    export: &Slip39EncryptedExport<'_>,
-    shares: &[String],
-    encryption_passphrase: &str,
-) -> Result<(), String> {
-    if shares.is_empty() {
-        return Err(t(
-            "Không có SLIP-0039 share nào để export",
-            "No SLIP-0039 shares available to export",
-        )
-        .to_string());
-    }
-
-    let payload = Slip39EncryptedPayload {
-        wallet_name: export.wallet_name,
-        network: export.network,
-        threshold: export.threshold,
-        share_count: export.share_count,
-        slip39_passphrase: export.slip39_passphrase,
-        shares,
-    };
-
-    write_encrypted_export(path, "slip39_backup", &payload, encryption_passphrase)
 }
 
 pub fn load_encrypted_secret_export(
@@ -828,8 +771,7 @@ mod tests {
     };
 
     use super::{
-        export_mnemonic_to_encrypted_file, export_slip39_shares_to_encrypted_file,
-        load_encrypted_secret_export, DecryptedSecretExport, Slip39EncryptedExport,
+        export_mnemonic_to_encrypted_file, load_encrypted_secret_export, DecryptedSecretExport,
     };
 
     fn unique_temp_path(file_name: &str) -> PathBuf {
@@ -868,49 +810,6 @@ mod tests {
                 wallet_name: "Primary".to_string(),
                 network: "testnet".to_string(),
                 mnemonic: mnemonic.to_string(),
-            }
-        );
-
-        fs::remove_file(path).expect("temporary export file should be removable");
-    }
-
-    #[test]
-    fn encrypted_slip39_export_round_trips() {
-        let path = unique_temp_path("slip39.enc");
-        let shares = vec![
-            "shadow pistol academic always adequate wildlife fancy gross oasis cylinder mustang wrist rescue view short".to_string(),
-            "shadow pistol academic always adult dream edge campus tedious branch rhythm grin theory busy debut".to_string(),
-            "shadow pistol academic always alcohol wits mailman lava husband erode vacuum engine knife imply".to_string(),
-        ];
-
-        let export = Slip39EncryptedExport {
-            wallet_name: "Vault",
-            network: "mainnet",
-            threshold: 2,
-            share_count: 3,
-            slip39_passphrase: "hidden-passphrase",
-        };
-
-        export_slip39_shares_to_encrypted_file(
-            &path,
-            &export,
-            &shares,
-            "correct horse battery staple",
-        )
-        .expect("encrypted SLIP-0039 export should succeed");
-
-        let decoded = load_encrypted_secret_export(&path, "correct horse battery staple")
-            .expect("encrypted SLIP-0039 import should succeed");
-
-        assert_eq!(
-            decoded,
-            DecryptedSecretExport::Slip39 {
-                wallet_name: "Vault".to_string(),
-                network: "mainnet".to_string(),
-                threshold: 2,
-                share_count: 3,
-                slip39_passphrase: "hidden-passphrase".to_string(),
-                shares,
             }
         );
 

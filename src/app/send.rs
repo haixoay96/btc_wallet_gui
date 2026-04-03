@@ -262,7 +262,7 @@ impl App {
                     return Task::none();
                 }
 
-                self.save_state();
+                let save_succeeded = self.save_state();
                 self.update_dashboard();
 
                 let short_txid = short_txid(&payload.txid);
@@ -283,7 +283,9 @@ impl App {
                 self.send_view.set_success(send_message.clone());
                 self.send_view.clear_form();
                 self.status = Some(send_message);
-                self.error = None;
+                if save_succeeded {
+                    self.error = None;
+                }
             }
             Err(err) => {
                 self.send_view.set_error(err.clone());
