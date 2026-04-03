@@ -104,7 +104,7 @@ jobs:
       with:
         name: ${{ matrix.artifact }}
         path: |
-          target/release/btc_wallet_gui
+          target/release/*-setup.exe
 
   create-universal-macos:
     name: Create macOS Universal Binary
@@ -116,38 +116,105 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: btc_wallet_gui_macos_intel
+        path: intel_artifact
 
     - name: Download ARM64 binary
       uses: actions/download-artifact@v4
       with:
         name: btc_wallet_gui_macos_arm64
+        path: arm64_artifact
+
+    - name: Debug - List artifact contents
+      run: |
+        echo "=== Intel artifact contents ==="
+        ls -la intel_artifact/
+        find intel_artifact -name "*.app" -type d
+        echo ""
+        echo "=== ARM64 artifact contents ==="
+        ls -la arm64_artifact/
+        find arm64_artifact -name "*.app" -type d
 
     - name: Extract binaries
       run: |
-        # Navigate into downloaded artifact directories and extract the actual binaries
-        # The artifacts are directories containing .app bundles
-        cd btc_wallet_gui_macos_intel
-        # Find the .app bundle and extract the executable from Contents/MacOS/
-        APP_NAME=$(find . -name "*.app" -type d | head -1 | xargs basename)
-        cp "${APP_NAME}/Contents/MacOS/${APP_NAME%.app}" ../btc_wallet_gui_intel
+        set -e
+        
+        # Extract Intel binary
+        cd intel_artifact
+        INTEL_APP=$(find . -name "*.app" -type d | head -1)
+        if [ -z "$INTEL_APP" ]; then
+          echo "Error: No .app bundle found in Intel artifact"
+          exit 1
+        fi
+        
+        # Get the executable name from inside the .app bundle
+        APP_BASENAME=$(basename "$INTEL_APP" .app)
+        EXECUTABLE_PATH="${INTEL_APP}/Contents/MacOS/${APP_BASENAME}"
+        
+        # If executable not found with app name, try to find any executable
+        if [ ! -f "$EXECUTABLE_PATH" ]; then
+          EXECUTABLE_PATH=$(find "${INTEL_APP}/Contents/MacOS" -type f | head -1)
+        fi
+        
+        if [ -z "$EXECUTABLE_PATH" ] || [ ! -f "$EXECUTABLE_PATH" ]; then
+          echo "Error: No executable found in Intel .app bundle"
+          exit 1
+        fi
+        
+        cp "$EXECUTABLE_PATH" ../btc_wallet_gui_intel
         cd ..
         
-        cd btc_wallet_gui_macos_arm64
-        # Find the .app bundle and extract the executable from Contents/MacOS/
-        APP_NAME=$(find . -name "*.app" -type d | head -1 | xargs basename)
-        cp "${APP_NAME}/Contents/MacOS/${APP_NAME%.app}" ../btc_wallet_gui_arm64
+        # Extract ARM64 binary
+        cd arm64_artifact
+        ARM64_APP=$(find . -name "*.app" -type d | head -1)
+        if [ -z "$ARM64_APP" ]; then
+          echo "Error: No .app bundle found in ARM64 artifact"
+          exit 1
+        fi
+        
+        # Get the executable name from inside the .app bundle
+        APP_BASENAME=$(basename "$ARM64_APP" .app)
+        EXECUTABLE_PATH="${ARM64_APP}/Contents/MacOS/${APP_BASENAME}"
+        
+        # If executable not found with app name, try to find any executable
+        if [ ! -f "$EXECUTABLE_PATH" ]; then
+          EXECUTABLE_PATH=$(find "${ARM64_APP}/Contents/MacOS" -type f | head -1)
+        fi
+        
+        if [ -z "$EXECUTABLE_PATH" ] || [ ! -f "$EXECUTABLE_PATH" ]; then
+          echo "Error: No executable found in ARM64 .app bundle"
+          exit 1
+        fi
+        
+        cp "$EXECUTABLE_PATH" ../btc_wallet_gui_arm64
         cd ..
         
         # Make binaries executable
         chmod +x btc_wallet_gui_intel btc_wallet_gui_arm64
+        
+        echo "Successfully extracted binaries:"
+        ls -la btc_wallet_gui_intel btc_wallet_gui_arm64
+        file btc_wallet_gui_intel btc_wallet_gui_arm64
 
     - name: Create universal binary
       run: |
+        set -e
+        
+        if [ ! -f btc_wallet_gui_intel ] || [ ! -f btc_wallet_gui_arm64 ]; then
+          echo "Error: Binary files not found"
+          exit 1
+        fi
+        
         lipo -create \
           btc_wallet_gui_intel \
           btc_wallet_gui_arm64 \
           -output btc_wallet_gui_macos_universal
+        
         chmod +x btc_wallet_gui_macos_universal
+        
+        echo "Universal binary created:"
+        file btc_wallet_gui_macos_universal
+        lipo -info btc_wallet_gui_macos_universal
+        
         tar -czf btc_wallet_gui_macos_universal.tar.gz btc_wallet_gui_macos_universal
 
     - name: Upload universal binary
