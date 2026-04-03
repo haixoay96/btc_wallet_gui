@@ -128,10 +128,22 @@ jobs:
 
     - name: Extract binaries
       run: |
-        tar -xzf btc_wallet_gui_macos_intel.tar.gz
-        mv btc_wallet_gui btc_wallet_gui_intel
-        tar -xzf btc_wallet_gui_macos_arm64.tar.gz
-        mv btc_wallet_gui btc_wallet_gui_arm64
+        # Navigate into downloaded artifact directories and extract the actual binaries
+        # The artifacts are directories containing .app bundles
+        cd btc_wallet_gui_macos_intel
+        # Find the .app bundle and extract the executable from Contents/MacOS/
+        APP_NAME=$(find . -name "*.app" -type d | head -1 | xargs basename)
+        cp "${APP_NAME}/Contents/MacOS/${APP_NAME%.app}" ../btc_wallet_gui_intel
+        cd ..
+        
+        cd btc_wallet_gui_macos_arm64
+        # Find the .app bundle and extract the executable from Contents/MacOS/
+        APP_NAME=$(find . -name "*.app" -type d | head -1 | xargs basename)
+        cp "${APP_NAME}/Contents/MacOS/${APP_NAME%.app}" ../btc_wallet_gui_arm64
+        cd ..
+        
+        # Make binaries executable
+        chmod +x btc_wallet_gui_intel btc_wallet_gui_arm64
 
     - name: Create universal binary
       run: |
