@@ -133,25 +133,35 @@ jobs:
       run: |
         mkdir -p release_files
         
-        # Copy macOS Intel app
-        if [ -d "artifacts/btc_wallet_gui_macos_intel" ]; then
-          cp -r artifacts/btc_wallet_gui_macos_intel/*.app release_files/ 2>/dev/null || true
-        fi
+        # macOS Intel - copy .app bundle and rename with platform
+        find artifacts/btc_wallet_gui_macos_intel -name "*.app" -type d | while read app; do
+          APP_NAME=$(basename "$app" .app)
+          cp -r "$app" "release_files/${APP_NAME} macOS-Intel.app"
+          echo "Copied: ${APP_NAME} macOS-Intel.app"
+        done
         
-        # Copy macOS ARM64 app
-        if [ -d "artifacts/btc_wallet_gui_macos_arm64" ]; then
-          cp -r artifacts/btc_wallet_gui_macos_arm64/*.app release_files/ 2>/dev/null || true
-        fi
+        # macOS ARM64 - copy .app bundle and rename with platform
+        find artifacts/btc_wallet_gui_macos_arm64 -name "*.app" -type d | while read app; do
+          APP_NAME=$(basename "$app" .app)
+          cp -r "$app" "release_files/${APP_NAME} macOS-ARM64.app"
+          echo "Copied: ${APP_NAME} macOS-ARM64.app"
+        done
         
-        # Copy Windows installer
-        if [ -d "artifacts/btc_wallet_gui_windows_x64" ]; then
-          cp artifacts/btc_wallet_gui_windows_x64/*-setup.exe release_files/ 2>/dev/null || true
-        fi
+        # Windows - copy installer and add platform to name
+        find artifacts/btc_wallet_gui_windows_x64 -name "*-setup.exe" | while read exe; do
+          EXE_NAME=$(basename "$exe")
+          NEW_NAME="${EXE_NAME/-setup.exe/ Windows-setup.exe}"
+          cp "$exe" "release_files/$NEW_NAME"
+          echo "Copied: $NEW_NAME"
+        done
         
-        # Copy Linux AppImage
-        if [ -d "artifacts/btc_wallet_gui_linux_x64" ]; then
-          cp artifacts/btc_wallet_gui_linux_x64/*.AppImage release_files/ 2>/dev/null || true
-        fi
+        # Linux - copy AppImage and add platform to name
+        find artifacts/btc_wallet_gui_linux_x64 -name "*.AppImage" | while read appimage; do
+          APPIMAGE_NAME=$(basename "$appimage")
+          NEW_NAME="${APPIMAGE_NAME/.AppImage/ Linux.AppImage}"
+          cp "$appimage" "release_files/$NEW_NAME"
+          echo "Copied: $NEW_NAME"
+        done
         
         echo "=== Files prepared for release ==="
         ls -la release_files/
