@@ -64,10 +64,6 @@ impl Storage {
         self.save_encrypted_state(&self.paths.encrypted_state_file, state, passphrase)
     }
 
-    // pub fn encrypted_state_exists(&self) -> bool {
-    //     self.paths.encrypted_state_file.exists()
-    // }
-
     pub fn has_existing_state(&self) -> bool {
         self.paths.encrypted_state_file.exists()
     }
@@ -171,10 +167,6 @@ impl Storage {
         Ok(state)
     }
 
-    // fn load_plain_state(&self, path: &std::path::Path) -> Result<PersistedState> {
-    //     legacy::load_plain_state(path)
-    // }
-
     fn save_encrypted_state(
         &self,
         path: &std::path::Path,
@@ -221,27 +213,7 @@ impl Storage {
 
         Ok(state)
     }
-
-    // fn archive_legacy_file(&self, path: &std::path::Path) -> Result<()> {
-    //     legacy::archive_legacy_file(path)
-    // }
 }
-
-// Re-export for backward compatibility
-// pub fn load_state(passphrase: &str) -> Result<PersistedState> {
-//     let storage = Storage::new()?;
-//     storage.load_state(passphrase)
-// }
-
-// pub fn save_state(state: &PersistedState, passphrase: &str) -> Result<()> {
-//     let storage = Storage::new()?;
-//     storage.save_state(state, passphrase)
-// }
-
-// pub fn encrypted_state_exists() -> Result<bool> {
-//     let storage = Storage::new()?;
-//     Ok(storage.encrypted_state_exists())
-// }
 
 fn remove_file_if_exists(path: &Path) -> Result<()> {
     match fs::remove_file(path) {

@@ -139,10 +139,6 @@ impl SendView {
         self.error = None;
     }
 
-    pub fn set_show_confirm(&mut self, show: bool) {
-        self.show_confirm = show;
-    }
-
     pub fn clear_form(&mut self) {
         self.to_address.clear();
         self.amount.clear();
@@ -268,7 +264,7 @@ impl SendView {
                     return None;
                 }
 
-                let amount_sat = match parse_btc_to_sat(&self.amount, "số lượng", "amount") {
+                let _amount_sat = match parse_btc_to_sat(&self.amount, "số lượng", "amount") {
                     Ok(value) => value,
                     Err(err) => {
                         self.error = Some(err);
@@ -276,7 +272,7 @@ impl SendView {
                     }
                 };
 
-                let fee_sat = if !self.fee_amount.trim().is_empty() {
+                let _fee_sat = if !self.fee_amount.trim().is_empty() {
                     match parse_btc_to_sat(&self.fee_amount, "phí", "fee") {
                         Ok(value) => Some(value),
                         Err(err) => {

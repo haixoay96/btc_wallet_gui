@@ -22,12 +22,7 @@ use crate::views::{
     sidebar::{NavItem, Sidebar, SidebarMessage, SidebarEvent},
     wallets::{WalletsMessage, WalletsView},
 };
-use crate::wallet::{
-    ChangeStrategy, InputSource, Wallet,
-};
-
-// Re-export SendRequest from views/send
-pub use crate::views::send::SendRequest;
+use crate::wallet::Wallet;
 
 #[derive(Debug, Clone)]
 pub enum AppState {
@@ -204,7 +199,7 @@ impl App {
             },
             AppState::Main => {
                 let sidebar = self.sidebar.view().map(AppMessage::SidebarMessage);
-                let selected_wallet = self.wallets.get(self.selected_wallet);
+                let _selected_wallet = self.wallets.get(self.selected_wallet);
 
                 let main_content = match self.current_page {
                     NavItem::Dashboard => self.dashboard.view().map(AppMessage::DashboardMessage),

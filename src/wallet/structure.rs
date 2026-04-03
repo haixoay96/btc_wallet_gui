@@ -23,12 +23,6 @@ use super::{
     ESTIMATE_P2WPKH_INPUT_VB, ESTIMATE_P2WPKH_OUTPUT_VB,
 };
 
-#[derive(Debug, Clone, Copy)]
-pub enum FeeMode {
-    FixedSat(u64),
-    Auto,
-}
-
 #[derive(Debug, Clone)]
 pub enum InputSource {
     All,
@@ -60,7 +54,6 @@ impl Default for TxBuildOptions {
 
 #[derive(Debug, Clone)]
 pub struct BuildTxResult {
-    pub raw_hex: String,
     pub txid: String,
     pub broadcasted: bool,
 }
@@ -255,31 +248,6 @@ impl Wallet {
         }
 
         Ok(shares)
-    }
-
-    pub fn from_account_xprv(
-        name: &str,
-        network: WalletNetwork,
-        account_xprv: &str,
-    ) -> Result<Self> {
-        let secp = Secp256k1::new();
-        let parsed_xprv = Xpriv::from_str(account_xprv).context("xprv không hợp lệ")?;
-        let account_xpub = Xpub::from_priv(&secp, &parsed_xprv);
-
-        let mut wallet = Wallet {
-            name: name.trim().to_string(),
-            network,
-            mnemonic: None,
-            mnemonic_backed_up: true,
-            account_xprv: parsed_xprv.to_string(),
-            account_xpub: account_xpub.to_string(),
-            next_index: 0,
-            addresses: Vec::new(),
-            history: Vec::new(),
-        };
-
-        wallet.derive_next_addresses(DEFAULT_GAP_LIMIT)?;
-        Ok(wallet)
     }
 
     fn create_wallet_from_mnemonic(
@@ -533,10 +501,10 @@ impl Wallet {
 
         self.sign_transaction(&selected, &mut tx)?;
 
-        let raw_hex = consensus::encode::serialize_hex(&tx);
         let txid = tx.compute_txid().to_string();
 
         if options.broadcast {
+            let raw_hex = consensus::encode::serialize_hex(&tx);
             self.broadcast_transaction(&raw_hex)?;
         }
 
@@ -553,7 +521,6 @@ impl Wallet {
         );
 
         Ok(BuildTxResult {
-            raw_hex,
             txid,
             broadcasted: options.broadcast,
         })
@@ -642,104 +609,6 @@ impl Wallet {
         }
 
         Ok((max_amount, fee))
-    }
-
-    pub fn create_send_all_transaction_with_options(
-        &mut self,
-        to_address: &str,
-        fee_mode: FeeMode,
-        options: TxBuildOptions,
-    ) -> Result<BuildTxResult> {
-        if self.addresses.is_empty() {
-            self.derive_next_addresses(DEFAULT_GAP_LIMIT)?;
-        }
-
-        let unchecked = Address::from_str(to_address).context("Địa chỉ nhận không hợp lệ")?;
-        let to_address = unchecked
-            .require_network(self.network.bitcoin_network())
-            .context("Địa chỉ nhận không đúng network của ví")?;
-
-        let mut utxos = self.collect_spendable_utxos_by_source(&options.input_source)?;
-        utxos.sort_by_key(|u| u.value);
-        utxos.reverse();
-
-        if utxos.is_empty() {
-            return Err(anyhow!("Không có UTXO để chuyển hết số dư"));
-        }
-
-        let total_input = utxos.iter().try_fold(0u64, |acc, utxo| {
-            acc.checked_add(utxo.value)
-                .ok_or_else(|| anyhow!("Tổng UTXO bị overflow"))
-        })?;
-
-        let fee_sat = match fee_mode {
-            FeeMode::FixedSat(value) => value,
-            FeeMode::Auto => self.estimate_auto_fee_sat(utxos.len(), 1)?,
-        };
-
-        if total_input <= fee_sat {
-            return Err(anyhow!(
-                "Không đủ số dư để trả fee. Tổng={} sat, fee={} sat",
-                total_input,
-                fee_sat
-            ));
-        }
-
-        let amount_sat = total_input - fee_sat;
-        if amount_sat < DUST_LIMIT_SAT {
-            return Err(anyhow!(
-                "Số tiền gửi sau khi trừ fee quá nhỏ ({} sat)",
-                amount_sat
-            ));
-        }
-
-        let mut tx = Transaction {
-            version: Version::TWO,
-            lock_time: absolute::LockTime::ZERO,
-            input: utxos
-                .iter()
-                .map(|utxo| TxIn {
-                    previous_output: OutPoint {
-                        txid: utxo.txid,
-                        vout: utxo.vout,
-                    },
-                    script_sig: ScriptBuf::new(),
-                    sequence: Sequence::ENABLE_RBF_NO_LOCKTIME,
-                    witness: Witness::new(),
-                })
-                .collect(),
-            output: vec![TxOut {
-                value: Amount::from_sat(amount_sat),
-                script_pubkey: to_address.script_pubkey(),
-            }],
-        };
-
-        self.sign_transaction(&utxos, &mut tx)?;
-
-        let raw_hex = consensus::encode::serialize_hex(&tx);
-        let txid = tx.compute_txid().to_string();
-
-        if options.broadcast {
-            self.broadcast_transaction(&raw_hex)?;
-        }
-
-        self.history.insert(
-            0,
-            TxRecord {
-                txid: txid.clone(),
-                direction: TxDirection::Outgoing,
-                amount_sat: -(i64::try_from(amount_sat).unwrap_or(i64::MAX)),
-                fee_sat: Some(fee_sat),
-                confirmed: false,
-                block_time: None,
-            },
-        );
-
-        Ok(BuildTxResult {
-            raw_hex,
-            txid,
-            broadcasted: options.broadcast,
-        })
     }
 
     fn collect_spendable_utxos_by_source(

@@ -2,7 +2,7 @@ mod api_types;
 mod structure;
 
 pub use structure::{
-    ChangeStrategy, FeeMode, InputSource, TxBuildOptions,
+    ChangeStrategy, InputSource, TxBuildOptions,
     TxDirection, TxRecord, Wallet, WalletNetwork,
 };
 
