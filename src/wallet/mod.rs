@@ -1,8 +1,13 @@
 mod api_types;
 mod esplora;
+mod secrets;
 mod structure;
 mod validation;
 
+pub use secrets::{
+    runtime_wallets_from_stored, stored_wallets_from_runtime, StoredWallet, WalletSecretsRef,
+    WalletSecretsVault,
+};
 pub use structure::{
     AddressChain, ChangeStrategy, InputSource, TxBuildOptions, TxDirection, TxRecord, Wallet,
     WalletNetwork,

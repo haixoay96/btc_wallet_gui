@@ -75,6 +75,7 @@ impl SettingsView {
         self.current_passphrase.clear();
         self.new_passphrase.clear();
         self.confirm_passphrase.clear();
+        self.clear_data_passphrase.clear();
     }
 
     pub fn update(&mut self, message: SettingsMessage) -> Option<SettingsEvent> {

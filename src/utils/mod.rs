@@ -6,8 +6,31 @@ use std::{
 };
 
 use printpdf::{BuiltinFont, Mm, PdfDocument};
+use serde::{Deserialize, Serialize};
+use zeroize::Zeroize;
 
 use crate::i18n::t;
+use crate::storage::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
+
+const ENCRYPTED_SECRET_EXPORT_FORMAT: &str = "btc_wallet_gui_encrypted_export";
+const ENCRYPTED_SECRET_EXPORT_VERSION: u8 = 1;
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum DecryptedSecretExport {
+    Mnemonic {
+        wallet_name: String,
+        network: String,
+        mnemonic: String,
+    },
+    Slip39 {
+        wallet_name: String,
+        network: String,
+        threshold: u8,
+        share_count: u8,
+        slip39_passphrase: String,
+        shares: Vec<String>,
+    },
+}
 
 // Utility functions
 
@@ -45,6 +68,16 @@ pub fn pick_import_backup_path() -> Option<PathBuf> {
         .pick_file()
 }
 
+pub fn pick_encrypted_secret_import_path() -> Option<PathBuf> {
+    rfd::FileDialog::new()
+        .set_title(t(
+            "Chọn file backup mã hóa (.enc)",
+            "Choose encrypted backup file (.enc)",
+        ))
+        .add_filter(t("File mã hóa", "Encrypted file"), &["enc"])
+        .pick_file()
+}
+
 pub fn pick_export_backup_path(current_path: &str) -> Option<PathBuf> {
     let resolved = resolve_user_path(current_path);
 
@@ -73,6 +106,14 @@ pub fn pick_mnemonic_pdf_path(default_file_name: &str) -> Option<PathBuf> {
         .save_file()
 }
 
+pub fn pick_encrypted_export_path(title: &str, default_file_name: &str) -> Option<PathBuf> {
+    rfd::FileDialog::new()
+        .set_title(title)
+        .add_filter(t("File mã hóa", "Encrypted file"), &["enc"])
+        .set_file_name(default_file_name)
+        .save_file()
+}
+
 pub fn pick_slip39_export_directory() -> Option<PathBuf> {
     rfd::FileDialog::new()
         .set_title(t(
@@ -86,9 +127,26 @@ pub fn default_mnemonic_pdf_filename(wallet_name: &str) -> String {
     format!("{}_mnemonic_backup.pdf", sanitize_filename(wallet_name))
 }
 
+pub fn default_mnemonic_encrypted_filename(wallet_name: &str) -> String {
+    format!("{}_mnemonic_backup.enc", sanitize_filename(wallet_name))
+}
+
 pub fn default_slip39_directory_name(wallet_name: &str, threshold: u8, share_count: u8) -> String {
     format!(
         "{}_slip39_{}of{}",
+        sanitize_filename(wallet_name),
+        threshold,
+        share_count
+    )
+}
+
+pub fn default_slip39_encrypted_filename(
+    wallet_name: &str,
+    threshold: u8,
+    share_count: u8,
+) -> String {
+    format!(
+        "{}_slip39_{}of{}.enc",
         sanitize_filename(wallet_name),
         threshold,
         share_count
@@ -127,6 +185,20 @@ pub fn ensure_pdf_extension(mut path: PathBuf) -> PathBuf {
     path
 }
 
+pub fn ensure_enc_extension(mut path: PathBuf) -> PathBuf {
+    let has_enc = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("enc"))
+        .unwrap_or(false);
+
+    if !has_enc {
+        path.set_extension("enc");
+    }
+
+    path
+}
+
 pub fn normalize_nickname(raw: Option<&str>) -> Option<String> {
     raw.map(str::trim)
         .filter(|value| !value.is_empty())
@@ -139,6 +211,64 @@ pub struct Slip39PdfExport<'a> {
     pub threshold: u8,
     pub share_count: u8,
     pub has_slip39_passphrase: bool,
+}
+
+pub struct Slip39EncryptedExport<'a> {
+    pub wallet_name: &'a str,
+    pub network: &'a str,
+    pub threshold: u8,
+    pub share_count: u8,
+    pub slip39_passphrase: &'a str,
+}
+
+#[derive(Serialize)]
+struct EncryptedSecretExport {
+    format: &'static str,
+    version: u8,
+    kind: &'static str,
+    envelope: EncryptedEnvelope,
+}
+
+#[derive(Deserialize)]
+struct StoredEncryptedSecretExport {
+    format: String,
+    version: u8,
+    kind: String,
+    envelope: EncryptedEnvelope,
+}
+
+#[derive(Serialize)]
+struct MnemonicEncryptedPayload<'a> {
+    wallet_name: &'a str,
+    network: &'a str,
+    mnemonic: &'a str,
+}
+
+#[derive(Deserialize)]
+struct StoredMnemonicEncryptedPayload {
+    wallet_name: String,
+    network: String,
+    mnemonic: String,
+}
+
+#[derive(Serialize)]
+struct Slip39EncryptedPayload<'a> {
+    wallet_name: &'a str,
+    network: &'a str,
+    threshold: u8,
+    share_count: u8,
+    slip39_passphrase: &'a str,
+    shares: &'a [String],
+}
+
+#[derive(Deserialize)]
+struct StoredSlip39EncryptedPayload {
+    wallet_name: String,
+    network: String,
+    threshold: u8,
+    share_count: u8,
+    slip39_passphrase: String,
+    shares: Vec<String>,
 }
 
 // PDF export functions
@@ -233,6 +363,22 @@ pub fn export_mnemonic_to_pdf(
     Ok(())
 }
 
+pub fn export_mnemonic_to_encrypted_file(
+    path: &Path,
+    wallet_name: &str,
+    network: &str,
+    mnemonic: &str,
+    encryption_passphrase: &str,
+) -> Result<(), String> {
+    let payload = MnemonicEncryptedPayload {
+        wallet_name,
+        network,
+        mnemonic,
+    };
+
+    write_encrypted_export(path, "mnemonic_backup", &payload, encryption_passphrase)
+}
+
 pub fn export_slip39_shares_to_pdf_directory(
     base_directory: &Path,
     directory_name: &str,
@@ -257,6 +403,50 @@ pub fn export_slip39_shares_to_pdf_directory(
     }
 
     Ok(export_dir)
+}
+
+pub fn export_slip39_shares_to_encrypted_file(
+    path: &Path,
+    export: &Slip39EncryptedExport<'_>,
+    shares: &[String],
+    encryption_passphrase: &str,
+) -> Result<(), String> {
+    if shares.is_empty() {
+        return Err(t(
+            "Không có SLIP-0039 share nào để export",
+            "No SLIP-0039 shares available to export",
+        )
+        .to_string());
+    }
+
+    let payload = Slip39EncryptedPayload {
+        wallet_name: export.wallet_name,
+        network: export.network,
+        threshold: export.threshold,
+        share_count: export.share_count,
+        slip39_passphrase: export.slip39_passphrase,
+        shares,
+    };
+
+    write_encrypted_export(path, "slip39_backup", &payload, encryption_passphrase)
+}
+
+pub fn load_encrypted_secret_export(
+    path: &Path,
+    decryption_passphrase: &str,
+) -> Result<DecryptedSecretExport, String> {
+    let encoded = fs::read(path).map_err(|err| {
+        format!(
+            "{} {}: {err}",
+            t(
+                "Không đọc được file backup mã hóa",
+                "Could not read encrypted backup file",
+            ),
+            path.display()
+        )
+    })?;
+
+    decode_encrypted_secret_export(&encoded, decryption_passphrase)
 }
 
 fn create_unique_export_directory(
@@ -425,4 +615,305 @@ fn export_slip39_share_to_pdf(
     })?;
 
     Ok(())
+}
+
+fn write_encrypted_export<T: Serialize>(
+    path: &Path,
+    kind: &'static str,
+    payload: &T,
+    encryption_passphrase: &str,
+) -> Result<(), String> {
+    let mut plaintext = serde_json::to_vec(payload).map_err(|err| {
+        format!(
+            "{}: {err}",
+            t(
+                "Không serialize được dữ liệu secret",
+                "Could not serialize secret data"
+            )
+        )
+    })?;
+
+    let envelope = encrypt_blob(&plaintext, encryption_passphrase).map_err(|err| err.to_string());
+    plaintext.zeroize();
+    let envelope = envelope?;
+
+    let export = EncryptedSecretExport {
+        format: ENCRYPTED_SECRET_EXPORT_FORMAT,
+        version: ENCRYPTED_SECRET_EXPORT_VERSION,
+        kind,
+        envelope,
+    };
+
+    let encoded = serde_json::to_vec_pretty(&export).map_err(|err| {
+        format!(
+            "{}: {err}",
+            t(
+                "Không serialize được file export mã hóa",
+                "Could not serialize encrypted export file",
+            )
+        )
+    })?;
+
+    let parent = path
+        .parent()
+        .filter(|dir| !dir.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent).map_err(|err| {
+        format!(
+            "{} {}: {err}",
+            t(
+                "Không tạo được thư mục export",
+                "Could not create export directory"
+            ),
+            parent.display()
+        )
+    })?;
+
+    let tmp_path = path.with_extension("enc.tmp");
+    fs::write(&tmp_path, encoded).map_err(|err| {
+        format!(
+            "{} {}: {err}",
+            t(
+                "Không ghi được file export tạm",
+                "Could not write temporary export file"
+            ),
+            tmp_path.display()
+        )
+    })?;
+
+    fs::rename(&tmp_path, path).map_err(|err| {
+        format!(
+            "{} {}: {err}",
+            t(
+                "Không thể hoàn tất file export",
+                "Could not finalize export file"
+            ),
+            path.display()
+        )
+    })?;
+
+    Ok(())
+}
+
+fn decode_encrypted_secret_export(
+    encoded: &[u8],
+    decryption_passphrase: &str,
+) -> Result<DecryptedSecretExport, String> {
+    let export: StoredEncryptedSecretExport = serde_json::from_slice(encoded).map_err(|err| {
+        format!(
+            "{}: {err}",
+            t(
+                "File backup mã hóa không đúng định dạng JSON",
+                "Encrypted backup file is not valid JSON",
+            )
+        )
+    })?;
+
+    if export.format != ENCRYPTED_SECRET_EXPORT_FORMAT {
+        return Err(t(
+            "Định dạng file backup mã hóa không được hỗ trợ",
+            "Unsupported encrypted backup file format",
+        )
+        .to_string());
+    }
+
+    if export.version != ENCRYPTED_SECRET_EXPORT_VERSION {
+        return Err(format!(
+            "{}: {}",
+            t(
+                "Version file backup mã hóa không được hỗ trợ",
+                "Unsupported encrypted backup file version",
+            ),
+            export.version
+        ));
+    }
+
+    let mut plaintext =
+        decrypt_blob(&export.envelope, decryption_passphrase).map_err(|err| err.to_string())?;
+
+    let decoded = match export.kind.as_str() {
+        "mnemonic_backup" => {
+            let payload: StoredMnemonicEncryptedPayload = serde_json::from_slice(&plaintext)
+                .map_err(|err| {
+                    format!(
+                        "{}: {err}",
+                        t(
+                            "Payload mnemonic mã hóa không hợp lệ",
+                            "Encrypted mnemonic payload is invalid",
+                        )
+                    )
+                })?;
+
+            Ok(DecryptedSecretExport::Mnemonic {
+                wallet_name: payload.wallet_name,
+                network: payload.network,
+                mnemonic: payload.mnemonic,
+            })
+        }
+        "slip39_backup" => {
+            let payload: StoredSlip39EncryptedPayload = serde_json::from_slice(&plaintext)
+                .map_err(|err| {
+                    format!(
+                        "{}: {err}",
+                        t(
+                            "Payload SLIP-0039 mã hóa không hợp lệ",
+                            "Encrypted SLIP-0039 payload is invalid",
+                        )
+                    )
+                })?;
+
+            if payload.shares.is_empty() {
+                plaintext.zeroize();
+                return Err(t(
+                    "Backup SLIP-0039 mã hóa không chứa share nào",
+                    "Encrypted SLIP-0039 backup does not contain any shares",
+                )
+                .to_string());
+            }
+
+            if usize::from(payload.share_count) != payload.shares.len() {
+                plaintext.zeroize();
+                return Err(t(
+                    "Số lượng share trong backup SLIP-0039 không khớp metadata",
+                    "SLIP-0039 share count does not match backup metadata",
+                )
+                .to_string());
+            }
+
+            Ok(DecryptedSecretExport::Slip39 {
+                wallet_name: payload.wallet_name,
+                network: payload.network,
+                threshold: payload.threshold,
+                share_count: payload.share_count,
+                slip39_passphrase: payload.slip39_passphrase,
+                shares: payload.shares,
+            })
+        }
+        _ => Err(format!(
+            "{}: {}",
+            t(
+                "Loại backup mã hóa không được hỗ trợ",
+                "Unsupported encrypted backup kind",
+            ),
+            export.kind
+        )),
+    };
+
+    plaintext.zeroize();
+    decoded
+}
+
+impl Drop for DecryptedSecretExport {
+    fn drop(&mut self) {
+        match self {
+            Self::Mnemonic { mnemonic, .. } => mnemonic.zeroize(),
+            Self::Slip39 {
+                slip39_passphrase,
+                shares,
+                ..
+            } => {
+                slip39_passphrase.zeroize();
+                shares.iter_mut().for_each(Zeroize::zeroize);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        fs,
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    use super::{
+        export_mnemonic_to_encrypted_file, export_slip39_shares_to_encrypted_file,
+        load_encrypted_secret_export, DecryptedSecretExport, Slip39EncryptedExport,
+    };
+
+    fn unique_temp_path(file_name: &str) -> PathBuf {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock should be after unix epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "btc_wallet_gui_test_{}_{}_{}",
+            std::process::id(),
+            timestamp,
+            file_name
+        ))
+    }
+
+    #[test]
+    fn encrypted_mnemonic_export_round_trips() {
+        let path = unique_temp_path("mnemonic.enc");
+        let mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+        export_mnemonic_to_encrypted_file(
+            &path,
+            "Primary",
+            "testnet",
+            mnemonic,
+            "correct horse battery staple",
+        )
+        .expect("encrypted mnemonic export should succeed");
+
+        let decoded = load_encrypted_secret_export(&path, "correct horse battery staple")
+            .expect("encrypted mnemonic import should succeed");
+
+        assert_eq!(
+            decoded,
+            DecryptedSecretExport::Mnemonic {
+                wallet_name: "Primary".to_string(),
+                network: "testnet".to_string(),
+                mnemonic: mnemonic.to_string(),
+            }
+        );
+
+        fs::remove_file(path).expect("temporary export file should be removable");
+    }
+
+    #[test]
+    fn encrypted_slip39_export_round_trips() {
+        let path = unique_temp_path("slip39.enc");
+        let shares = vec![
+            "shadow pistol academic always adequate wildlife fancy gross oasis cylinder mustang wrist rescue view short".to_string(),
+            "shadow pistol academic always adult dream edge campus tedious branch rhythm grin theory busy debut".to_string(),
+            "shadow pistol academic always alcohol wits mailman lava husband erode vacuum engine knife imply".to_string(),
+        ];
+
+        let export = Slip39EncryptedExport {
+            wallet_name: "Vault",
+            network: "mainnet",
+            threshold: 2,
+            share_count: 3,
+            slip39_passphrase: "hidden-passphrase",
+        };
+
+        export_slip39_shares_to_encrypted_file(
+            &path,
+            &export,
+            &shares,
+            "correct horse battery staple",
+        )
+        .expect("encrypted SLIP-0039 export should succeed");
+
+        let decoded = load_encrypted_secret_export(&path, "correct horse battery staple")
+            .expect("encrypted SLIP-0039 import should succeed");
+
+        assert_eq!(
+            decoded,
+            DecryptedSecretExport::Slip39 {
+                wallet_name: "Vault".to_string(),
+                network: "mainnet".to_string(),
+                threshold: 2,
+                share_count: 3,
+                slip39_passphrase: "hidden-passphrase".to_string(),
+                shares,
+            }
+        );
+
+        fs::remove_file(path).expect("temporary export file should be removable");
+    }
 }

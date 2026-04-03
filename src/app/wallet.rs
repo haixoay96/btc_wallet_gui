@@ -1,10 +1,17 @@
+use anyhow::anyhow;
 use iced::{clipboard, Task};
+use secrecy::{ExposeSecret, SecretString};
+use zeroize::Zeroize;
 
 use crate::i18n::t;
 use crate::utils::{
-    address_count_text, default_mnemonic_pdf_filename, default_slip39_directory_name,
-    ensure_pdf_extension, export_mnemonic_to_pdf, export_slip39_shares_to_pdf_directory,
-    pick_mnemonic_pdf_path, pick_slip39_export_directory, Slip39PdfExport,
+    address_count_text, default_mnemonic_encrypted_filename, default_mnemonic_pdf_filename,
+    default_slip39_directory_name, default_slip39_encrypted_filename, ensure_enc_extension,
+    ensure_pdf_extension, export_mnemonic_to_encrypted_file, export_mnemonic_to_pdf,
+    export_slip39_shares_to_encrypted_file, export_slip39_shares_to_pdf_directory,
+    load_encrypted_secret_export, pick_encrypted_export_path, pick_encrypted_secret_import_path,
+    pick_mnemonic_pdf_path, pick_slip39_export_directory, resolve_user_path, DecryptedSecretExport,
+    Slip39EncryptedExport, Slip39PdfExport,
 };
 use crate::views::receive::{ReceiveEvent, ReceiveMessage};
 use crate::views::wallets::{WalletsEvent, WalletsMessage, WalletsView};
@@ -24,7 +31,9 @@ impl App {
                     network,
                     mnemonic,
                 } => {
-                    return self.handle_import_wallet_from_mnemonic(name, network, mnemonic);
+                    let task = self.handle_import_wallet_from_mnemonic(name, network, mnemonic);
+                    self.wallets_view.clear_import_sensitive_inputs();
+                    return task;
                 }
                 WalletsEvent::ImportWalletFromSlip39 {
                     name,
@@ -32,12 +41,31 @@ impl App {
                     shares,
                     slip39_passphrase,
                 } => {
-                    return self.handle_import_wallet_from_slip39(
+                    let task = self.handle_import_wallet_from_slip39(
                         name,
                         network,
                         shares,
                         slip39_passphrase,
                     );
+                    self.wallets_view.clear_import_sensitive_inputs();
+                    return task;
+                }
+                WalletsEvent::BrowseImportEncryptedPath => {
+                    if let Some(path) = pick_encrypted_secret_import_path() {
+                        self.wallets_view
+                            .set_import_encrypted_path(path.to_string_lossy().to_string());
+                    }
+                    return Task::none();
+                }
+                WalletsEvent::ImportWalletFromEncrypted {
+                    path,
+                    passphrase,
+                    name_override,
+                } => {
+                    let task =
+                        self.handle_import_wallet_from_encrypted(path, passphrase, name_override);
+                    self.wallets_view.clear_import_sensitive_inputs();
+                    return task;
                 }
                 WalletsEvent::SelectWallet(index) => {
                     return self.handle_select_wallet(index);
@@ -49,16 +77,23 @@ impl App {
                     wallet_index,
                     passphrase,
                 } => {
-                    return self.handle_reveal_mnemonic(wallet_index, passphrase);
+                    let task = self.handle_reveal_mnemonic(wallet_index, passphrase);
+                    self.wallets_view.clear_reveal_sensitive_inputs();
+                    return task;
                 }
                 WalletsEvent::VerifyMnemonicBackup {
                     wallet_index,
                     checks,
                 } => {
-                    return self.handle_verify_mnemonic_backup(wallet_index, checks);
+                    let task = self.handle_verify_mnemonic_backup(wallet_index, checks);
+                    self.wallets_view.clear_backup_test_inputs();
+                    return task;
                 }
                 WalletsEvent::ExportMnemonicPdf(index) => {
                     return self.handle_export_mnemonic_pdf(index);
+                }
+                WalletsEvent::ExportMnemonicEncrypted(index) => {
+                    return self.handle_export_mnemonic_encrypted(index);
                 }
                 WalletsEvent::ExportWalletSlip39 {
                     wallet_index,
@@ -66,12 +101,29 @@ impl App {
                     share_count,
                     slip39_passphrase,
                 } => {
-                    return self.handle_export_wallet_slip39(
+                    let task = self.handle_export_wallet_slip39(
                         wallet_index,
                         threshold,
                         share_count,
                         slip39_passphrase,
                     );
+                    self.wallets_view.clear_export_sensitive_inputs();
+                    return task;
+                }
+                WalletsEvent::ExportWalletSlip39Encrypted {
+                    wallet_index,
+                    threshold,
+                    share_count,
+                    slip39_passphrase,
+                } => {
+                    let task = self.handle_export_wallet_slip39_encrypted(
+                        wallet_index,
+                        threshold,
+                        share_count,
+                        slip39_passphrase,
+                    );
+                    self.wallets_view.clear_export_sensitive_inputs();
+                    return task;
                 }
             }
         }
@@ -83,9 +135,11 @@ impl App {
         name: String,
         network: WalletNetwork,
     ) -> Task<AppMessage> {
-        match Wallet::new(&name, network) {
-            Ok(wallet) => {
-                self.wallets.push(wallet);
+        match Wallet::generate(&name, network) {
+            Ok(bundle) => {
+                let wallet_id = bundle.wallet.wallet_id().to_string();
+                self.wallet_vault.insert(wallet_id, bundle.secrets);
+                self.wallets.push(bundle.wallet);
                 self.selected_wallet = self.wallets.len() - 1;
                 self.save_state();
                 self.update_dashboard();
@@ -118,8 +172,10 @@ impl App {
         mnemonic: String,
     ) -> Task<AppMessage> {
         match Wallet::from_mnemonic(&name, network, &mnemonic) {
-            Ok(wallet) => {
-                self.wallets.push(wallet);
+            Ok(bundle) => {
+                let wallet_id = bundle.wallet.wallet_id().to_string();
+                self.wallet_vault.insert(wallet_id, bundle.secrets);
+                self.wallets.push(bundle.wallet);
                 self.selected_wallet = self.wallets.len() - 1;
                 self.save_state();
                 self.update_dashboard();
@@ -155,8 +211,10 @@ impl App {
         slip39_passphrase: String,
     ) -> Task<AppMessage> {
         match Wallet::from_slip39_shares(&name, network, &shares, &slip39_passphrase) {
-            Ok(wallet) => {
-                self.wallets.push(wallet);
+            Ok(bundle) => {
+                let wallet_id = bundle.wallet.wallet_id().to_string();
+                self.wallet_vault.insert(wallet_id, bundle.secrets);
+                self.wallets.push(bundle.wallet);
                 self.selected_wallet = self.wallets.len() - 1;
                 self.save_state();
                 self.update_dashboard();
@@ -184,8 +242,135 @@ impl App {
         Task::none()
     }
 
+    pub fn handle_import_wallet_from_encrypted(
+        &mut self,
+        path: String,
+        mut passphrase: String,
+        name_override: Option<String>,
+    ) -> Task<AppMessage> {
+        let resolved_path = resolve_user_path(&path);
+        let import_result = load_encrypted_secret_export(&resolved_path, &passphrase);
+        passphrase.zeroize();
+
+        match import_result {
+            Ok(mut export) => {
+                let imported = match &mut export {
+                    DecryptedSecretExport::Mnemonic {
+                        wallet_name,
+                        network,
+                        mnemonic,
+                    } => {
+                        let import_name =
+                            resolve_encrypted_import_name(name_override.as_ref(), wallet_name);
+                        match parse_encrypted_import_network(network) {
+                            Ok(import_network) => {
+                                Wallet::from_mnemonic(&import_name, import_network, mnemonic).map(
+                                    |bundle| {
+                                        (
+                                            bundle,
+                                            import_name,
+                                            t(
+                                                "từ backup mnemonic mã hóa",
+                                                "from encrypted mnemonic backup",
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+                            Err(err) => Err(anyhow!(err)),
+                        }
+                    }
+                    DecryptedSecretExport::Slip39 {
+                        wallet_name,
+                        network,
+                        threshold,
+                        share_count,
+                        slip39_passphrase,
+                        shares,
+                    } => {
+                        if *threshold == 0 || *share_count < *threshold {
+                            Err(anyhow!(t(
+                                "Metadata SLIP-0039 trong backup mã hóa không hợp lệ",
+                                "Invalid SLIP-0039 metadata in encrypted backup",
+                            )))
+                        } else {
+                            let import_name =
+                                resolve_encrypted_import_name(name_override.as_ref(), wallet_name);
+                            match parse_encrypted_import_network(network) {
+                                Ok(import_network) => Wallet::from_slip39_shares(
+                                    &import_name,
+                                    import_network,
+                                    shares,
+                                    slip39_passphrase,
+                                )
+                                .map(|bundle| {
+                                    (
+                                        bundle,
+                                        import_name,
+                                        t(
+                                            "từ backup SLIP-0039 mã hóa",
+                                            "from encrypted SLIP-0039 backup",
+                                        ),
+                                    )
+                                }),
+                                Err(err) => Err(anyhow!(err)),
+                            }
+                        }
+                    }
+                };
+
+                match imported {
+                    Ok((bundle, name, source_label)) => {
+                        let wallet_id = bundle.wallet.wallet_id().to_string();
+                        self.wallet_vault.insert(wallet_id, bundle.secrets);
+                        self.wallets.push(bundle.wallet);
+                        self.selected_wallet = self.wallets.len() - 1;
+                        self.save_state();
+                        self.update_dashboard();
+                        self.wallets_view = WalletsView::new();
+                        self.wallets_view.set_info(t(
+                            "Import file .enc thành công. Ví này đã được đánh dấu backup.",
+                            "Encrypted .enc import succeeded. This wallet has been marked as backed up.",
+                        ));
+                        self.status = Some(format!(
+                            "{} '{name}' {}",
+                            t("Đã import ví", "Imported wallet"),
+                            source_label
+                        ));
+                        self.error = None;
+                    }
+                    Err(err) => {
+                        let message = format!(
+                            "{}: {err}",
+                            t(
+                                "Import backup mã hóa thất bại",
+                                "Encrypted backup import failed"
+                            )
+                        );
+                        self.wallets_view.set_error(message.clone());
+                        self.error = Some(message);
+                    }
+                }
+            }
+            Err(err) => {
+                let message = format!(
+                    "{}: {err}",
+                    t(
+                        "Import backup mã hóa thất bại",
+                        "Encrypted backup import failed"
+                    )
+                );
+                self.wallets_view.set_error(message.clone());
+                self.error = Some(message);
+            }
+        }
+
+        Task::none()
+    }
+
     pub fn handle_select_wallet(&mut self, index: usize) -> Task<AppMessage> {
         if index < self.wallets.len() {
+            self.clear_revealed_mnemonic();
             self.selected_wallet = index;
             self.status = Some(format!(
                 "{}: {}",
@@ -199,8 +384,11 @@ impl App {
 
     pub fn handle_delete_wallet(&mut self, index: usize) -> Task<AppMessage> {
         if index < self.wallets.len() {
+            self.clear_revealed_mnemonic();
             let name = self.wallets[index].name.clone();
+            let wallet_id = self.wallets[index].wallet_id().to_string();
             self.wallets.remove(index);
+            self.wallet_vault.remove(&wallet_id);
 
             if self.wallets.is_empty() {
                 self.selected_wallet = 0;
@@ -217,8 +405,13 @@ impl App {
     }
 
     pub fn handle_derive_addresses(&mut self, count: u32) -> Task<AppMessage> {
+        let Some(secrets) = self.wallet_secret_by_index(self.selected_wallet) else {
+            self.error = Some(t("Thiếu secret của ví", "Wallet secret is missing").to_string());
+            return Task::none();
+        };
+
         if let Some(wallet) = self.wallets.get_mut(self.selected_wallet) {
-            match wallet.derive_next_addresses(count) {
+            match wallet.derive_next_addresses(secrets.as_ref(), count) {
                 Ok(addresses) => {
                     self.save_state();
                     self.status = Some(format!(
@@ -249,24 +442,22 @@ impl App {
         wallet_index: usize,
         passphrase: String,
     ) -> Task<AppMessage> {
-        let active_passphrase = match &self.storage_passphrase {
-            Some(value) => value.clone(),
-            None => {
-                self.wallets_view.set_error(t(
-                    "Không có session đăng nhập hợp lệ",
-                    "No active login session found",
-                ));
-                return Task::none();
-            }
-        };
-
+        let passphrase = SecretString::from(passphrase);
         if wallet_index >= self.wallets.len() {
             self.wallets_view
                 .set_error(t("Ví không tồn tại", "Wallet does not exist"));
             return Task::none();
         }
 
-        if passphrase != active_passphrase {
+        if self.current_passphrase().is_none() {
+            self.wallets_view.set_error(t(
+                "Không có session đăng nhập hợp lệ",
+                "No active login session found",
+            ));
+            return Task::none();
+        }
+
+        if !self.passphrase_matches(passphrase.expose_secret()) {
             self.wallets_view.set_error(t(
                 "Passphrase không đúng, không thể hiển thị mnemonic",
                 "Incorrect passphrase, cannot reveal mnemonic",
@@ -275,7 +466,13 @@ impl App {
         }
 
         let wallet_name = self.wallets[wallet_index].name.clone();
-        if self.wallets[wallet_index].mnemonic.is_none() {
+        let Some(secrets) = self.wallet_secret_by_index(wallet_index) else {
+            self.wallets_view
+                .set_error(t("Thiếu secret của ví", "Wallet secret is missing"));
+            return Task::none();
+        };
+
+        if secrets.mnemonic_phrase().is_none() {
             self.wallets_view.set_error(t(
                 "Ví này không có mnemonic để hiển thị",
                 "This wallet has no mnemonic to reveal",
@@ -289,7 +486,7 @@ impl App {
             t("Đã mở khóa mnemonic cho ví", "Mnemonic unlocked for wallet")
         ));
         self.error = None;
-        Task::none()
+        self.schedule_revealed_mnemonic_timeout()
     }
 
     pub fn handle_verify_mnemonic_backup(
@@ -304,8 +501,12 @@ impl App {
         }
 
         let verification = {
-            let wallet = &self.wallets[wallet_index];
-            let mnemonic = match &wallet.mnemonic {
+            let Some(secrets) = self.wallet_secret_by_index(wallet_index) else {
+                self.wallets_view
+                    .set_error(t("Thiếu secret của ví", "Wallet secret is missing"));
+                return Task::none();
+            };
+            let mnemonic = match secrets.mnemonic_phrase() {
                 Some(value) => value,
                 None => {
                     self.wallets_view.set_error(t(
@@ -400,7 +601,12 @@ impl App {
         }
 
         let wallet = &self.wallets[wallet_index];
-        let mnemonic = match wallet.mnemonic.as_deref() {
+        let Some(secrets) = self.wallet_secret(wallet) else {
+            self.wallets_view
+                .set_error(t("Thiếu secret của ví", "Wallet secret is missing"));
+            return Task::none();
+        };
+        let mnemonic = match secrets.mnemonic_phrase() {
             Some(value) => value,
             None => {
                 self.wallets_view.set_error(t(
@@ -446,6 +652,84 @@ impl App {
         Task::none()
     }
 
+    pub fn handle_export_mnemonic_encrypted(&mut self, wallet_index: usize) -> Task<AppMessage> {
+        if wallet_index >= self.wallets.len() {
+            self.wallets_view
+                .set_error(t("Ví không tồn tại", "Wallet does not exist"));
+            return Task::none();
+        }
+
+        let encryption_passphrase = match self.current_passphrase() {
+            Some(value) => value.expose_secret(),
+            None => {
+                self.wallets_view.set_error(t(
+                    "Không có session đăng nhập hợp lệ",
+                    "No active login session found",
+                ));
+                return Task::none();
+            }
+        };
+
+        let wallet = &self.wallets[wallet_index];
+        let Some(secrets) = self.wallet_secret(wallet) else {
+            self.wallets_view
+                .set_error(t("Thiếu secret của ví", "Wallet secret is missing"));
+            return Task::none();
+        };
+        let mnemonic = match secrets.mnemonic_phrase() {
+            Some(value) => value,
+            None => {
+                self.wallets_view.set_error(t(
+                    "Ví này không có mnemonic để export mã hóa",
+                    "This wallet has no mnemonic to export as encrypted backup",
+                ));
+                return Task::none();
+            }
+        };
+
+        let default_name = default_mnemonic_encrypted_filename(&wallet.name);
+        let Some(raw_path) = pick_encrypted_export_path(
+            t("Lưu mnemonic mã hóa", "Save encrypted mnemonic backup"),
+            &default_name,
+        ) else {
+            return Task::none();
+        };
+        let export_path = ensure_enc_extension(raw_path);
+
+        match export_mnemonic_to_encrypted_file(
+            &export_path,
+            &wallet.name,
+            wallet.network.as_str(),
+            mnemonic,
+            encryption_passphrase,
+        ) {
+            Ok(_) => {
+                let message = format!(
+                    "{}: {}",
+                    t(
+                        "Đã export mnemonic mã hóa bằng passphrase hiện tại",
+                        "Exported encrypted mnemonic using the current passphrase",
+                    ),
+                    export_path.display()
+                );
+                self.wallets_view.set_info(message.clone());
+                self.status = Some(message);
+                self.error = None;
+            }
+            Err(err) => {
+                self.wallets_view.set_error(format!(
+                    "{}: {err}",
+                    t(
+                        "Export mnemonic mã hóa thất bại",
+                        "Failed to export encrypted mnemonic",
+                    )
+                ));
+            }
+        }
+
+        Task::none()
+    }
+
     pub fn handle_export_wallet_slip39(
         &mut self,
         wallet_index: usize,
@@ -460,7 +744,12 @@ impl App {
         }
 
         let wallet = &self.wallets[wallet_index];
-        let mnemonic = match wallet.mnemonic.as_deref() {
+        let Some(secrets) = self.wallet_secret(wallet) else {
+            self.wallets_view
+                .set_error(t("Thiếu secret của ví", "Wallet secret is missing"));
+            return Task::none();
+        };
+        let mnemonic = match secrets.mnemonic_phrase() {
             Some(value) => value,
             None => {
                 self.wallets_view.set_error(t(
@@ -529,6 +818,115 @@ impl App {
         Task::none()
     }
 
+    pub fn handle_export_wallet_slip39_encrypted(
+        &mut self,
+        wallet_index: usize,
+        threshold: u8,
+        share_count: u8,
+        slip39_passphrase: String,
+    ) -> Task<AppMessage> {
+        if wallet_index >= self.wallets.len() {
+            self.wallets_view
+                .set_error(t("Ví không tồn tại", "Wallet does not exist"));
+            return Task::none();
+        }
+
+        let encryption_passphrase = match self.current_passphrase() {
+            Some(value) => value.expose_secret(),
+            None => {
+                self.wallets_view.set_error(t(
+                    "Không có session đăng nhập hợp lệ",
+                    "No active login session found",
+                ));
+                return Task::none();
+            }
+        };
+
+        let wallet = &self.wallets[wallet_index];
+        let Some(secrets) = self.wallet_secret(wallet) else {
+            self.wallets_view
+                .set_error(t("Thiếu secret của ví", "Wallet secret is missing"));
+            return Task::none();
+        };
+        let mnemonic = match secrets.mnemonic_phrase() {
+            Some(value) => value,
+            None => {
+                self.wallets_view.set_error(t(
+                    "Ví này không có mnemonic để export SLIP-0039 mã hóa",
+                    "This wallet has no mnemonic to export as encrypted SLIP-0039 backup",
+                ));
+                return Task::none();
+            }
+        };
+
+        let shares = match Wallet::split_mnemonic_to_slip39_shares(
+            mnemonic,
+            threshold,
+            share_count,
+            &slip39_passphrase,
+        ) {
+            Ok(value) => value,
+            Err(err) => {
+                self.wallets_view.set_error(format!(
+                    "{}: {err}",
+                    t("Không thể tách SLIP-0039", "Could not split to SLIP-0039")
+                ));
+                return Task::none();
+            }
+        };
+
+        let default_name = default_slip39_encrypted_filename(&wallet.name, threshold, share_count);
+        let Some(raw_path) = pick_encrypted_export_path(
+            t(
+                "Lưu backup SLIP-0039 mã hóa",
+                "Save encrypted SLIP-0039 backup",
+            ),
+            &default_name,
+        ) else {
+            return Task::none();
+        };
+        let export_path = ensure_enc_extension(raw_path);
+        let export = Slip39EncryptedExport {
+            wallet_name: &wallet.name,
+            network: wallet.network.as_str(),
+            threshold,
+            share_count,
+            slip39_passphrase: &slip39_passphrase,
+        };
+
+        match export_slip39_shares_to_encrypted_file(
+            &export_path,
+            &export,
+            &shares,
+            encryption_passphrase,
+        ) {
+            Ok(_) => {
+                let message = format!(
+                    "{}: {}",
+                    t(
+                        "Đã export SLIP-0039 mã hóa bằng passphrase hiện tại",
+                        "Exported encrypted SLIP-0039 using the current passphrase",
+                    ),
+                    export_path.display()
+                );
+                self.wallets_view.set_info(message.clone());
+                self.status = Some(message);
+                self.error = None;
+            }
+            Err(err) => {
+                self.wallets_view.set_error(format!(
+                    "{}: {err}",
+                    t(
+                        "Export SLIP-0039 mã hóa thất bại",
+                        "Failed to export encrypted SLIP-0039",
+                    )
+                ));
+            }
+        }
+
+        Task::none()
+    }
+
     pub fn handle_receive_message(&mut self, msg: ReceiveMessage) -> Task<AppMessage> {
         if let Some(event) = self.receive_view.update(msg) {
             match event {
@@ -549,4 +947,30 @@ impl App {
         }
         Task::none()
     }
+}
+
+fn resolve_encrypted_import_name(name_override: Option<&String>, backup_name: &str) -> String {
+    match name_override {
+        Some(value) => value.clone(),
+        None => {
+            let trimmed = backup_name.trim();
+            if trimmed.is_empty() {
+                t("Ví import", "Imported wallet").to_string()
+            } else {
+                trimmed.to_string()
+            }
+        }
+    }
+}
+
+fn parse_encrypted_import_network(raw: &str) -> Result<WalletNetwork, String> {
+    raw.parse().map_err(|_| {
+        format!(
+            "{}: {raw}",
+            t(
+                "Network trong backup mã hóa không hợp lệ",
+                "Invalid network in encrypted backup",
+            )
+        )
+    })
 }

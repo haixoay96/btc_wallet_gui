@@ -3,15 +3,18 @@ mod send;
 mod settings;
 mod wallet;
 
+use std::time::Duration;
+
 use iced::{
     clipboard,
     widget::{column, container, row, text, Space},
     Element, Length, Task,
 };
+use secrecy::{ExposeSecret, SecretString};
 
 use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::storage::{PersistedState, Storage, UserProfile};
-use crate::utils::wallet_count_text;
+use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile};
+use crate::utils::{normalize_nickname, wallet_count_text};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::{HistoryEvent, HistoryMessage, HistoryView},
@@ -23,7 +26,9 @@ use crate::views::{
     sidebar::{NavItem, Sidebar, SidebarEvent, SidebarMessage},
     wallets::{WalletsMessage, WalletsView},
 };
-use crate::wallet::Wallet;
+use crate::wallet::{Wallet, WalletSecretsRef, WalletSecretsVault};
+
+const REVEALED_MNEMONIC_TTL_SECS: u64 = 60;
 
 #[derive(Debug, Clone)]
 pub enum AppState {
@@ -33,10 +38,11 @@ pub enum AppState {
 
 pub struct App {
     pub state: AppState,
-    pub storage_passphrase: Option<String>,
+    pub storage_passphrase: Option<SecretString>,
     pub language: AppLanguage,
     pub user_nickname: Option<String>,
     pub wallets: Vec<Wallet>,
+    pub wallet_vault: WalletSecretsVault,
     pub selected_wallet: usize,
 
     pub login_view: LoginView,
@@ -56,6 +62,7 @@ pub struct App {
     pub is_estimating_fee: bool,
     pub is_calculating_max: bool,
     pub is_sending: bool,
+    pub revealed_mnemonic_session_id: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -73,6 +80,7 @@ pub enum AppMessage {
     EstimateSendFeeFinished(Result<u64, String>),
     MaxAmountFinished(Result<(u64, u64), String>),
     SendTransactionFinished(Result<SendExecutionResult, String>),
+    RevealedMnemonicExpired(u64),
 }
 
 #[derive(Debug, Clone)]
@@ -118,6 +126,7 @@ impl App {
                 language: initial_language,
                 user_nickname: None,
                 wallets: Vec::new(),
+                wallet_vault: WalletSecretsVault::new(),
                 selected_wallet: 0,
                 login_view,
                 sidebar: Sidebar::new(),
@@ -135,6 +144,7 @@ impl App {
                 is_estimating_fee: false,
                 is_calculating_max: false,
                 is_sending: false,
+                revealed_mnemonic_session_id: 0,
             },
             Task::none(),
         )
@@ -208,6 +218,9 @@ impl App {
             AppMessage::SendTransactionFinished(result) => {
                 self.handle_send_transaction_finished(result)
             }
+            AppMessage::RevealedMnemonicExpired(session_id) => {
+                self.handle_revealed_mnemonic_expired(session_id)
+            }
         }
     }
 
@@ -228,7 +241,11 @@ impl App {
                         .map(AppMessage::DashboardMessage),
                     NavItem::Wallets => self
                         .wallets_view
-                        .view(&self.wallets, self.selected_wallet)
+                        .view(
+                            &self.wallets,
+                            self.selected_wallet,
+                            self.selected_wallet_revealed_mnemonic(),
+                        )
                         .map(AppMessage::WalletsMessage),
                     NavItem::Send => self
                         .send_view
@@ -333,6 +350,7 @@ impl App {
         self.error = None;
 
         let wallets = self.wallets.clone();
+        let wallet_vault = self.wallet_vault.clone();
         Task::perform(
             async move {
                 tokio::task::spawn_blocking(move || {
@@ -342,7 +360,12 @@ impl App {
                     let mut errors = Vec::new();
 
                     for wallet in &mut wallets {
-                        match wallet.refresh_history() {
+                        let Some(secrets) = wallet_vault.get(wallet.wallet_id()) else {
+                            errors.push(format!("{}: thiếu wallet secret", wallet.name));
+                            continue;
+                        };
+
+                        match wallet.refresh_history(secrets.as_ref()) {
                             Ok(count) => {
                                 refreshed_wallets += 1;
                                 refreshed_txs += count;
@@ -385,14 +408,26 @@ impl App {
 
     pub fn save_state(&mut self) {
         let passphrase = match &self.storage_passphrase {
-            Some(value) => value.clone(),
+            Some(value) => value,
             None => return,
         };
 
         match Storage::new() {
             Ok(storage) => {
-                let state = self.persisted_state();
-                if let Err(err) = storage.save_state(&state, &passphrase) {
+                let state = match self.persisted_state() {
+                    Ok(state) => state,
+                    Err(err) => {
+                        self.error = Some(format!(
+                            "{}: {err}",
+                            t(
+                                "Không thể gom dữ liệu ví",
+                                "Failed to assemble wallet state"
+                            )
+                        ));
+                        return;
+                    }
+                };
+                if let Err(err) = storage.save_state(&state, passphrase.expose_secret()) {
                     self.error = Some(format!(
                         "{}: {err}",
                         t("Không thể lưu trạng thái", "Failed to save app state")
@@ -413,6 +448,7 @@ impl App {
         self.storage_passphrase = None;
         self.user_nickname = None;
         self.wallets.clear();
+        self.wallet_vault.clear();
         self.selected_wallet = 0;
         self.current_page = NavItem::Dashboard;
         self.status = None;
@@ -421,6 +457,7 @@ impl App {
         self.is_estimating_fee = false;
         self.is_calculating_max = false;
         self.is_sending = false;
+        self.revealed_mnemonic_session_id = 0;
 
         self.login_view = LoginView::new();
         self.login_view
@@ -439,14 +476,77 @@ impl App {
         self.user_nickname.as_deref().unwrap_or(t("bạn", "friend"))
     }
 
-    pub fn persisted_state(&self) -> PersistedState {
-        PersistedState {
-            profile: UserProfile {
+    pub fn persisted_state(&self) -> anyhow::Result<PersistedState> {
+        PersistedState::from_runtime(
+            UserProfile {
                 nickname: self.user_nickname.clone(),
                 language: self.language,
             },
-            wallets: self.wallets.clone(),
+            &self.wallets,
+            &self.wallet_vault,
+        )
+    }
+
+    pub fn selected_wallet_revealed_mnemonic(&self) -> Option<&str> {
+        let wallet = self.wallets.get(self.selected_wallet)?;
+        if self.wallets_view.revealed_wallet_index() != Some(self.selected_wallet) {
+            return None;
         }
+
+        self.wallet_secret(wallet)
+            .and_then(|secrets| secrets.mnemonic_phrase())
+    }
+
+    pub fn wallet_secret(&self, wallet: &Wallet) -> Option<&WalletSecretsRef> {
+        self.wallet_vault.get(wallet.wallet_id())
+    }
+
+    pub fn wallet_secret_by_index(&self, wallet_index: usize) -> Option<WalletSecretsRef> {
+        let wallet = self.wallets.get(wallet_index)?;
+        self.wallet_vault.get(wallet.wallet_id()).cloned()
+    }
+
+    pub fn restore_runtime_state(&mut self, state: RuntimeState) {
+        self.user_nickname = normalize_nickname(state.profile.nickname.as_deref());
+        self.language = state.profile.language;
+        set_current_language(self.language);
+        self.save_language_preference();
+        self.wallets = state.wallets;
+        self.wallet_vault = state.wallet_vault;
+        self.state = AppState::Main;
+        self.selected_wallet = self
+            .selected_wallet
+            .min(self.wallets.len().saturating_sub(1));
+        self.update_dashboard();
+        self.login_view.clear_error();
+    }
+
+    pub fn current_passphrase(&self) -> Option<&SecretString> {
+        self.storage_passphrase.as_ref()
+    }
+
+    pub fn passphrase_matches(&self, candidate: &str) -> bool {
+        self.current_passphrase()
+            .map(|value| value.expose_secret() == candidate)
+            .unwrap_or(false)
+    }
+
+    pub fn clear_revealed_mnemonic(&mut self) {
+        self.revealed_mnemonic_session_id = self.revealed_mnemonic_session_id.wrapping_add(1);
+        self.wallets_view.clear_revealed_mnemonic();
+    }
+
+    pub fn schedule_revealed_mnemonic_timeout(&mut self) -> Task<AppMessage> {
+        self.revealed_mnemonic_session_id = self.revealed_mnemonic_session_id.wrapping_add(1);
+        let session_id = self.revealed_mnemonic_session_id;
+
+        Task::perform(
+            async move {
+                tokio::time::sleep(Duration::from_secs(REVEALED_MNEMONIC_TTL_SECS)).await;
+                session_id
+            },
+            AppMessage::RevealedMnemonicExpired,
+        )
     }
 
     fn handle_refresh_wallets_finished(
@@ -484,6 +584,27 @@ impl App {
                 ));
             }
         }
+
+        Task::none()
+    }
+
+    fn handle_revealed_mnemonic_expired(&mut self, session_id: u64) -> Task<AppMessage> {
+        if session_id != self.revealed_mnemonic_session_id {
+            return Task::none();
+        }
+
+        if self.wallets_view.revealed_wallet_index().is_none() {
+            return Task::none();
+        }
+
+        self.clear_revealed_mnemonic();
+        self.status = Some(format!(
+            "{} {} {}",
+            t("Mnemonic đã tự động khóa sau", "Mnemonic auto-locked after"),
+            REVEALED_MNEMONIC_TTL_SECS,
+            t("giây", "seconds")
+        ));
+        self.error = None;
 
         Task::none()
     }

@@ -1,6 +1,7 @@
 use iced::Task;
+use secrecy::{ExposeSecret, SecretString};
 
-use crate::i18n::{set_current_language, t};
+use crate::i18n::t;
 use crate::storage::Storage;
 use crate::utils::{
     normalize_nickname, pick_import_backup_path, resolve_user_path, wallet_count_text,
@@ -16,6 +17,7 @@ impl App {
         nickname: Option<String>,
         creating_new: bool,
     ) -> Task<AppMessage> {
+        let passphrase = SecretString::from(passphrase);
         self.status = None;
         self.error = None;
 
@@ -33,7 +35,7 @@ impl App {
                     return Task::none();
                 }
 
-                match storage.load_state(&passphrase) {
+                match storage.load_state(passphrase.expose_secret()) {
                     Ok(mut state) => {
                         if !had_existing_state {
                             if !creating_new {
@@ -60,7 +62,9 @@ impl App {
                                 Ok(value) => {
                                     state.profile.nickname = Some(value);
                                     state.profile.language = self.language;
-                                    if let Err(err) = storage.save_state(&state, &passphrase) {
+                                    if let Err(err) =
+                                        storage.save_state(&state, passphrase.expose_secret())
+                                    {
                                         let message = format!(
                                             "{}: {err}",
                                             t(
@@ -81,18 +85,24 @@ impl App {
                             }
                         }
 
-                        self.user_nickname = normalize_nickname(state.profile.nickname.as_deref());
-                        self.language = state.profile.language;
-                        set_current_language(self.language);
-                        self.save_language_preference();
-                        self.storage_passphrase = Some(passphrase);
-                        self.wallets = state.wallets;
-                        self.state = AppState::Main;
-                        self.selected_wallet = self
-                            .selected_wallet
-                            .min(self.wallets.len().saturating_sub(1));
-                        self.update_dashboard();
-                        self.login_view.clear_error();
+                        match state.into_runtime() {
+                            Ok(runtime_state) => {
+                                self.storage_passphrase = Some(passphrase);
+                                self.restore_runtime_state(runtime_state);
+                            }
+                            Err(err) => {
+                                let message = format!(
+                                    "{}: {err}",
+                                    t(
+                                        "Không thể khôi phục secret wallet",
+                                        "Failed to restore wallet secrets",
+                                    )
+                                );
+                                self.error = Some(message.clone());
+                                self.login_view.set_error(message);
+                                return Task::none();
+                            }
+                        }
 
                         if had_existing_state {
                             self.status = Some(format!(
@@ -134,10 +144,11 @@ impl App {
         backup_path: String,
         passphrase: String,
     ) -> Task<AppMessage> {
+        let passphrase = SecretString::from(passphrase);
         self.status = None;
         self.error = None;
 
-        if passphrase.trim().is_empty() {
+        if passphrase.expose_secret().trim().is_empty() {
             let message = t(
                 "Passphrase không được để trống",
                 "Passphrase must not be empty",
@@ -163,9 +174,9 @@ impl App {
                     return Task::none();
                 }
 
-                match storage.import_backup(&import_path, &passphrase) {
+                match storage.import_backup(&import_path, passphrase.expose_secret()) {
                     Ok(state) => {
-                        if let Err(err) = storage.save_state(&state, &passphrase) {
+                        if let Err(err) = storage.save_state(&state, passphrase.expose_secret()) {
                             let message = format!(
                                 "{}: {err}",
                                 t(
@@ -178,18 +189,24 @@ impl App {
                             return Task::none();
                         }
 
-                        self.user_nickname = normalize_nickname(state.profile.nickname.as_deref());
-                        self.language = state.profile.language;
-                        set_current_language(self.language);
-                        self.save_language_preference();
-                        self.storage_passphrase = Some(passphrase);
-                        self.wallets = state.wallets;
-                        self.state = AppState::Main;
-                        self.selected_wallet = self
-                            .selected_wallet
-                            .min(self.wallets.len().saturating_sub(1));
-                        self.update_dashboard();
-                        self.login_view.clear_error();
+                        match state.into_runtime() {
+                            Ok(runtime_state) => {
+                                self.storage_passphrase = Some(passphrase);
+                                self.restore_runtime_state(runtime_state);
+                            }
+                            Err(err) => {
+                                let message = format!(
+                                    "{}: {err}",
+                                    t(
+                                        "Không thể khôi phục secret wallet",
+                                        "Failed to restore wallet secrets",
+                                    )
+                                );
+                                self.error = Some(message.clone());
+                                self.login_view.set_error(message);
+                                return Task::none();
+                            }
+                        }
                         self.status = Some(format!(
                             "{} {} {} {}",
                             t("Đã import", "Imported"),
@@ -237,19 +254,25 @@ impl App {
                     }
                 }
                 LoginEvent::SubmitExisting { passphrase } => {
-                    return self.handle_login(passphrase, None, false);
+                    let task = self.handle_login(passphrase, None, false);
+                    self.login_view.clear_sensitive_inputs();
+                    return task;
                 }
                 LoginEvent::SubmitNew {
                     passphrase,
                     nickname,
                 } => {
-                    return self.handle_login(passphrase, Some(nickname), true);
+                    let task = self.handle_login(passphrase, Some(nickname), true);
+                    self.login_view.clear_sensitive_inputs();
+                    return task;
                 }
                 LoginEvent::SubmitImport {
                     backup_path,
                     passphrase,
                 } => {
-                    return self.handle_initial_import_backup(backup_path, passphrase);
+                    let task = self.handle_initial_import_backup(backup_path, passphrase);
+                    self.login_view.clear_sensitive_inputs();
+                    return task;
                 }
             }
         }

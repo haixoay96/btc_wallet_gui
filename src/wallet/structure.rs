@@ -18,6 +18,7 @@ use sssmc39::{combine_mnemonics, generate_mnemonics};
 
 use super::api_types::{ApiAddressUtxo, ApiTx};
 use super::esplora::EsploraClient;
+use super::secrets::{WalletBundle, WalletSecrets};
 use super::{
     DEFAULT_AUTO_FEE_RATE_SAT_VB, DEFAULT_GAP_LIMIT, DUST_LIMIT_SAT, ESTIMATE_OVERHEAD_VB,
     ESTIMATE_P2WPKH_INPUT_VB, ESTIMATE_P2WPKH_OUTPUT_VB,
@@ -113,10 +114,12 @@ pub enum TxDirection {
 pub struct Wallet {
     pub name: String,
     pub network: WalletNetwork,
-    pub mnemonic: Option<String>,
     #[serde(default)]
     pub mnemonic_backed_up: bool,
-    pub account_xprv: String,
+    #[serde(default)]
+    pub has_mnemonic: bool,
+    #[serde(default)]
+    pub mnemonic_word_count: Option<usize>,
     pub account_xpub: String,
     #[serde(default, alias = "next_index")]
     pub next_external_index: u32,
@@ -162,6 +165,23 @@ impl WalletNetwork {
     }
 }
 
+impl std::str::FromStr for WalletNetwork {
+    type Err = &'static str;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let trimmed = value.trim();
+        if trimmed.eq_ignore_ascii_case("mainnet") || trimmed.eq_ignore_ascii_case("bitcoin") {
+            Ok(Self::Mainnet)
+        } else if trimmed.eq_ignore_ascii_case("testnet")
+            || trimmed.eq_ignore_ascii_case("testnet3")
+        {
+            Ok(Self::Testnet)
+        } else {
+            Err("unsupported wallet network")
+        }
+    }
+}
+
 impl AddressChain {
     fn branch_index(self) -> u32 {
         match self {
@@ -176,7 +196,7 @@ impl AddressChain {
 }
 
 impl Wallet {
-    pub fn new(name: &str, network: WalletNetwork) -> Result<Self> {
+    pub fn generate(name: &str, network: WalletNetwork) -> Result<WalletBundle> {
         let mnemonic = Mnemonic::generate_in(Language::English, 12)?;
         Self::create_wallet_from_mnemonic(name, network, mnemonic, false)
     }
@@ -185,7 +205,7 @@ impl Wallet {
         name: &str,
         network: WalletNetwork,
         mnemonic_phrase: &str,
-    ) -> Result<Self> {
+    ) -> Result<WalletBundle> {
         let mnemonic = Mnemonic::parse_in_normalized(Language::English, mnemonic_phrase)
             .context("Mnemonic không hợp lệ")?;
         Self::create_wallet_from_mnemonic(name, network, mnemonic, true)
@@ -196,7 +216,7 @@ impl Wallet {
         network: WalletNetwork,
         share_phrases: &[String],
         slip39_passphrase: &str,
-    ) -> Result<Self> {
+    ) -> Result<WalletBundle> {
         if share_phrases.is_empty() {
             return Err(anyhow!("Vui lòng nhập ít nhất một SLIP-0039 share"));
         }
@@ -285,7 +305,7 @@ impl Wallet {
         network: WalletNetwork,
         mnemonic: Mnemonic,
         mnemonic_backed_up: bool,
-    ) -> Result<Wallet> {
+    ) -> Result<WalletBundle> {
         let secp = Secp256k1::new();
         let seed = mnemonic.to_seed_normalized("");
         let root_xprv = Xpriv::new_master(network.bitcoin_network(), &seed)?;
@@ -298,13 +318,15 @@ impl Wallet {
 
         let account_xprv = root_xprv.derive_priv(&secp, &account_path)?;
         let account_xpub = Xpub::from_priv(&secp, &account_xprv);
+        let mnemonic_phrase = mnemonic.to_string();
+        let mnemonic_word_count = mnemonic_phrase.split_whitespace().count();
 
         let mut wallet = Wallet {
             name: name.trim().to_string(),
             network,
-            mnemonic: Some(mnemonic.to_string()),
             mnemonic_backed_up,
-            account_xprv: account_xprv.to_string(),
+            has_mnemonic: true,
+            mnemonic_word_count: Some(mnemonic_word_count),
             account_xpub: account_xpub.to_string(),
             next_external_index: 0,
             next_internal_index: 0,
@@ -312,21 +334,44 @@ impl Wallet {
             history: Vec::new(),
         };
 
-        wallet.derive_next_addresses(DEFAULT_GAP_LIMIT)?;
-        Ok(wallet)
+        let secrets = WalletSecrets::new(Some(mnemonic_phrase), account_xprv.to_string());
+        wallet.derive_next_addresses(&secrets, DEFAULT_GAP_LIMIT)?;
+        Ok(WalletBundle::new(wallet, secrets))
     }
 
-    pub fn derive_next_addresses(&mut self, count: u32) -> Result<Vec<String>> {
-        self.derive_addresses(AddressChain::External, count)
+    pub fn wallet_id(&self) -> &str {
+        &self.account_xpub
     }
 
-    fn derive_next_change_addresses(&mut self, count: u32) -> Result<Vec<String>> {
-        self.derive_addresses(AddressChain::Internal, count)
+    pub fn sync_secret_metadata(&mut self, secrets: &WalletSecrets) {
+        self.has_mnemonic = secrets.has_mnemonic();
+        self.mnemonic_word_count = secrets.mnemonic_word_count();
     }
 
-    fn derive_addresses(&mut self, chain: AddressChain, count: u32) -> Result<Vec<String>> {
+    pub fn derive_next_addresses(
+        &mut self,
+        secrets: &WalletSecrets,
+        count: u32,
+    ) -> Result<Vec<String>> {
+        self.derive_addresses(secrets, AddressChain::External, count)
+    }
+
+    fn derive_next_change_addresses(
+        &mut self,
+        secrets: &WalletSecrets,
+        count: u32,
+    ) -> Result<Vec<String>> {
+        self.derive_addresses(secrets, AddressChain::Internal, count)
+    }
+
+    fn derive_addresses(
+        &mut self,
+        secrets: &WalletSecrets,
+        chain: AddressChain,
+        count: u32,
+    ) -> Result<Vec<String>> {
         let secp = Secp256k1::new();
-        let account_xprv = Xpriv::from_str(&self.account_xprv)?;
+        let account_xprv = Self::parse_account_xprv(secrets)?;
         let next_index = match chain {
             AddressChain::External => &mut self.next_external_index,
             AddressChain::Internal => &mut self.next_internal_index,
@@ -371,18 +416,18 @@ impl Wallet {
         Ok((address, private_key, public_key))
     }
 
-    pub fn refresh_history(&mut self) -> Result<usize> {
+    pub fn refresh_history(&mut self, secrets: &WalletSecrets) -> Result<usize> {
         let esplora = EsploraClient::new(self.network)?;
         let ChainSyncResult {
             entries: mut external_entries,
             txs: mut external_txs,
             next_index: next_external_index,
-        } = self.sync_chain_history(AddressChain::External, &esplora)?;
+        } = self.sync_chain_history(secrets, AddressChain::External, &esplora)?;
         let ChainSyncResult {
             entries: internal_entries,
             txs: internal_txs,
             next_index: next_internal_index,
-        } = self.sync_chain_history(AddressChain::Internal, &esplora)?;
+        } = self.sync_chain_history(secrets, AddressChain::Internal, &esplora)?;
 
         external_entries.extend(internal_entries);
         let mut addresses = external_entries;
@@ -412,11 +457,12 @@ impl Wallet {
 
     fn sync_chain_history(
         &self,
+        secrets: &WalletSecrets,
         chain: AddressChain,
         esplora: &EsploraClient,
     ) -> Result<ChainSyncResult> {
         let secp = Secp256k1::new();
-        let account_xprv = Xpriv::from_str(&self.account_xprv)?;
+        let account_xprv = Self::parse_account_xprv(secrets)?;
         let existing_max_index = self
             .addresses
             .iter()
@@ -536,6 +582,7 @@ impl Wallet {
 
     pub fn create_transaction_with_options(
         &mut self,
+        secrets: &WalletSecrets,
         to_address: &str,
         amount_sat: u64,
         fee_sat: u64,
@@ -546,7 +593,7 @@ impl Wallet {
         }
 
         if self.addresses.is_empty() {
-            self.derive_next_addresses(DEFAULT_GAP_LIMIT)?;
+            self.derive_next_addresses(secrets, DEFAULT_GAP_LIMIT)?;
         }
 
         let unchecked = Address::from_str(to_address).context("Địa chỉ nhận không hợp lệ")?;
@@ -576,7 +623,7 @@ impl Wallet {
         if change >= DUST_LIMIT_SAT {
             let change_address = match options.change_strategy {
                 ChangeStrategy::NewAddress => self
-                    .derive_next_change_addresses(1)?
+                    .derive_next_change_addresses(secrets, 1)?
                     .into_iter()
                     .next()
                     .ok_or_else(|| anyhow!("Không tạo được change address"))?,
@@ -615,7 +662,7 @@ impl Wallet {
             output: tx_outs,
         };
 
-        self.sign_transaction(&selected, &mut tx)?;
+        self.sign_transaction(secrets, &selected, &mut tx)?;
 
         let txid = tx.compute_txid().to_string();
 
@@ -871,11 +918,12 @@ impl Wallet {
 
     fn sign_transaction(
         &self,
+        secrets: &WalletSecrets,
         selected_utxos: &[SpendableUtxo],
         tx: &mut Transaction,
     ) -> Result<()> {
         let secp = Secp256k1::new();
-        let account_xprv = Xpriv::from_str(&self.account_xprv)?;
+        let account_xprv = Self::parse_account_xprv(secrets)?;
 
         for (input_index, utxo) in selected_utxos.iter().enumerate() {
             let (_, private_key, public_key) = Self::derive_address_and_keys(
@@ -908,6 +956,10 @@ impl Wallet {
         }
 
         Ok(())
+    }
+
+    fn parse_account_xprv(secrets: &WalletSecrets) -> Result<Xpriv> {
+        Xpriv::from_str(secrets.account_xprv()).context("account_xprv không hợp lệ")
     }
 
     pub fn balance(&self) -> i64 {

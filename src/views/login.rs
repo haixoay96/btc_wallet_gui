@@ -100,6 +100,11 @@ impl LoginView {
         self.error = None;
     }
 
+    pub fn clear_sensitive_inputs(&mut self) {
+        self.passphrase.clear();
+        self.confirm_passphrase.clear();
+    }
+
     pub fn set_backup_path(&mut self, path: String) {
         self.backup_path = path;
         self.error = None;

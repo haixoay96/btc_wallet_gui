@@ -6,10 +6,13 @@ use serde::{Deserialize, Serialize};
 mod encryption;
 mod paths;
 
-use self::encryption::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
+pub use self::encryption::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
 use self::paths::StoragePaths;
 use crate::i18n::AppLanguage;
-use crate::wallet::Wallet;
+use crate::wallet::{
+    runtime_wallets_from_stored, stored_wallets_from_runtime, StoredWallet, Wallet,
+    WalletSecretsVault,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UserProfile {
@@ -19,12 +22,40 @@ pub struct UserProfile {
     pub language: AppLanguage,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct PersistedState {
     #[serde(default)]
     pub profile: UserProfile,
     #[serde(default)]
+    pub wallets: Vec<StoredWallet>,
+}
+
+pub struct RuntimeState {
+    pub profile: UserProfile,
     pub wallets: Vec<Wallet>,
+    pub wallet_vault: WalletSecretsVault,
+}
+
+impl PersistedState {
+    pub fn from_runtime(
+        profile: UserProfile,
+        wallets: &[Wallet],
+        wallet_vault: &WalletSecretsVault,
+    ) -> Result<Self> {
+        Ok(Self {
+            profile,
+            wallets: stored_wallets_from_runtime(wallets, wallet_vault)?,
+        })
+    }
+
+    pub fn into_runtime(self) -> Result<RuntimeState> {
+        let (wallets, wallet_vault) = runtime_wallets_from_stored(self.wallets)?;
+        Ok(RuntimeState {
+            profile: self.profile,
+            wallets,
+            wallet_vault,
+        })
+    }
 }
 #[derive(Debug)]
 pub struct Storage {

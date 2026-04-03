@@ -74,7 +74,6 @@ impl App {
             self.error = Some(message);
             return Task::none();
         };
-
         if wallet.balance() <= 0 {
             let message = t("Số dư bằng 0", "Balance is zero").to_string();
             self.send_view.set_error(message.clone());
@@ -108,6 +107,12 @@ impl App {
 
         let Some(wallet) = self.wallets.get(self.selected_wallet).cloned() else {
             let message = t("Chưa chọn ví", "No wallet selected").to_string();
+            self.send_view.set_error(message.clone());
+            self.error = Some(message);
+            return Task::none();
+        };
+        let Some(secrets) = self.wallet_secret_by_index(self.selected_wallet) else {
+            let message = t("Thiếu secret của ví", "Wallet secret is missing").to_string();
             self.send_view.set_error(message.clone());
             self.error = Some(message);
             return Task::none();
@@ -155,6 +160,7 @@ impl App {
                     };
                     let tx_result = wallet
                         .create_transaction_with_options(
+                            secrets.as_ref(),
                             &request.to_address,
                             amount_sat,
                             fee_sat,
