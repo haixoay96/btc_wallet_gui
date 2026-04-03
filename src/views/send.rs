@@ -4,14 +4,14 @@ use iced::{
     },
     Alignment, Element, Length,
 };
-use std::fmt;
 
 use crate::i18n::t;
 use crate::theme::{
     card_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, text_color, Colors,
 };
-use crate::wallet::{ChangeStrategy, InputSource, Wallet};
+use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
+use crate::wallet::{validate_bitcoin_address, ChangeStrategy, InputSource, Wallet};
 
 fn format_btc_and_sat(amount_sat: u64) -> String {
     let amount_btc = amount_sat as f64 / 100_000_000.0;
@@ -49,7 +49,10 @@ fn parse_btc_to_sat(raw: &str, field_vi: &str, field_en: &str) -> Result<u64, St
         return Err(format!(
             "{} {}",
             t(field_vi, field_en),
-            t("quá nhỏ, phải >= 0.00000001 BTC", "too small, must be >= 0.00000001 BTC")
+            t(
+                "quá nhỏ, phải >= 0.00000001 BTC",
+                "too small, must be >= 0.00000001 BTC"
+            )
         ));
     }
 
@@ -83,8 +86,13 @@ pub struct SendRequest {
 #[derive(Debug, Clone)]
 pub enum SendEvent {
     SelectWallet(usize),
-    EstimateSendFee { amount_sat: u64, input_source: crate::wallet::InputSource },
-    MaxAmount { input_source: crate::wallet::InputSource },
+    EstimateSendFee {
+        amount_sat: u64,
+        input_source: crate::wallet::InputSource,
+    },
+    MaxAmount {
+        input_source: crate::wallet::InputSource,
+    },
     SendTransaction(SendRequest),
 }
 
@@ -125,7 +133,10 @@ impl SendView {
 
     pub fn set_fee_amount(&mut self, fee_sat: u64) {
         let fee_btc = fee_sat as f64 / 100_000_000.0;
-        self.fee_amount = format!("{:.8}", fee_btc).trim_end_matches('0').trim_end_matches('.').to_string();
+        self.fee_amount = format!("{:.8}", fee_btc)
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string();
         self.estimated_fee = Some(fee_sat);
         self.error = None;
     }
@@ -157,7 +168,10 @@ impl SendView {
 
     pub fn set_max_amount(&mut self, amount_sat: u64) {
         let amount_btc = amount_sat as f64 / 100_000_000.0;
-        self.amount = format!("{:.8}", amount_btc).trim_end_matches('0').trim_end_matches('.').to_string();
+        self.amount = format!("{:.8}", amount_btc)
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string();
         self.error = None;
         self.estimated_fee = None;
     }
@@ -173,7 +187,7 @@ impl SendView {
             SendMessage::ToAddressChanged(addr) => {
                 self.to_address = addr.clone();
                 if !addr.trim().is_empty() {
-                    if let Err(err) = validate_btc_address(&addr) {
+                    if let Err(err) = validate_bitcoin_address(&addr) {
                         self.to_address_error = Some(err);
                     } else {
                         self.to_address_error = None;
@@ -200,11 +214,11 @@ impl SendView {
             SendMessage::MaxAmount => {
                 self.error = None;
                 self.success = None;
-                Some(SendEvent::MaxAmount { 
+                Some(SendEvent::MaxAmount {
                     input_source: match parse_input_source(&self.from_address) {
                         Ok(value) => value,
                         Err(_) => crate::wallet::InputSource::All,
-                    }
+                    },
                 })
             }
             SendMessage::FeeAmountChanged(fee) => {
@@ -250,7 +264,10 @@ impl SendView {
 
                 self.error = None;
                 self.success = None;
-                Some(SendEvent::EstimateSendFee { amount_sat, input_source })
+                Some(SendEvent::EstimateSendFee {
+                    amount_sat,
+                    input_source,
+                })
             }
             SendMessage::Send => {
                 if self.to_address.trim().is_empty() {
@@ -360,10 +377,14 @@ impl SendView {
         &'a self,
         wallets: &'a [Wallet],
         selected_wallet: usize,
+        is_estimating_fee: bool,
+        is_calculating_max: bool,
+        is_sending: bool,
     ) -> Element<'a, SendMessage> {
         let wallet_options = wallet_choices(wallets);
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
         let wallet = wallets.get(selected_wallet);
+        let is_any_busy = is_estimating_fee || is_calculating_max || is_sending;
 
         let title = text(t("Gửi BTC", "Send BTC"))
             .size(32)
@@ -386,8 +407,8 @@ impl SendView {
         .spacing(4);
 
         let balance_text = if let Some(wallet) = wallet {
-            let balance: i64 = wallet.history.iter().map(|tx| tx.amount_sat).sum();
-            let balance_btc = balance as f64 / 100_000_000.0;
+            let balance_sat = wallet.balance();
+            let balance_btc = balance_sat as f64 / 100_000_000.0;
             text(format!(
                 "{}: {:.8} BTC",
                 t("Sẵn có", "Available"),
@@ -423,26 +444,27 @@ impl SendView {
         ]
         .spacing(4);
 
-        let max_button = button(
-            text(t("Tối Đa", "Max"))
-                .size(12)
-        )
-        .on_press(SendMessage::MaxAmount)
-        .padding(6)
-        .style(primary_button_style());
+        let max_label = if is_calculating_max {
+            t("Đang tính...", "Calculating...")
+        } else {
+            t("Tối Đa", "Max")
+        };
+        let mut max_button = button(text(max_label).size(12))
+            .padding(6)
+            .style(primary_button_style());
+        if !is_calculating_max {
+            max_button = max_button.on_press(SendMessage::MaxAmount);
+        }
 
         let amount_label = text(t("Số lượng (BTC)", "Amount (BTC)"))
             .size(14)
             .style(text_color(Colors::TEXT_SECONDARY));
 
         let amount_input_row = row![
-            text_input(
-                t("Nhập số BTC...", "Enter amount in BTC..."),
-                &self.amount
-            )
-            .on_input(SendMessage::AmountChanged)
-            .padding(12)
-            .size(14),
+            text_input(t("Nhập số BTC...", "Enter amount in BTC..."), &self.amount)
+                .on_input(SendMessage::AmountChanged)
+                .padding(12)
+                .size(14),
             Space::with_width(8),
             max_button,
         ]
@@ -467,10 +489,17 @@ impl SendView {
             Space::with_height(0).into()
         };
 
-        let estimate_btn = button(text(t("Ước tính phí", "Estimate Fee")).size(14))
-            .on_press(SendMessage::EstimateFee)
+        let estimate_label = if is_estimating_fee {
+            t("Đang ước tính...", "Estimating...")
+        } else {
+            t("Ước tính phí", "Estimate Fee")
+        };
+        let mut estimate_btn = button(text(estimate_label).size(14))
             .padding(6)
             .style(primary_button_style());
+        if !is_estimating_fee {
+            estimate_btn = estimate_btn.on_press(SendMessage::EstimateFee);
+        }
 
         let fee_label = text(t("Phí (BTC)", "Fee Amount (BTC)"))
             .size(14)
@@ -566,11 +595,18 @@ impl SendView {
             Space::with_height(0).into()
         };
 
-        let send_btn = button(text(t("Gửi giao dịch", "Send Transaction")).size(16))
-            .on_press(SendMessage::Send)
+        let send_label = if is_sending {
+            t("Đang gửi giao dịch...", "Sending transaction...")
+        } else {
+            t("Gửi giao dịch", "Send Transaction")
+        };
+        let mut send_btn = button(text(send_label).size(16))
             .padding(14)
             .width(Length::Fill)
             .style(primary_button_style());
+        if !is_any_busy {
+            send_btn = send_btn.on_press(SendMessage::Send);
+        }
 
         let content = column![
             title,
@@ -610,26 +646,11 @@ impl SendView {
                             .size(20)
                             .style(text_color(Colors::TEXT_PRIMARY)),
                         Space::with_height(16),
-                        text(format!(
-                            "{}: {}",
-                            t("Đến", "To"),
-                            self.to_address
-                        ))
-                        .size(14),
+                        text(format!("{}: {}", t("Đến", "To"), self.to_address)).size(14),
                         Space::with_height(8),
-                        text(format!(
-                            "{}: {} BTC",
-                            t("Số lượng", "Amount"),
-                            self.amount
-                        ))
-                        .size(14),
+                        text(format!("{}: {} BTC", t("Số lượng", "Amount"), self.amount)).size(14),
                         Space::with_height(8),
-                        text(format!(
-                            "{}: {} BTC",
-                            t("Phí", "Fee"),
-                            self.fee_amount
-                        ))
-                        .size(14),
+                        text(format!("{}: {} BTC", t("Phí", "Fee"), self.fee_amount)).size(14),
                         Space::with_height(8),
                         text(format!(
                             "Change: {}",
@@ -657,13 +678,18 @@ impl SendView {
                 )
                 .style(card_style())
                 .padding(24)
-                .width(Length::Fixed(400.0))
+                .width(Length::Fixed(400.0)),
             )
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x(Length::Fill)
             .align_y(iced::alignment::Vertical::Top)
-            .padding(iced::Padding { top: 80.0, right: 0.0, bottom: 0.0, left: 0.0 });
+            .padding(iced::Padding {
+                top: 80.0,
+                right: 0.0,
+                bottom: 0.0,
+                left: 0.0,
+            });
 
             // Stack overlay on top of content
             stack![
@@ -680,36 +706,6 @@ impl SendView {
                 .into()
         }
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct WalletChoice {
-    index: usize,
-    label: String,
-}
-
-impl fmt::Display for WalletChoice {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.label)
-    }
-}
-
-fn wallet_choices(wallets: &[Wallet]) -> Vec<WalletChoice> {
-    wallets
-        .iter()
-        .enumerate()
-        .map(|(index, wallet)| WalletChoice {
-            index,
-            label: format!("{} ({})", wallet.name, wallet.network.as_str()),
-        })
-        .collect()
-}
-
-fn selected_wallet_choice(wallets: &[Wallet], selected_wallet: usize) -> Option<WalletChoice> {
-    wallets.get(selected_wallet).map(|wallet| WalletChoice {
-        index: selected_wallet,
-        label: format!("{} ({})", wallet.name, wallet.network.as_str()),
-    })
 }
 
 fn parse_input_source(raw: &str) -> Result<InputSource, String> {
@@ -753,46 +749,23 @@ fn parse_change_strategy(raw: &str) -> Result<ChangeStrategy, String> {
     Ok(ChangeStrategy::ExistingIndex(index))
 }
 
-fn validate_btc_address(address: &str) -> Result<(), String> {
-    let addr = address.trim();
-    
-    if addr.is_empty() {
-        return Err(t("Địa chỉ không được rỗng", "Address cannot be empty").to_string());
+#[cfg(test)]
+mod tests {
+    use super::parse_input_source;
+    use crate::wallet::InputSource;
+
+    #[test]
+    fn parse_input_source_accepts_empty_and_csv_indexes() {
+        assert!(matches!(parse_input_source(""), Ok(InputSource::All)));
+        assert!(matches!(
+            parse_input_source("0, 2,5"),
+            Ok(InputSource::AddressIndexes(indexes)) if indexes == vec![0, 2, 5]
+        ));
     }
-    
-    let len = addr.len();
-    
-    // P2PKH: starts with 1 (mainnet) or m/n (testnet)
-    if addr.starts_with('1') || addr.starts_with('m') || addr.starts_with('n') {
-        if len < 26 || len > 35 {
-            return Err(t("Địa chỉ P2PKH phải có 26-35 ký tự", "P2PKH address must be 26-35 characters").to_string());
-        }
-        return Ok(());
+
+    #[test]
+    fn parse_input_source_rejects_invalid_tokens() {
+        assert!(parse_input_source("x,1").is_err());
+        assert!(parse_input_source(",,,").is_err());
     }
-    
-    // P2SH: starts with 3 (mainnet) or 2 (testnet)
-    if addr.starts_with('3') || addr.starts_with('2') {
-        if len < 26 || len > 35 {
-            return Err(t("Địa chỉ P2SH phải có 26-35 ký tự", "P2SH address must be 26-35 characters").to_string());
-        }
-        return Ok(());
-    }
-    
-    // Bech32 SegWit: starts with bc1q (mainnet) or tb1q (testnet)
-    if addr.starts_with("bc1q") || addr.starts_with("tb1q") {
-        if len < 42 || len > 62 {
-            return Err(t("Địa chỉ Bech32 phải có 42-62 ký tự", "Bech32 address must be 42-62 characters").to_string());
-        }
-        return Ok(());
-    }
-    
-    // Bech32m Taproot: starts with bc1p (mainnet) or tb1p (testnet)
-    if addr.starts_with("bc1p") || addr.starts_with("tb1p") {
-        if len != 62 {
-            return Err(t("Địa chỉ Taproot phải có 62 ký tự", "Taproot address must be 62 characters").to_string());
-        }
-        return Ok(());
-    }
-    
-    Err(t("Địa chỉ Bitcoin không hợp lệ", "Invalid Bitcoin address").to_string())
 }

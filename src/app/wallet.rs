@@ -4,7 +4,7 @@ use crate::i18n::t;
 use crate::utils::{
     address_count_text, default_mnemonic_pdf_filename, default_slip39_directory_name,
     ensure_pdf_extension, export_mnemonic_to_pdf, export_slip39_shares_to_pdf_directory,
-    pick_mnemonic_pdf_path, pick_slip39_export_directory,
+    pick_mnemonic_pdf_path, pick_slip39_export_directory, Slip39PdfExport,
 };
 use crate::views::receive::{ReceiveEvent, ReceiveMessage};
 use crate::views::wallets::{WalletsEvent, WalletsMessage, WalletsView};
@@ -32,7 +32,12 @@ impl App {
                     shares,
                     slip39_passphrase,
                 } => {
-                    return self.handle_import_wallet_from_slip39(name, network, shares, slip39_passphrase);
+                    return self.handle_import_wallet_from_slip39(
+                        name,
+                        network,
+                        shares,
+                        slip39_passphrase,
+                    );
                 }
                 WalletsEvent::SelectWallet(index) => {
                     return self.handle_select_wallet(index);
@@ -46,7 +51,10 @@ impl App {
                 } => {
                     return self.handle_reveal_mnemonic(wallet_index, passphrase);
                 }
-                WalletsEvent::VerifyMnemonicBackup { wallet_index, checks } => {
+                WalletsEvent::VerifyMnemonicBackup {
+                    wallet_index,
+                    checks,
+                } => {
                     return self.handle_verify_mnemonic_backup(wallet_index, checks);
                 }
                 WalletsEvent::ExportMnemonicPdf(index) => {
@@ -58,14 +66,23 @@ impl App {
                     share_count,
                     slip39_passphrase,
                 } => {
-                    return self.handle_export_wallet_slip39(wallet_index, threshold, share_count, slip39_passphrase);
+                    return self.handle_export_wallet_slip39(
+                        wallet_index,
+                        threshold,
+                        share_count,
+                        slip39_passphrase,
+                    );
                 }
             }
         }
         Task::none()
     }
 
-    pub fn handle_create_wallet(&mut self, name: String, network: WalletNetwork) -> Task<AppMessage> {
+    pub fn handle_create_wallet(
+        &mut self,
+        name: String,
+        network: WalletNetwork,
+    ) -> Task<AppMessage> {
         match Wallet::new(&name, network) {
             Ok(wallet) => {
                 self.wallets.push(wallet);
@@ -470,20 +487,23 @@ impl App {
             }
         };
 
-        let default_dir_name =
-            default_slip39_directory_name(&wallet.name, threshold, share_count);
+        let default_dir_name = default_slip39_directory_name(&wallet.name, threshold, share_count);
         let Some(base_directory) = pick_slip39_export_directory() else {
             return Task::none();
+        };
+
+        let export = Slip39PdfExport {
+            wallet_name: &wallet.name,
+            network: wallet.network.as_str(),
+            threshold,
+            share_count,
+            has_slip39_passphrase: !slip39_passphrase.trim().is_empty(),
         };
 
         match export_slip39_shares_to_pdf_directory(
             &base_directory,
             &default_dir_name,
-            &wallet.name,
-            wallet.network.as_str(),
-            threshold,
-            share_count,
-            !slip39_passphrase.trim().is_empty(),
+            &export,
             &shares,
         ) {
             Ok(export_directory) => {

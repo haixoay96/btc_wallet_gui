@@ -1,11 +1,13 @@
 mod api_types;
+mod esplora;
 mod structure;
+mod validation;
 
 pub use structure::{
-    ChangeStrategy, InputSource, TxBuildOptions,
-    TxDirection, TxRecord, Wallet, WalletNetwork,
+    AddressChain, ChangeStrategy, InputSource, TxBuildOptions, TxDirection, TxRecord, Wallet,
+    WalletNetwork,
 };
-
+pub use validation::{validate_address_for_network, validate_bitcoin_address};
 
 pub(super) const DEFAULT_GAP_LIMIT: u32 = 5;
 pub(super) const DUST_LIMIT_SAT: u64 = 546;

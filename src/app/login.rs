@@ -2,6 +2,9 @@ use iced::Task;
 
 use crate::i18n::{set_current_language, t};
 use crate::storage::Storage;
+use crate::utils::{
+    normalize_nickname, pick_import_backup_path, resolve_user_path, wallet_count_text,
+};
 use crate::views::login::{LoginEvent, LoginMessage};
 
 use super::*;
@@ -44,8 +47,8 @@ impl App {
                                 return Task::none();
                             }
 
-                            let normalized_nickname =
-                                normalize_nickname(nickname.as_deref()).ok_or_else(|| {
+                            let normalized_nickname = normalize_nickname(nickname.as_deref())
+                                .ok_or_else(|| {
                                     t(
                                         "Vui lòng nhập nickname hợp lệ",
                                         "Please enter a valid nickname",
@@ -78,8 +81,7 @@ impl App {
                             }
                         }
 
-                        self.user_nickname =
-                            normalize_nickname(state.profile.nickname.as_deref());
+                        self.user_nickname = normalize_nickname(state.profile.nickname.as_deref());
                         self.language = state.profile.language;
                         set_current_language(self.language);
                         self.save_language_preference();
@@ -105,16 +107,12 @@ impl App {
                                 "{} {}! {}",
                                 t("Xin chào,", "Welcome,"),
                                 self.display_name(),
-                                t(
-                                    "Hãy tạo ví đầu tiên của bạn.",
-                                    "Create your first wallet."
-                                ),
+                                t("Hãy tạo ví đầu tiên của bạn.", "Create your first wallet."),
                             ));
                         }
                     }
                     Err(err) => {
-                        let message =
-                            format!("{}: {err}", t("Đăng nhập thất bại", "Login failed"));
+                        let message = format!("{}: {err}", t("Đăng nhập thất bại", "Login failed"));
                         self.error = Some(message.clone());
                         self.login_view.set_error(message);
                     }
@@ -180,8 +178,7 @@ impl App {
                             return Task::none();
                         }
 
-                        self.user_nickname =
-                            normalize_nickname(state.profile.nickname.as_deref());
+                        self.user_nickname = normalize_nickname(state.profile.nickname.as_deref());
                         self.language = state.profile.language;
                         set_current_language(self.language);
                         self.save_language_preference();
@@ -242,7 +239,10 @@ impl App {
                 LoginEvent::SubmitExisting { passphrase } => {
                     return self.handle_login(passphrase, None, false);
                 }
-                LoginEvent::SubmitNew { passphrase, nickname } => {
+                LoginEvent::SubmitNew {
+                    passphrase,
+                    nickname,
+                } => {
                     return self.handle_login(passphrase, Some(nickname), true);
                 }
                 LoginEvent::SubmitImport {

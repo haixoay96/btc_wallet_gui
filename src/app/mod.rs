@@ -11,15 +11,16 @@ use iced::{
 
 use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, Storage, UserProfile};
+use crate::utils::wallet_count_text;
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
-    history::{HistoryMessage, HistoryView, HistoryEvent},
+    history::{HistoryEvent, HistoryMessage, HistoryView},
     language_selector::LanguageSelector,
     login::{LoginMessage, LoginMode, LoginView},
     receive::{ReceiveMessage, ReceiveView},
     send::{SendMessage, SendView},
     settings::{SettingsMessage, SettingsView},
-    sidebar::{NavItem, Sidebar, SidebarMessage, SidebarEvent},
+    sidebar::{NavItem, Sidebar, SidebarEvent, SidebarMessage},
     wallets::{WalletsMessage, WalletsView},
 };
 use crate::wallet::Wallet;
@@ -51,6 +52,10 @@ pub struct App {
     pub current_page: NavItem,
     pub status: Option<String>,
     pub error: Option<String>,
+    pub is_refreshing: bool,
+    pub is_estimating_fee: bool,
+    pub is_calculating_max: bool,
+    pub is_sending: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -64,6 +69,26 @@ pub enum AppMessage {
     HistoryMessage(HistoryMessage),
     SettingsMessage(SettingsMessage),
     LanguageChanged(AppLanguage),
+    RefreshWalletsFinished(Result<RefreshWalletsResult, String>),
+    EstimateSendFeeFinished(Result<u64, String>),
+    MaxAmountFinished(Result<(u64, u64), String>),
+    SendTransactionFinished(Result<SendExecutionResult, String>),
+}
+
+#[derive(Debug, Clone)]
+pub struct RefreshWalletsResult {
+    pub wallets: Vec<Wallet>,
+    pub refreshed_wallets: usize,
+    pub refreshed_txs: usize,
+    pub errors: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SendExecutionResult {
+    pub wallet_id: String,
+    pub wallet: Wallet,
+    pub txid: String,
+    pub broadcasted: bool,
 }
 
 impl App {
@@ -106,6 +131,10 @@ impl App {
                 current_page: NavItem::Dashboard,
                 status: None,
                 error: None,
+                is_refreshing: false,
+                is_estimating_fee: false,
+                is_calculating_max: false,
+                is_sending: false,
             },
             Task::none(),
         )
@@ -130,86 +159,86 @@ impl App {
                 Task::none()
             }
 
-            AppMessage::DashboardMessage(msg) => {
-                match msg {
-                    DashboardMessage::Refresh => self.refresh_all_wallets(),
-                }
-                Task::none()
-            }
+            AppMessage::DashboardMessage(DashboardMessage::Refresh) => self.refresh_all_wallets(),
 
             AppMessage::WalletsMessage(msg) => self.handle_wallets_message(msg),
             AppMessage::SendMessage(msg) => self.handle_send_message(msg),
             AppMessage::ReceiveMessage(msg) => self.handle_receive_message(msg),
 
-            AppMessage::HistoryMessage(msg) => {
-                match msg {
-                    HistoryMessage::SelectWallet(index) => {
-                        return self.handle_select_wallet(index);
-                    }
-                    HistoryMessage::CopyTxid(txid) => {
-                        return clipboard::write(txid);
-                    }
-                    HistoryMessage::OpenExplorer(url) => {
-                        #[cfg(target_os = "linux")]
-                        let result = std::process::Command::new("xdg-open")
-                            .arg(&url)
-                            .spawn();
-                        
-                        #[cfg(target_os = "macos")]
-                        let result = std::process::Command::new("open")
-                            .arg(&url)
-                            .spawn();
-                        
-                        #[cfg(target_os = "windows")]
-                        let result = std::process::Command::new("cmd")
-                            .args(["/C", "start", &url])
-                            .spawn();
+            AppMessage::HistoryMessage(msg) => match msg {
+                HistoryMessage::SelectWallet(index) => self.handle_select_wallet(index),
+                HistoryMessage::CopyTxid(txid) => clipboard::write(txid),
+                HistoryMessage::OpenExplorer(url) => {
+                    #[cfg(target_os = "linux")]
+                    let result = std::process::Command::new("xdg-open").arg(&url).spawn();
 
-                        if let Err(e) = result {
-                            self.error = Some(format!("Không thể mở trình duyệt: {}", e));
-                        }
-                        return Task::none();
+                    #[cfg(target_os = "macos")]
+                    let result = std::process::Command::new("open").arg(&url).spawn();
+
+                    #[cfg(target_os = "windows")]
+                    let result = std::process::Command::new("cmd")
+                        .args(["/C", "start", &url])
+                        .spawn();
+
+                    if let Err(e) = result {
+                        self.error = Some(format!("Không thể mở trình duyệt: {}", e));
                     }
-                    _ => {
-                        if let Some(event) = self.history_view.update(msg) {
-                            match event {
-                                HistoryEvent::Refresh => self.refresh_all_wallets(),
-                            }
-                        }
-                        Task::none()
-                    }
+                    Task::none()
                 }
-            }
+                _ => {
+                    if let Some(event) = self.history_view.update(msg) {
+                        match event {
+                            HistoryEvent::Refresh => return self.refresh_all_wallets(),
+                        }
+                    }
+                    Task::none()
+                }
+            },
 
             AppMessage::SettingsMessage(msg) => self.handle_settings_message(msg),
 
             AppMessage::LanguageChanged(language) => self.handle_change_language(language),
+            AppMessage::RefreshWalletsFinished(result) => {
+                self.handle_refresh_wallets_finished(result)
+            }
+            AppMessage::EstimateSendFeeFinished(result) => {
+                self.handle_estimate_send_fee_finished(result)
+            }
+            AppMessage::MaxAmountFinished(result) => self.handle_max_amount_finished(result),
+            AppMessage::SendTransactionFinished(result) => {
+                self.handle_send_transaction_finished(result)
+            }
         }
     }
 
     pub fn view(&self) -> Element<'_, AppMessage> {
         match self.state {
-            AppState::Login => {
-                container(
-                    self.login_view.view().map(AppMessage::LoginMessage),
-                )
+            AppState::Login => container(self.login_view.view().map(AppMessage::LoginMessage))
                 .width(Length::Fill)
                 .height(Length::Fill)
-                .into()
-            },
+                .into(),
             AppState::Main => {
                 let sidebar = self.sidebar.view().map(AppMessage::SidebarMessage);
                 let _selected_wallet = self.wallets.get(self.selected_wallet);
 
                 let main_content = match self.current_page {
-                    NavItem::Dashboard => self.dashboard.view().map(AppMessage::DashboardMessage),
+                    NavItem::Dashboard => self
+                        .dashboard
+                        .view(self.is_refreshing)
+                        .map(AppMessage::DashboardMessage),
                     NavItem::Wallets => self
                         .wallets_view
                         .view(&self.wallets, self.selected_wallet)
                         .map(AppMessage::WalletsMessage),
                     NavItem::Send => self
                         .send_view
-                        .view(&self.wallets, self.selected_wallet)
+                        .view(
+                            &self.wallets,
+                            self.selected_wallet,
+                            self.is_estimating_fee,
+                            self.is_calculating_max,
+                            self.is_sending,
+                        )
                         .map(AppMessage::SendMessage),
                     NavItem::Receive => self
                         .receive_view
@@ -217,7 +246,7 @@ impl App {
                         .map(AppMessage::ReceiveMessage),
                     NavItem::History => self
                         .history_view
-                        .view(&self.wallets, self.selected_wallet)
+                        .view(&self.wallets, self.selected_wallet, self.is_refreshing)
                         .map(AppMessage::HistoryMessage),
                     NavItem::Settings => self.settings_view.view().map(AppMessage::SettingsMessage),
                 };
@@ -244,9 +273,7 @@ impl App {
                     container(Space::with_height(0))
                 };
 
-                let language_picker = self
-                    .language_selector
-                    .view(AppMessage::LanguageChanged);
+                let language_picker = self.language_selector.view(AppMessage::LanguageChanged);
 
                 let header_bar = container(
                     row![
@@ -278,11 +305,7 @@ impl App {
     }
 
     pub fn update_dashboard(&mut self) {
-        let total: i64 = self
-            .wallets
-            .iter()
-            .map(|wallet| wallet.balance())
-            .sum();
+        let total: i64 = self.wallets.iter().map(|wallet| wallet.balance()).sum();
 
         let confirmed: i64 = self
             .wallets
@@ -294,48 +317,54 @@ impl App {
             .update_balances(total, confirmed, self.wallets.len());
     }
 
-    pub fn refresh_all_wallets(&mut self) {
+    pub fn refresh_all_wallets(&mut self) -> Task<AppMessage> {
         if self.wallets.is_empty() {
             self.status = Some(t("Không có ví để làm mới", "No wallets to refresh").to_string());
-            return;
+            return Task::none();
         }
 
-        let mut refreshed_wallets = 0usize;
-        let mut refreshed_txs = 0usize;
-        let mut errors = Vec::new();
-
-        for wallet in &mut self.wallets {
-            match wallet.refresh_history() {
-                Ok(count) => {
-                    refreshed_wallets += 1;
-                    refreshed_txs += count;
-                }
-                Err(err) => {
-                    errors.push(format!("{}: {}", wallet.name, err));
-                }
-            }
+        if self.is_refreshing {
+            return Task::none();
         }
 
-        self.save_state();
-        self.update_dashboard();
+        self.is_refreshing = true;
+        self.status =
+            Some(t("Đang làm mới dữ liệu ví...", "Refreshing wallet data...").to_string());
+        self.error = None;
 
-        self.status = Some(format!(
-            "{} {}, {} {}",
-            t("Đã làm mới", "Refreshed"),
-            wallet_count_text(refreshed_wallets),
-            refreshed_txs,
-            t("giao dịch", "transaction(s)")
-        ));
+        let wallets = self.wallets.clone();
+        Task::perform(
+            async move {
+                tokio::task::spawn_blocking(move || {
+                    let mut wallets = wallets;
+                    let mut refreshed_wallets = 0usize;
+                    let mut refreshed_txs = 0usize;
+                    let mut errors = Vec::new();
 
-        if !errors.is_empty() {
-            self.error = Some(format!(
-                "{}: {}",
-                t("Một số ví làm mới lỗi", "Some wallets failed to refresh",),
-                errors.join(" | ")
-            ));
-        } else {
-            self.error = None;
-        }
+                    for wallet in &mut wallets {
+                        match wallet.refresh_history() {
+                            Ok(count) => {
+                                refreshed_wallets += 1;
+                                refreshed_txs += count;
+                            }
+                            Err(err) => {
+                                errors.push(format!("{}: {}", wallet.name, err));
+                            }
+                        }
+                    }
+
+                    Ok(RefreshWalletsResult {
+                        wallets,
+                        refreshed_wallets,
+                        refreshed_txs,
+                        errors,
+                    })
+                })
+                .await
+                .unwrap_or_else(|err| Err(format!("Wallet refresh task failed: {err}")))
+            },
+            AppMessage::RefreshWalletsFinished,
+        )
     }
 
     pub fn save_language_preference(&mut self) {
@@ -362,13 +391,7 @@ impl App {
 
         match Storage::new() {
             Ok(storage) => {
-                let state = PersistedState {
-                    profile: UserProfile {
-                        nickname: self.user_nickname.clone(),
-                        language: self.language,
-                    },
-                    wallets: self.wallets.clone(),
-                };
+                let state = self.persisted_state();
                 if let Err(err) = storage.save_state(&state, &passphrase) {
                     self.error = Some(format!(
                         "{}: {err}",
@@ -394,6 +417,10 @@ impl App {
         self.current_page = NavItem::Dashboard;
         self.status = None;
         self.error = None;
+        self.is_refreshing = false;
+        self.is_estimating_fee = false;
+        self.is_calculating_max = false;
+        self.is_sending = false;
 
         self.login_view = LoginView::new();
         self.login_view
@@ -411,7 +438,53 @@ impl App {
     pub fn display_name(&self) -> &str {
         self.user_nickname.as_deref().unwrap_or(t("bạn", "friend"))
     }
-}
 
-// Re-export utility functions from utils module
-pub use crate::utils::*;
+    pub fn persisted_state(&self) -> PersistedState {
+        PersistedState {
+            profile: UserProfile {
+                nickname: self.user_nickname.clone(),
+                language: self.language,
+            },
+            wallets: self.wallets.clone(),
+        }
+    }
+
+    fn handle_refresh_wallets_finished(
+        &mut self,
+        result: Result<RefreshWalletsResult, String>,
+    ) -> Task<AppMessage> {
+        self.is_refreshing = false;
+
+        match result {
+            Ok(payload) => {
+                self.wallets = payload.wallets;
+                self.save_state();
+                self.update_dashboard();
+                self.status = Some(format!(
+                    "{} {}, {} {}",
+                    t("Đã làm mới", "Refreshed"),
+                    wallet_count_text(payload.refreshed_wallets),
+                    payload.refreshed_txs,
+                    t("giao dịch", "transaction(s)")
+                ));
+                self.error = if payload.errors.is_empty() {
+                    None
+                } else {
+                    Some(format!(
+                        "{}: {}",
+                        t("Một số ví làm mới lỗi", "Some wallets failed to refresh"),
+                        payload.errors.join(" | ")
+                    ))
+                };
+            }
+            Err(err) => {
+                self.error = Some(format!(
+                    "{}: {err}",
+                    t("Làm mới ví thất bại", "Wallet refresh failed")
+                ));
+            }
+        }
+
+        Task::none()
+    }
+}

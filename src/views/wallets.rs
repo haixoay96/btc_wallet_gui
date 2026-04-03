@@ -5,8 +5,8 @@ use iced::{
 
 use crate::i18n::t;
 use crate::theme::{
-    card_style, danger_button_style, popup_dialog_style, popup_overlay_style,
-    primary_button_style, secondary_button_style, text_color, Colors,
+    card_style, danger_button_style, popup_dialog_style, popup_overlay_style, primary_button_style,
+    secondary_button_style, text_color, Colors,
 };
 use crate::wallet::{Wallet, WalletNetwork};
 
@@ -57,14 +57,34 @@ pub enum WalletsMessage {
 #[derive(Debug, Clone)]
 pub enum WalletsEvent {
     CreateWallet(String, crate::wallet::WalletNetwork),
-    ImportWalletFromMnemonic { name: String, network: crate::wallet::WalletNetwork, mnemonic: String },
-    ImportWalletFromSlip39 { name: String, network: crate::wallet::WalletNetwork, shares: Vec<String>, slip39_passphrase: String },
+    ImportWalletFromMnemonic {
+        name: String,
+        network: crate::wallet::WalletNetwork,
+        mnemonic: String,
+    },
+    ImportWalletFromSlip39 {
+        name: String,
+        network: crate::wallet::WalletNetwork,
+        shares: Vec<String>,
+        slip39_passphrase: String,
+    },
     SelectWallet(usize),
     DeleteWallet(usize),
-    RevealMnemonic { wallet_index: usize, passphrase: String },
-    VerifyMnemonicBackup { wallet_index: usize, checks: Vec<(usize, String)> },
+    RevealMnemonic {
+        wallet_index: usize,
+        passphrase: String,
+    },
+    VerifyMnemonicBackup {
+        wallet_index: usize,
+        checks: Vec<(usize, String)>,
+    },
     ExportMnemonicPdf(usize),
-    ExportWalletSlip39 { wallet_index: usize, threshold: u8, share_count: u8, slip39_passphrase: String },
+    ExportWalletSlip39 {
+        wallet_index: usize,
+        threshold: u8,
+        share_count: u8,
+        slip39_passphrase: String,
+    },
 }
 
 pub struct WalletsView {
@@ -282,7 +302,11 @@ impl WalletsView {
                 self.show_import_mnemonic_form = false;
                 self.error = None;
 
-                Some(WalletsEvent::ImportWalletFromMnemonic { name, network, mnemonic })
+                Some(WalletsEvent::ImportWalletFromMnemonic {
+                    name,
+                    network,
+                    mnemonic,
+                })
             }
             WalletsMessage::ImportWalletFromSlip39 => {
                 if self.import_name.trim().is_empty() {
@@ -326,7 +350,12 @@ impl WalletsView {
                 self.show_import_mnemonic_form = false;
                 self.error = None;
 
-                Some(WalletsEvent::ImportWalletFromSlip39 { name, network, shares, slip39_passphrase })
+                Some(WalletsEvent::ImportWalletFromSlip39 {
+                    name,
+                    network,
+                    shares,
+                    slip39_passphrase,
+                })
             }
             WalletsMessage::SelectWallet(index) => {
                 self.revealed_wallet_index = None;
@@ -380,7 +409,10 @@ impl WalletsView {
                 }
 
                 self.error = None;
-                Some(WalletsEvent::RevealMnemonic { wallet_index, passphrase: self.mnemonic_passphrase.clone() })
+                Some(WalletsEvent::RevealMnemonic {
+                    wallet_index,
+                    passphrase: self.mnemonic_passphrase.clone(),
+                })
             }
             WalletsMessage::ToggleBackupTest {
                 wallet_index,
@@ -514,7 +546,12 @@ impl WalletsView {
                 }
 
                 self.error = None;
-                Some(WalletsEvent::ExportWalletSlip39 { wallet_index, threshold, share_count, slip39_passphrase: self.slip39_export_passphrase.clone() })
+                Some(WalletsEvent::ExportWalletSlip39 {
+                    wallet_index,
+                    threshold,
+                    share_count,
+                    slip39_passphrase: self.slip39_export_passphrase.clone(),
+                })
             }
             WalletsMessage::BackupWordChanged(field_index, value) => {
                 if let Some(slot) = self.backup_test_answers.get_mut(field_index) {
@@ -557,7 +594,10 @@ impl WalletsView {
                     .zip(self.backup_test_answers.iter().cloned())
                     .collect::<Vec<_>>();
 
-                Some(WalletsEvent::VerifyMnemonicBackup { wallet_index, checks })
+                Some(WalletsEvent::VerifyMnemonicBackup {
+                    wallet_index,
+                    checks,
+                })
             }
             WalletsMessage::DismissWalletNotice => {
                 self.notice_wallet_index = None;
@@ -876,8 +916,7 @@ impl WalletsView {
             for (index, wallet) in wallets.iter().enumerate() {
                 let is_selected = index == selected;
                 let needs_backup = wallet.mnemonic.is_some() && !wallet.mnemonic_backed_up;
-                let balance: i64 = wallet.history.iter().map(|tx| tx.amount_sat).sum();
-                let balance_btc = balance as f64 / 100_000_000.0;
+                let balance_btc = wallet.balance() as f64 / 100_000_000.0;
 
                 let select_btn = button(
                     row![
@@ -979,8 +1018,7 @@ impl WalletsView {
 
             container(
                 column![
-                    container(Space::with_height(Length::Fill))
-                        .height(Length::FillPortion(1)),
+                    container(Space::with_height(Length::Fill)).height(Length::FillPortion(1)),
                     container(
                         column![
                             text(t("Xác nhận xóa", "Confirm Delete"))
@@ -1010,8 +1048,7 @@ impl WalletsView {
                     .style(popup_dialog_style())
                     .width(Length::Fixed(420.0))
                     .center_x(Length::Fill),
-                    container(Space::with_height(Length::Fill))
-                        .height(Length::FillPortion(3)),
+                    container(Space::with_height(Length::Fill)).height(Length::FillPortion(3)),
                 ]
                 .width(Length::Fill)
                 .height(Length::Fill),
@@ -1310,7 +1347,7 @@ fn test_positions(word_count: usize) -> Vec<usize> {
         return Vec::new();
     }
 
-    let mut positions = vec![1, ((word_count + 1) / 2).max(1), word_count];
+    let mut positions = vec![1, word_count.div_ceil(2).max(1), word_count];
     positions.retain(|position| *position <= word_count && *position > 0);
     positions.sort_unstable();
     positions.dedup();
@@ -1351,4 +1388,21 @@ fn parse_u8_field(raw: &str, field_name_vi: &str, field_name_en: &str) -> Result
             )
         )
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_u8_field, test_positions};
+
+    #[test]
+    fn backup_test_positions_cover_first_middle_last() {
+        assert_eq!(test_positions(12), vec![1, 6, 12]);
+        assert_eq!(test_positions(2), vec![1, 2]);
+    }
+
+    #[test]
+    fn parse_u8_field_rejects_blank_input() {
+        assert!(parse_u8_field("", "Ngưỡng", "Threshold").is_err());
+        assert!(matches!(parse_u8_field("7", "Ngưỡng", "Threshold"), Ok(7)));
+    }
 }

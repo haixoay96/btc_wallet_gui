@@ -14,7 +14,7 @@ const PREFERENCES_FILE: &str = "app_preferences.json";
 pub struct StoragePaths {
     pub data_dir: PathBuf,
     pub encrypted_state_file: PathBuf,
-    pub preferences_file: PathBuf
+    pub preferences_file: PathBuf,
 }
 
 impl StoragePaths {
@@ -34,7 +34,7 @@ impl StoragePaths {
         Ok(Self {
             data_dir,
             encrypted_state_file,
-            preferences_file
+            preferences_file,
         })
     }
 }

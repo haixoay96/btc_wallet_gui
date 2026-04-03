@@ -2,6 +2,12 @@ use iced::overlay::menu;
 use iced::widget::{button, container, pick_list, text, text_input};
 use iced::{Background, Border, Color, Shadow, Theme, Vector};
 
+type ButtonStyleFn = dyn Fn(&Theme, button::Status) -> button::Style;
+type ContainerStyleFn = dyn Fn(&Theme) -> container::Style;
+type MenuStyleFn = dyn Fn(&Theme) -> menu::Style;
+type PickListStyleFn = dyn Fn(&Theme, pick_list::Status) -> pick_list::Style;
+type TextInputStyleFn = dyn Fn(&Theme, text_input::Status) -> text_input::Style;
+type TextStyleFn = dyn Fn(&Theme) -> text::Style;
 
 /// Color palette inspired by Exodus wallet
 pub struct Colors;
@@ -44,7 +50,7 @@ pub fn color_with_alpha(color: Color, alpha: f32) -> Color {
 }
 
 /// Style for primary buttons with gradient (purple to teal)
-pub fn primary_button_style() -> Box<dyn Fn(&Theme, button::Status) -> button::Style> {
+pub fn primary_button_style() -> Box<ButtonStyleFn> {
     Box::new(|_theme: &Theme, status: button::Status| {
         let (background, shadow_color) = match status {
             button::Status::Hovered => (
@@ -56,7 +62,7 @@ pub fn primary_button_style() -> Box<dyn Fn(&Theme, button::Status) -> button::S
                 color_with_alpha(Colors::ACCENT_PURPLE, 0.3),
             ),
         };
-        
+
         button::Style {
             background: Some(background),
             text_color: Colors::TEXT_PRIMARY,
@@ -75,7 +81,7 @@ pub fn primary_button_style() -> Box<dyn Fn(&Theme, button::Status) -> button::S
 }
 
 /// Style for gradient buttons (purple to teal)
-pub fn gradient_button_style() -> Box<dyn Fn(&Theme, button::Status) -> button::Style> {
+pub fn gradient_button_style() -> Box<ButtonStyleFn> {
     Box::new(|_theme: &Theme, status: button::Status| {
         let (background, shadow_color) = match status {
             button::Status::Hovered => (
@@ -87,7 +93,7 @@ pub fn gradient_button_style() -> Box<dyn Fn(&Theme, button::Status) -> button::
                 color_with_alpha(Colors::GRADIENT_START, 0.3),
             ),
         };
-        
+
         button::Style {
             background: Some(background),
             text_color: Colors::TEXT_PRIMARY,
@@ -106,19 +112,15 @@ pub fn gradient_button_style() -> Box<dyn Fn(&Theme, button::Status) -> button::
 }
 
 /// Style for secondary buttons with hover effect
-pub fn secondary_button_style() -> Box<dyn Fn(&Theme, button::Status) -> button::Style> {
+pub fn secondary_button_style() -> Box<ButtonStyleFn> {
     Box::new(|_theme: &Theme, status: button::Status| {
         let (background, border_color) = match status {
-            button::Status::Hovered => (
-                Background::Color(Colors::BG_HOVER),
-                Colors::BORDER_FOCUSED,
-            ),
-            _ => (
-                Background::Color(Colors::BG_CARD),
-                Colors::BORDER,
-            ),
+            button::Status::Hovered => {
+                (Background::Color(Colors::BG_HOVER), Colors::BORDER_FOCUSED)
+            }
+            _ => (Background::Color(Colors::BG_CARD), Colors::BORDER),
         };
-        
+
         button::Style {
             background: Some(background),
             text_color: Colors::TEXT_PRIMARY,
@@ -133,7 +135,7 @@ pub fn secondary_button_style() -> Box<dyn Fn(&Theme, button::Status) -> button:
 }
 
 /// Style for info buttons/accent (using ACCENT_BLUE)
-pub fn info_style() -> Box<dyn Fn(&Theme, button::Status) -> button::Style> {
+pub fn info_style() -> Box<ButtonStyleFn> {
     Box::new(|_theme: &Theme, status: button::Status| {
         let (background, shadow_color) = match status {
             button::Status::Hovered => (
@@ -145,7 +147,7 @@ pub fn info_style() -> Box<dyn Fn(&Theme, button::Status) -> button::Style> {
                 color_with_alpha(Colors::ACCENT_BLUE, 0.3),
             ),
         };
-        
+
         button::Style {
             background: Some(background),
             text_color: Colors::TEXT_PRIMARY,
@@ -164,7 +166,7 @@ pub fn info_style() -> Box<dyn Fn(&Theme, button::Status) -> button::Style> {
 }
 
 /// Style for warning buttons (using ACCENT_PINK)
-pub fn warning_style() -> Box<dyn Fn(&Theme, button::Status) -> button::Style> {
+pub fn warning_style() -> Box<ButtonStyleFn> {
     Box::new(|_theme: &Theme, status: button::Status| {
         let (background, shadow_color) = match status {
             button::Status::Hovered => (
@@ -176,7 +178,7 @@ pub fn warning_style() -> Box<dyn Fn(&Theme, button::Status) -> button::Style> {
                 color_with_alpha(Colors::ACCENT_PINK, 0.3),
             ),
         };
-        
+
         button::Style {
             background: Some(background),
             text_color: Colors::TEXT_PRIMARY,
@@ -195,7 +197,7 @@ pub fn warning_style() -> Box<dyn Fn(&Theme, button::Status) -> button::Style> {
 }
 
 /// Style for danger buttons
-pub fn danger_button_style() -> Box<dyn Fn(&Theme, button::Status) -> button::Style> {
+pub fn danger_button_style() -> Box<ButtonStyleFn> {
     Box::new(|_theme: &Theme, _status: button::Status| button::Style {
         background: Some(Background::Color(Colors::ERROR)),
         text_color: Colors::TEXT_PRIMARY,
@@ -213,7 +215,7 @@ pub fn danger_button_style() -> Box<dyn Fn(&Theme, button::Status) -> button::St
 }
 
 /// Style for cards
-pub fn card_style() -> Box<dyn Fn(&Theme) -> container::Style> {
+pub fn card_style() -> Box<ContainerStyleFn> {
     Box::new(|_theme: &Theme| container::Style {
         background: Some(Background::Color(Colors::BG_CARD)),
         border: Border {
@@ -231,9 +233,12 @@ pub fn card_style() -> Box<dyn Fn(&Theme) -> container::Style> {
 }
 
 /// Style for popup overlay background (semi-transparent dark)
-pub fn popup_overlay_style() -> Box<dyn Fn(&Theme) -> container::Style> {
+pub fn popup_overlay_style() -> Box<ContainerStyleFn> {
     Box::new(|_theme: &Theme| container::Style {
-        background: Some(Background::Color(color_with_alpha(Colors::BG_SECONDARY, 0.7))),
+        background: Some(Background::Color(color_with_alpha(
+            Colors::BG_SECONDARY,
+            0.7,
+        ))),
         border: Border {
             radius: 0.0.into(),
             width: 0.0,
@@ -245,7 +250,7 @@ pub fn popup_overlay_style() -> Box<dyn Fn(&Theme) -> container::Style> {
 }
 
 /// Style for popup dialog (with stronger shadow)
-pub fn popup_dialog_style() -> Box<dyn Fn(&Theme) -> container::Style> {
+pub fn popup_dialog_style() -> Box<ContainerStyleFn> {
     Box::new(|_theme: &Theme| container::Style {
         background: Some(Background::Color(Colors::BG_CARD)),
         border: Border {
@@ -263,13 +268,13 @@ pub fn popup_dialog_style() -> Box<dyn Fn(&Theme) -> container::Style> {
 }
 
 /// Style for input fields with focus state
-pub fn input_style() -> Box<dyn Fn(&Theme, text_input::Status) -> text_input::Style> {
+pub fn input_style() -> Box<TextInputStyleFn> {
     Box::new(|_theme: &Theme, status: text_input::Status| {
         let (border_color, border_width) = match status {
             text_input::Status::Focused => (Colors::BORDER_FOCUSED, 2.0),
             _ => (Colors::BORDER, 1.0),
         };
-        
+
         text_input::Style {
             background: Background::Color(Colors::BG_INPUT),
             border: Border {
@@ -286,7 +291,7 @@ pub fn input_style() -> Box<dyn Fn(&Theme, text_input::Status) -> text_input::St
 }
 
 /// Style for dropdown / pick list
-pub fn pick_list_style() -> Box<dyn Fn(&Theme, pick_list::Status) -> pick_list::Style> {
+pub fn pick_list_style() -> Box<PickListStyleFn> {
     Box::new(|_theme: &Theme, status: pick_list::Status| {
         let border_color = match status {
             pick_list::Status::Active => Colors::BORDER,
@@ -308,7 +313,7 @@ pub fn pick_list_style() -> Box<dyn Fn(&Theme, pick_list::Status) -> pick_list::
 }
 
 /// Style for dropdown menu items
-pub fn pick_list_menu_style() -> Box<dyn Fn(&Theme) -> menu::Style> {
+pub fn pick_list_menu_style() -> Box<MenuStyleFn> {
     Box::new(|_theme: &Theme| menu::Style {
         background: Background::Color(Colors::BG_CARD),
         border: Border {
@@ -323,7 +328,7 @@ pub fn pick_list_menu_style() -> Box<dyn Fn(&Theme) -> menu::Style> {
 }
 
 /// Style for sidebar
-pub fn sidebar_style() -> Box<dyn Fn(&Theme) -> container::Style> {
+pub fn sidebar_style() -> Box<ContainerStyleFn> {
     Box::new(|_theme: &Theme| container::Style {
         background: Some(Background::Color(Colors::BG_SECONDARY)),
         border: Border {
@@ -337,6 +342,6 @@ pub fn sidebar_style() -> Box<dyn Fn(&Theme) -> container::Style> {
 }
 
 /// Text style functions
-pub fn text_color(color: Color) -> Box<dyn Fn(&Theme) -> text::Style> {
+pub fn text_color(color: Color) -> Box<TextStyleFn> {
     Box::new(move |_theme: &Theme| text::Style { color: Some(color) })
 }

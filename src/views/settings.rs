@@ -26,7 +26,10 @@ pub enum SettingsMessage {
 
 #[derive(Debug, Clone)]
 pub enum SettingsEvent {
-    ChangePassphrase { current: String, new_passphrase: String },
+    ChangePassphrase {
+        current: String,
+        new_passphrase: String,
+    },
     ExportWallet,
     ClearAllData(String),
 }
@@ -133,7 +136,10 @@ impl SettingsView {
 
                 self.error = None;
                 self.success = None;
-                Some(SettingsEvent::ChangePassphrase { current: self.current_passphrase.clone(), new_passphrase: self.new_passphrase.clone() })
+                Some(SettingsEvent::ChangePassphrase {
+                    current: self.current_passphrase.clone(),
+                    new_passphrase: self.new_passphrase.clone(),
+                })
             }
             SettingsMessage::ExportWallet => {
                 self.error = None;
@@ -173,7 +179,9 @@ impl SettingsView {
                 self.show_clear_data_confirm = false;
                 self.error = None;
                 self.success = None;
-                Some(SettingsEvent::ClearAllData(self.clear_data_passphrase.clone()))
+                Some(SettingsEvent::ClearAllData(
+                    self.clear_data_passphrase.clone(),
+                ))
             }
             SettingsMessage::CancelClearData => {
                 self.show_clear_data_confirm = false;
@@ -434,4 +442,3 @@ impl SettingsView {
             .into()
     }
 }
-

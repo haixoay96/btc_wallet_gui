@@ -25,9 +25,17 @@ pub enum LoginMessage {
 pub enum LoginEvent {
     ChangeLanguage(AppLanguage),
     BrowseBackupPath,
-    SubmitExisting { passphrase: String },
-    SubmitNew { passphrase: String, nickname: String },
-    SubmitImport { backup_path: String, passphrase: String },
+    SubmitExisting {
+        passphrase: String,
+    },
+    SubmitNew {
+        passphrase: String,
+        nickname: String,
+    },
+    SubmitImport {
+        backup_path: String,
+        passphrase: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -132,7 +140,9 @@ impl LoginView {
                 }
 
                 match self.mode {
-                    LoginMode::ExistingWallet => Some(LoginEvent::SubmitExisting { passphrase: self.passphrase.clone() }),
+                    LoginMode::ExistingWallet => Some(LoginEvent::SubmitExisting {
+                        passphrase: self.passphrase.clone(),
+                    }),
                     LoginMode::NewWallet => {
                         if self.nickname.trim().is_empty() {
                             self.error = Some(
@@ -156,7 +166,10 @@ impl LoginView {
                             return None;
                         }
 
-                        Some(LoginEvent::SubmitNew { passphrase: self.passphrase.clone(), nickname: self.nickname.trim().to_string() })
+                        Some(LoginEvent::SubmitNew {
+                            passphrase: self.passphrase.clone(),
+                            nickname: self.nickname.trim().to_string(),
+                        })
                     }
                     LoginMode::ImportBackup => {
                         if self.backup_path.trim().is_empty() {
@@ -170,7 +183,10 @@ impl LoginView {
                             return None;
                         }
 
-                        Some(LoginEvent::SubmitImport { backup_path: self.backup_path.trim().to_string(), passphrase: self.passphrase.clone() })
+                        Some(LoginEvent::SubmitImport {
+                            backup_path: self.backup_path.trim().to_string(),
+                            passphrase: self.passphrase.clone(),
+                        })
                     }
                 }
             }
@@ -192,27 +208,18 @@ impl LoginView {
     }
 
     pub fn view(&self) -> Element<'_, LoginMessage> {
-        let language_picker = self
-            .language_selector
-            .view(LoginMessage::LanguageChanged);
+        let language_picker = self.language_selector.view(LoginMessage::LanguageChanged);
 
         // Header bar with language selector on top-right (similar to main view)
         let header_bar = container(
-            row![
-                Space::with_width(Length::Fill),
-                language_picker,
-            ]
-            .align_y(Alignment::Center),
+            row![Space::with_width(Length::Fill), language_picker,].align_y(Alignment::Center),
         )
         .width(Length::Fill)
         .padding(Padding::from([8, 16]));
 
-        let logo = text("₿")
-            .size(64)
-            .style(text_color(Colors::ACCENT_PURPLE));
+        let logo = text("₿").size(64).style(text_color(Colors::ACCENT_PURPLE));
 
-        let logo_container = container(logo)
-            .center_x(Length::Fill);
+        let logo_container = container(logo).center_x(Length::Fill);
 
         let title = text(t("Ví Bitcoin", "Bitcoin Wallet"))
             .size(36)
@@ -293,21 +300,22 @@ impl LoginView {
         };
 
         let backup_path_input: Element<'_, LoginMessage> = if self.mode == LoginMode::ImportBackup {
-            let mut col = column![
-                button(text(t("Chọn file backup", "Choose backup file")).size(14))
-                    .on_press(LoginMessage::BrowseBackupPath)
-                    .padding(12)
-                    .style(secondary_button_style()),
-            ]
-            .spacing(8)
-            .align_x(Alignment::Center);
+            let mut col =
+                column![
+                    button(text(t("Chọn file backup", "Choose backup file")).size(14))
+                        .on_press(LoginMessage::BrowseBackupPath)
+                        .padding(12)
+                        .style(secondary_button_style()),
+                ]
+                .spacing(8)
+                .align_x(Alignment::Center);
 
             // Show file path if selected
             if !self.backup_path.trim().is_empty() {
                 col = col.push(
                     text(format!("📄 {}", self.backup_path))
                         .size(13)
-                        .style(text_color(Colors::TEXT_SECONDARY))
+                        .style(text_color(Colors::TEXT_SECONDARY)),
                 );
             }
 

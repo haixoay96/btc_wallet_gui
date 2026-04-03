@@ -13,11 +13,11 @@ use bitcoin::{
     Address, Amount, CompressedPublicKey, Network, OutPoint, PrivateKey, ScriptBuf, Sequence,
     Transaction, TxIn, TxOut, Txid, Witness,
 };
-use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use sssmc39::{combine_mnemonics, generate_mnemonics};
 
 use super::api_types::{ApiAddressUtxo, ApiTx};
+use super::esplora::EsploraClient;
 use super::{
     DEFAULT_AUTO_FEE_RATE_SAT_VB, DEFAULT_GAP_LIMIT, DUST_LIMIT_SAT, ESTIMATE_OVERHEAD_VB,
     ESTIMATE_P2WPKH_INPUT_VB, ESTIMATE_P2WPKH_OUTPUT_VB,
@@ -64,6 +64,7 @@ pub struct SpendableUtxo {
     pub vout: u32,
     pub value: u64,
     pub address_index: u32,
+    pub chain: AddressChain,
     pub address: Address,
 }
 
@@ -74,11 +75,20 @@ pub enum WalletNetwork {
     Testnet,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum AddressChain {
+    #[default]
+    External,
+    Internal,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddressEntry {
     pub index: u32,
     pub address: String,
+    #[serde(default)]
+    pub chain: AddressChain,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -108,11 +118,19 @@ pub struct Wallet {
     pub mnemonic_backed_up: bool,
     pub account_xprv: String,
     pub account_xpub: String,
-    pub next_index: u32,
+    #[serde(default, alias = "next_index")]
+    pub next_external_index: u32,
+    #[serde(default)]
+    pub next_internal_index: u32,
     pub addresses: Vec<AddressEntry>,
     pub history: Vec<TxRecord>,
 }
 
+struct ChainSyncResult {
+    entries: Vec<AddressEntry>,
+    txs: Vec<ApiTx>,
+    next_index: u32,
+}
 
 impl WalletNetwork {
     pub fn as_str(self) -> &'static str {
@@ -142,7 +160,19 @@ impl WalletNetwork {
             Self::Testnet => "https://blockstream.info/testnet/api",
         }
     }
-  
+}
+
+impl AddressChain {
+    fn branch_index(self) -> u32 {
+        match self {
+            Self::External => 0,
+            Self::Internal => 1,
+        }
+    }
+
+    fn matches_receive_flow(self) -> bool {
+        matches!(self, Self::External)
+    }
 }
 
 impl Wallet {
@@ -276,7 +306,8 @@ impl Wallet {
             mnemonic_backed_up,
             account_xprv: account_xprv.to_string(),
             account_xpub: account_xpub.to_string(),
-            next_index: 0,
+            next_external_index: 0,
+            next_internal_index: 0,
             addresses: Vec::new(),
             history: Vec::new(),
         };
@@ -286,19 +317,33 @@ impl Wallet {
     }
 
     pub fn derive_next_addresses(&mut self, count: u32) -> Result<Vec<String>> {
+        self.derive_addresses(AddressChain::External, count)
+    }
+
+    fn derive_next_change_addresses(&mut self, count: u32) -> Result<Vec<String>> {
+        self.derive_addresses(AddressChain::Internal, count)
+    }
+
+    fn derive_addresses(&mut self, chain: AddressChain, count: u32) -> Result<Vec<String>> {
         let secp = Secp256k1::new();
         let account_xprv = Xpriv::from_str(&self.account_xprv)?;
+        let next_index = match chain {
+            AddressChain::External => &mut self.next_external_index,
+            AddressChain::Internal => &mut self.next_internal_index,
+        };
 
         let mut new_addresses = Vec::with_capacity(count as usize);
         for _ in 0..count {
-            let index = self.next_index;
-            let (address, _, _) = Self::derive_address_and_keys(&secp, &account_xprv, self.network, index)?;
+            let index = *next_index;
+            let (address, _, _) =
+                Self::derive_address_and_keys(&secp, &account_xprv, self.network, chain, index)?;
 
             self.addresses.push(AddressEntry {
                 index,
                 address: address.to_string(),
+                chain,
             });
-            self.next_index += 1;
+            *next_index += 1;
             new_addresses.push(address.to_string());
         }
 
@@ -309,10 +354,11 @@ impl Wallet {
         secp: &Secp256k1<bitcoin::secp256k1::All>,
         account_xprv: &Xpriv,
         network: WalletNetwork,
+        chain: AddressChain,
         index: u32,
     ) -> Result<(Address, PrivateKey, bitcoin::PublicKey)> {
         let derivation_path = DerivationPath::from(vec![
-            ChildNumber::from_normal_idx(0)?,
+            ChildNumber::from_normal_idx(chain.branch_index())?,
             ChildNumber::from_normal_idx(index)?,
         ]);
 
@@ -326,97 +372,166 @@ impl Wallet {
     }
 
     pub fn refresh_history(&mut self) -> Result<usize> {
-        if self.addresses.is_empty() {
-            self.derive_next_addresses(DEFAULT_GAP_LIMIT)?;
+        let esplora = EsploraClient::new(self.network)?;
+        let ChainSyncResult {
+            entries: mut external_entries,
+            txs: mut external_txs,
+            next_index: next_external_index,
+        } = self.sync_chain_history(AddressChain::External, &esplora)?;
+        let ChainSyncResult {
+            entries: internal_entries,
+            txs: internal_txs,
+            next_index: next_internal_index,
+        } = self.sync_chain_history(AddressChain::Internal, &esplora)?;
+
+        external_entries.extend(internal_entries);
+        let mut addresses = external_entries;
+        addresses.sort_by_key(|entry| {
+            let chain_order = match entry.chain {
+                AddressChain::External => 0u8,
+                AddressChain::Internal => 1u8,
+            };
+            (chain_order, entry.index)
+        });
+
+        external_txs.extend(internal_txs);
+        let txs = external_txs;
+
+        let own_addresses = addresses
+            .iter()
+            .map(|entry| entry.address.clone())
+            .collect::<HashSet<_>>();
+
+        self.addresses = addresses;
+        self.next_external_index = next_external_index;
+        self.next_internal_index = next_internal_index;
+        self.history = Self::tx_records_from_api(txs, &own_addresses);
+
+        Ok(self.history.len())
+    }
+
+    fn sync_chain_history(
+        &self,
+        chain: AddressChain,
+        esplora: &EsploraClient,
+    ) -> Result<ChainSyncResult> {
+        let secp = Secp256k1::new();
+        let account_xprv = Xpriv::from_str(&self.account_xprv)?;
+        let existing_max_index = self
+            .addresses
+            .iter()
+            .filter(|entry| entry.chain == chain)
+            .map(|entry| entry.index)
+            .max()
+            .map(|index| index + 1)
+            .unwrap_or(0);
+
+        let minimum_scan_count = existing_max_index.max(DEFAULT_GAP_LIMIT);
+        let mut entries = Vec::new();
+        let mut txs = Vec::new();
+        let mut index = 0u32;
+        let mut empty_streak = 0u32;
+
+        loop {
+            let (address, _, _) =
+                Self::derive_address_and_keys(&secp, &account_xprv, self.network, chain, index)?;
+            let address_string = address.to_string();
+            let address_txs = esplora.fetch_all_address_txs(&address_string)?;
+            let has_activity = !address_txs.is_empty();
+
+            entries.push(AddressEntry {
+                index,
+                address: address_string,
+                chain,
+            });
+            txs.extend(address_txs);
+
+            if has_activity {
+                empty_streak = 0;
+            } else {
+                empty_streak += 1;
+            }
+
+            index += 1;
+
+            if index >= minimum_scan_count && empty_streak >= DEFAULT_GAP_LIMIT {
+                break;
+            }
         }
 
-        let client = Client::new();
-        let base_url = self.network.blockstream_base_url();
-        let own_addresses: HashSet<String> =
-            self.addresses.iter().map(|a| a.address.clone()).collect();
+        Ok(ChainSyncResult {
+            entries,
+            txs,
+            next_index: index,
+        })
+    }
 
+    fn tx_records_from_api(txs: Vec<ApiTx>, own_addresses: &HashSet<String>) -> Vec<TxRecord> {
         let mut tx_map: HashMap<String, TxRecord> = HashMap::new();
 
-        for addr in &self.addresses {
-            let url = format!("{base_url}/address/{}/txs", addr.address);
-            let txs: Vec<ApiTx> = client
-                .get(&url)
-                .send()
-                .with_context(|| format!("Không gọi được API lịch sử: {url}"))?
-                .error_for_status()
-                .with_context(|| format!("Lỗi response API lịch sử: {url}"))?
-                .json()
-                .with_context(|| format!("Không parse được dữ liệu lịch sử của {}", addr.address))?;
+        for tx in txs {
+            let received: u64 = tx
+                .vout
+                .iter()
+                .filter_map(|vout| {
+                    let address = vout.scriptpubkey_address.as_ref()?;
+                    if own_addresses.contains(address) {
+                        Some(vout.value)
+                    } else {
+                        None
+                    }
+                })
+                .sum();
 
-            for tx in txs {
-                let received: u64 = tx
-                    .vout
-                    .iter()
-                    .filter_map(|v| {
-                        let address = v.scriptpubkey_address.as_ref()?;
-                        if own_addresses.contains(address) {
-                            Some(v.value)
-                        } else {
-                            None
-                        }
-                    })
-                    .sum();
+            let spent: u64 = tx
+                .vin
+                .iter()
+                .filter_map(|vin| vin.prevout.as_ref())
+                .filter_map(|prevout| {
+                    let address = prevout.scriptpubkey_address.as_ref()?;
+                    if own_addresses.contains(address) {
+                        Some(prevout.value)
+                    } else {
+                        None
+                    }
+                })
+                .sum();
 
-                let spent: u64 = tx
-                    .vin
-                    .iter()
-                    .filter_map(|vin| vin.prevout.as_ref())
-                    .filter_map(|prevout| {
-                        let address = prevout.scriptpubkey_address.as_ref()?;
-                        if own_addresses.contains(address) {
-                            Some(prevout.value)
-                        } else {
-                            None
-                        }
-                    })
-                    .sum();
+            let net = i128::from(received) - i128::from(spent);
+            let amount_sat = i64::try_from(net).unwrap_or(if net.is_negative() {
+                i64::MIN
+            } else {
+                i64::MAX
+            });
+            let direction = if amount_sat > 0 {
+                TxDirection::Incoming
+            } else if amount_sat < 0 {
+                TxDirection::Outgoing
+            } else {
+                TxDirection::SelfTransfer
+            };
 
-                let net = i128::from(received) - i128::from(spent);
-                let amount_sat = i64::try_from(net).unwrap_or(if net.is_negative() {
-                    i64::MIN
-                } else {
-                    i64::MAX
-                });
-                let direction = if amount_sat > 0 {
-                    TxDirection::Incoming
-                } else if amount_sat < 0 {
-                    TxDirection::Outgoing
-                } else {
-                    TxDirection::SelfTransfer
-                };
-
-                tx_map.insert(
-                    tx.txid.clone(),
-                    TxRecord {
-                        txid: tx.txid,
-                        direction,
-                        amount_sat,
-                        fee_sat: tx.fee,
-                        confirmed: tx.status.confirmed,
-                        block_time: tx.status.block_time,
-                    },
-                );
-            }
+            tx_map.insert(
+                tx.txid.clone(),
+                TxRecord {
+                    txid: tx.txid,
+                    direction,
+                    amount_sat,
+                    fee_sat: tx.fee,
+                    confirmed: tx.status.confirmed,
+                    block_time: tx.status.block_time,
+                },
+            );
         }
 
         let mut history: Vec<TxRecord> = tx_map.into_values().collect();
-        history.sort_by(|a, b| {
-            match (a.block_time, b.block_time) {
-                (None, None) => a.txid.cmp(&b.txid),
-                (None, Some(_)) => std::cmp::Ordering::Less, // a (None) comes first
-                (Some(_), None) => std::cmp::Ordering::Greater, // b (None) comes first
-                (Some(a_time), Some(b_time)) => b_time.cmp(&a_time).then_with(|| a.txid.cmp(&b.txid)),
-            }
+        history.sort_by(|a, b| match (a.block_time, b.block_time) {
+            (None, None) => a.txid.cmp(&b.txid),
+            (None, Some(_)) => std::cmp::Ordering::Less,
+            (Some(_), None) => std::cmp::Ordering::Greater,
+            (Some(a_time), Some(b_time)) => b_time.cmp(&a_time).then_with(|| a.txid.cmp(&b.txid)),
         });
-
-        let count = history.len();
-        self.history = history;
-        Ok(count)
+        history
     }
 
     pub fn create_transaction_with_options(
@@ -460,20 +575,21 @@ impl Wallet {
 
         if change >= DUST_LIMIT_SAT {
             let change_address = match options.change_strategy {
-                ChangeStrategy::NewAddress => self.derive_next_addresses(1)?
+                ChangeStrategy::NewAddress => self
+                    .derive_next_change_addresses(1)?
                     .into_iter()
                     .next()
                     .ok_or_else(|| anyhow!("Không tạo được change address"))?,
                 ChangeStrategy::ExistingIndex(index) => self
                     .addresses
                     .iter()
-                    .find(|addr| addr.index == index)
+                    .find(|addr| addr.index == index && addr.chain == AddressChain::External)
                     .map(|addr| addr.address.clone())
                     .ok_or_else(|| anyhow!("change index {} không tồn tại trong ví", index))?,
             };
 
-            let checked_change =
-                Address::from_str(&change_address)?.require_network(self.network.bitcoin_network())?;
+            let checked_change = Address::from_str(&change_address)?
+                .require_network(self.network.bitcoin_network())?;
 
             tx_outs.push(TxOut {
                 value: Amount::from_sat(change),
@@ -513,7 +629,8 @@ impl Wallet {
             TxRecord {
                 txid: txid.clone(),
                 direction: TxDirection::Outgoing,
-                amount_sat: -(i64::try_from(amount_sat).unwrap_or(i64::MAX)),
+                amount_sat: -(i64::try_from(amount_sat.saturating_add(fee_sat))
+                    .unwrap_or(i64::MAX)),
                 fee_sat: Some(fee_sat),
                 confirmed: false,
                 block_time: None,
@@ -574,12 +691,9 @@ impl Wallet {
         ))
     }
 
-    pub fn estimate_fee_for_send_all(
-        &self,
-        input_source: &InputSource,
-    ) -> Result<(u64, u64)> {
+    pub fn estimate_fee_for_send_all(&self, input_source: &InputSource) -> Result<(u64, u64)> {
         let utxos = self.collect_spendable_utxos_by_source(input_source)?;
-        
+
         if utxos.is_empty() {
             return Err(anyhow!("Không có UTXO khả dụng"));
         }
@@ -618,6 +732,7 @@ impl Wallet {
         let known_indices = self
             .addresses
             .iter()
+            .filter(|addr| addr.chain.matches_receive_flow())
             .map(|addr| addr.index)
             .collect::<HashSet<_>>();
 
@@ -649,7 +764,10 @@ impl Wallet {
                     ));
                 }
 
-                utxos.retain(|utxo| selected_indices.contains(&utxo.address_index));
+                utxos.retain(|utxo| {
+                    utxo.chain.matches_receive_flow()
+                        && selected_indices.contains(&utxo.address_index)
+                });
 
                 if utxos.is_empty() {
                     return Err(anyhow!("Không có UTXO khả dụng ở các địa chỉ from đã chọn"));
@@ -691,13 +809,11 @@ impl Wallet {
         ))
     }
 
-    fn estimate_auto_fee_sat(
-        &self,
-        input_count: usize,
-        output_count: usize,
-    ) -> Result<u64> {
+    fn estimate_auto_fee_sat(&self, input_count: usize, output_count: usize) -> Result<u64> {
         let vbytes = self.estimate_p2wpkh_vbytes(input_count, output_count)?;
-        let fee_rate_sat_vb = self.estimate_fee_rate_sat_vb().unwrap_or(DEFAULT_AUTO_FEE_RATE_SAT_VB);
+        let fee_rate_sat_vb = self
+            .estimate_fee_rate_sat_vb()
+            .unwrap_or(DEFAULT_AUTO_FEE_RATE_SAT_VB);
         let fee = (fee_rate_sat_vb * vbytes as f64).ceil() as u64;
         Ok(fee.max(1))
     }
@@ -720,75 +836,22 @@ impl Wallet {
     }
 
     fn estimate_fee_rate_sat_vb(&self) -> Result<f64> {
-        let client = Client::new();
-        let url = format!("{}/fee-estimates", self.network.blockstream_base_url());
-
-        let fee_map: HashMap<String, f64> = client
-            .get(&url)
-            .send()
-            .with_context(|| format!("Không gọi được API fee-estimates: {url}"))?
-            .error_for_status()
-            .with_context(|| format!("Lỗi response API fee-estimates: {url}"))?
-            .json()
-            .with_context(|| format!("Không parse được dữ liệu fee-estimates: {url}"))?;
-
-        for target in ["1", "2", "3", "6", "12"] {
-            if let Some(rate) = fee_map.get(target) {
-                if rate.is_finite() && *rate > 0.0 {
-                    return Ok(*rate);
-                }
-            }
-        }
-
-        if let Some(rate) = fee_map
-            .values()
-            .copied()
-            .filter(|rate| rate.is_finite() && *rate > 0.0)
-            .reduce(f64::min)
-        {
-            return Ok(rate);
-        }
-
-        Err(anyhow!("Không lấy được fee-rate hợp lệ từ Blockstream"))
+        EsploraClient::new(self.network)?.fetch_fee_rate_sat_vb()
     }
 
     fn broadcast_transaction(&self, raw_hex: &str) -> Result<String> {
-        let client = Client::new();
-        let url = format!("{}/tx", self.network.blockstream_base_url());
-        let response = client
-            .post(&url)
-            .body(raw_hex.to_owned())
-            .send()
-            .with_context(|| format!("Không gọi được API broadcast: {url}"))?;
-
-        if !response.status().is_success() {
-            let status = response.status();
-            let body = response.text().unwrap_or_default();
-            return Err(anyhow!("Broadcast thất bại ({status}): {body}"));
-        }
-
-        let txid = response.text().unwrap_or_default();
-        Ok(txid)
+        EsploraClient::new(self.network)?.broadcast_transaction(raw_hex)
     }
 
     fn collect_wallet_utxos(&self) -> Result<Vec<SpendableUtxo>> {
-        let client = Client::new();
-        let base_url = self.network.blockstream_base_url();
+        let esplora = EsploraClient::new(self.network)?;
         let mut utxos = Vec::new();
 
         for addr in &self.addresses {
-            let url = format!("{base_url}/address/{}/utxo", addr.address);
-            let rows: Vec<ApiAddressUtxo> = client
-                .get(&url)
-                .send()
-                .with_context(|| format!("Không gọi được API UTXO: {url}"))?
-                .error_for_status()
-                .with_context(|| format!("Lỗi response API UTXO: {url}"))?
-                .json()
-                .with_context(|| format!("Không parse được UTXO của {}", addr.address))?;
+            let rows: Vec<ApiAddressUtxo> = esplora.fetch_address_utxos(&addr.address)?;
 
-            let checked_address =
-                Address::from_str(&addr.address)?.require_network(self.network.bitcoin_network())?;
+            let checked_address = Address::from_str(&addr.address)?
+                .require_network(self.network.bitcoin_network())?;
 
             for row in rows {
                 utxos.push(SpendableUtxo {
@@ -797,6 +860,7 @@ impl Wallet {
                     vout: row.vout,
                     value: row.value,
                     address_index: addr.index,
+                    chain: addr.chain,
                     address: checked_address.clone(),
                 });
             }
@@ -814,8 +878,13 @@ impl Wallet {
         let account_xprv = Xpriv::from_str(&self.account_xprv)?;
 
         for (input_index, utxo) in selected_utxos.iter().enumerate() {
-            let (_, private_key, public_key) =
-                Self::derive_address_and_keys(&secp, &account_xprv, self.network, utxo.address_index)?;
+            let (_, private_key, public_key) = Self::derive_address_and_keys(
+                &secp,
+                &account_xprv,
+                self.network,
+                utxo.chain,
+                utxo.address_index,
+            )?;
 
             let script_code = utxo.address.script_pubkey();
 
@@ -832,8 +901,10 @@ impl Wallet {
             let mut signature_bytes = signature.serialize_der().to_vec();
             signature_bytes.push(EcdsaSighashType::All as u8);
 
-            tx.input[input_index].witness =
-                Witness::from_slice(&[signature_bytes.as_slice(), public_key.to_bytes().as_slice()]);
+            tx.input[input_index].witness = Witness::from_slice(&[
+                signature_bytes.as_slice(),
+                public_key.to_bytes().as_slice(),
+            ]);
         }
 
         Ok(())

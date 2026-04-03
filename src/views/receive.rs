@@ -6,14 +6,14 @@ use iced::{
     Alignment, Background, Border, Color, Element, Length, Shadow, Theme,
 };
 use qrcode::{types::Color as QrColor, QrCode};
-use std::fmt;
 
 use crate::i18n::t;
 use crate::theme::{
     card_style, color_with_alpha, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, text_color, Colors,
 };
-use crate::wallet::Wallet;
+use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
+use crate::wallet::{AddressChain, Wallet};
 
 #[derive(Debug, Clone)]
 pub enum ReceiveMessage {
@@ -139,8 +139,12 @@ impl ReceiveView {
         let mut content = column![title, wallet_selector].spacing(16).padding(32);
 
         if let Some(wallet) = wallet {
-            let balance: i64 = wallet.history.iter().map(|tx| tx.amount_sat).sum();
-            let balance_btc = balance as f64 / 100_000_000.0;
+            let balance_btc = wallet.balance() as f64 / 100_000_000.0;
+            let receive_addresses = wallet
+                .addresses
+                .iter()
+                .filter(|entry| entry.chain == AddressChain::External)
+                .collect::<Vec<_>>();
 
             content = content.push(
                 text(format!(
@@ -162,7 +166,7 @@ impl ReceiveView {
 
             content = content.push(derive_button);
 
-            if wallet.addresses.is_empty() {
+            if receive_addresses.is_empty() {
                 content = content.push(
                     text(t(
                         "Ví chưa có địa chỉ, hãy bấm 'Tạo địa chỉ mới'.",
@@ -172,8 +176,8 @@ impl ReceiveView {
                     .style(text_color(Colors::TEXT_MUTED)),
                 );
             } else {
-                let selected_index = self.selected_index.min(wallet.addresses.len() - 1);
-                if let Some(addr) = wallet.addresses.get(selected_index) {
+                let selected_index = self.selected_index.min(receive_addresses.len() - 1);
+                if let Some(addr) = receive_addresses.get(selected_index) {
                     content = content.push(Space::with_height(12));
                     content = content.push(
                         text(t("Địa chỉ đang chọn:", "Selected Address:"))
@@ -243,7 +247,7 @@ impl ReceiveView {
                 );
 
                 let mut list = column![];
-                for (i, addr) in wallet.addresses.iter().enumerate() {
+                for (i, addr) in receive_addresses.iter().enumerate() {
                     let is_selected = i == selected_index;
                     let row_content = row![
                         text(format!("#{}", addr.index))
@@ -345,7 +349,7 @@ impl ReceiveView {
                 .center_x(Length::Fill)
                 .center_y(Length::Fill);
 
-            let overlay = stack(vec![opaque(backdrop).into(), popup_layer.into()])
+            let overlay = stack(vec![opaque(backdrop), popup_layer.into()])
                 .width(Length::Fill)
                 .height(Length::Fill);
 
@@ -371,36 +375,6 @@ impl ReceiveView {
         self.show_qr = false;
         self.qr_error = None;
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct WalletChoice {
-    index: usize,
-    label: String,
-}
-
-impl fmt::Display for WalletChoice {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.label)
-    }
-}
-
-fn wallet_choices(wallets: &[Wallet]) -> Vec<WalletChoice> {
-    wallets
-        .iter()
-        .enumerate()
-        .map(|(index, wallet)| WalletChoice {
-            index,
-            label: format!("{} ({})", wallet.name, wallet.network.as_str()),
-        })
-        .collect()
-}
-
-fn selected_wallet_choice(wallets: &[Wallet], selected_wallet: usize) -> Option<WalletChoice> {
-    wallets.get(selected_wallet).map(|wallet| WalletChoice {
-        index: selected_wallet,
-        label: format!("{} ({})", wallet.name, wallet.network.as_str()),
-    })
 }
 
 fn build_qr_handle(address: &str) -> Result<image::Handle, String> {

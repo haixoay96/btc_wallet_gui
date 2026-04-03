@@ -1,7 +1,8 @@
 use iced::Task;
 
 use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::storage::{PersistedState, Storage, UserProfile};
+use crate::storage::Storage;
+use crate::utils::{pick_export_backup_path, resolve_user_path};
 use crate::views::settings::{SettingsEvent, SettingsMessage};
 
 use super::*;
@@ -13,12 +14,11 @@ impl App {
                 SettingsEvent::ChangePassphrase {
                     current,
                     new_passphrase,
-                } => {
-                    return self.handle_change_passphrase(current, new_passphrase)
-                }
+                } => return self.handle_change_passphrase(current, new_passphrase),
                 SettingsEvent::ExportWallet => {
-                    if let Some(path) = super::pick_export_backup_path("") {
-                        return self.handle_export_wallet_backup(path.to_string_lossy().to_string());
+                    if let Some(path) = pick_export_backup_path("") {
+                        return self
+                            .handle_export_wallet_backup(path.to_string_lossy().to_string());
                     }
                 }
                 SettingsEvent::ClearAllData(passphrase) => {
@@ -115,13 +115,7 @@ impl App {
         };
 
         let export_path = resolve_user_path(&raw_path);
-        let state = PersistedState {
-            profile: UserProfile {
-                nickname: self.user_nickname.clone(),
-                language: self.language,
-            },
-            wallets: self.wallets.clone(),
-        };
+        let state = self.persisted_state();
 
         match Storage::new() {
             Ok(storage) => {

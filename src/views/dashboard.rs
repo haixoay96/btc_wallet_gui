@@ -31,7 +31,7 @@ impl DashboardView {
         self.wallet_count = wallets;
     }
 
-    pub fn view(&self) -> Element<'_, DashboardMessage> {
+    pub fn view(&self, is_refreshing: bool) -> Element<'_, DashboardMessage> {
         let title = text(t("Tổng quan", "Dashboard"))
             .size(32)
             .style(text_color(Colors::TEXT_PRIMARY));
@@ -92,10 +92,18 @@ impl DashboardView {
         .style(card_style())
         .width(Length::Fill);
 
-        let refresh_button = button(text(format!("🔄 {}", t("Làm mới", "Refresh"))).size(16))
-            .on_press(DashboardMessage::Refresh)
+        let refresh_label = if is_refreshing {
+            t("Đang làm mới...", "Refreshing...")
+        } else {
+            t("🔄 Làm mới", "🔄 Refresh")
+        };
+
+        let mut refresh_button = button(text(refresh_label).size(16))
             .padding(12)
             .style(primary_button_style());
+        if !is_refreshing {
+            refresh_button = refresh_button.on_press(DashboardMessage::Refresh);
+        }
 
         let content = column![
             row![title, Space::with_width(Length::Fill), refresh_button].align_y(Alignment::Center),

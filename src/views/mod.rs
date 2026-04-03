@@ -6,4 +6,5 @@ pub mod receive;
 pub mod send;
 pub mod settings;
 pub mod sidebar;
+pub mod wallet_picker;
 pub mod wallets;

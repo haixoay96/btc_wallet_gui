@@ -133,6 +133,14 @@ pub fn normalize_nickname(raw: Option<&str>) -> Option<String> {
         .map(ToOwned::to_owned)
 }
 
+pub struct Slip39PdfExport<'a> {
+    pub wallet_name: &'a str,
+    pub network: &'a str,
+    pub threshold: u8,
+    pub share_count: u8,
+    pub has_slip39_passphrase: bool,
+}
+
 // PDF export functions
 
 pub fn export_mnemonic_to_pdf(
@@ -228,11 +236,7 @@ pub fn export_mnemonic_to_pdf(
 pub fn export_slip39_shares_to_pdf_directory(
     base_directory: &Path,
     directory_name: &str,
-    wallet_name: &str,
-    network: &str,
-    threshold: u8,
-    share_count: u8,
-    has_slip39_passphrase: bool,
+    export: &Slip39PdfExport<'_>,
     shares: &[String],
 ) -> Result<PathBuf, String> {
     if shares.is_empty() {
@@ -249,17 +253,7 @@ pub fn export_slip39_shares_to_pdf_directory(
         let file_name = format!("share_{:02}_of_{:02}.pdf", index + 1, shares.len());
         let share_path = export_dir.join(file_name);
 
-        export_slip39_share_to_pdf(
-            &share_path,
-            wallet_name,
-            network,
-            threshold,
-            share_count,
-            has_slip39_passphrase,
-            index + 1,
-            shares.len(),
-            share,
-        )?;
+        export_slip39_share_to_pdf(&share_path, export, index + 1, shares.len(), share)?;
     }
 
     Ok(export_dir)
@@ -312,11 +306,7 @@ fn create_unique_export_directory(
 
 fn export_slip39_share_to_pdf(
     path: &Path,
-    wallet_name: &str,
-    network: &str,
-    threshold: u8,
-    share_count: u8,
-    has_slip39_passphrase: bool,
+    export: &Slip39PdfExport<'_>,
     share_index: usize,
     share_total: usize,
     share_phrase: &str,
@@ -354,21 +344,21 @@ fn export_slip39_share_to_pdf(
         &font_bold,
     );
     current_layer.use_text(
-        format!("Wallet: {wallet_name}"),
+        format!("Wallet: {}", export.wallet_name),
         12.0,
         Mm(18.0),
         Mm(268.0),
         &font_regular,
     );
     current_layer.use_text(
-        format!("Network: {network}"),
+        format!("Network: {}", export.network),
         12.0,
         Mm(18.0),
         Mm(260.0),
         &font_regular,
     );
     current_layer.use_text(
-        format!("Scheme: {threshold}-of-{share_count}"),
+        format!("Scheme: {}-of-{}", export.threshold, export.share_count),
         12.0,
         Mm(18.0),
         Mm(252.0),
@@ -384,7 +374,7 @@ fn export_slip39_share_to_pdf(
     current_layer.use_text(
         format!(
             "SLIP39 passphrase: {}",
-            if has_slip39_passphrase {
+            if export.has_slip39_passphrase {
                 "SET (required for restore)"
             } else {
                 "EMPTY"

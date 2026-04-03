@@ -11,8 +11,6 @@ use self::paths::StoragePaths;
 use crate::i18n::AppLanguage;
 use crate::wallet::Wallet;
 
-
-
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UserProfile {
     #[serde(default)]

@@ -1,19 +1,18 @@
 use crate::i18n::t;
 use crate::theme::{
-    card_style, pick_list_menu_style, pick_list_style, primary_button_style, secondary_button_style,
-    text_color, Colors,
+    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    secondary_button_style, text_color, Colors,
 };
+use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
 use chrono::DateTime;
 use iced::{
     widget::{button, column, container, pick_list, row, scrollable, text, Space},
     Alignment, Element, Length,
 };
-use std::fmt;
 
 fn format_timestamp(timestamp: u64) -> String {
-    let datetime = DateTime::from_timestamp(timestamp as i64, 0)
-        .unwrap_or_default();
+    let datetime = DateTime::from_timestamp(timestamp as i64, 0).unwrap_or_default();
     datetime.format("%d/%m/%Y %H:%M:%S").to_string()
 }
 
@@ -81,6 +80,7 @@ impl HistoryView {
         &'a self,
         wallets: &'a [Wallet],
         selected_wallet: usize,
+        is_refreshing: bool,
     ) -> Element<'a, HistoryMessage> {
         let wallet_options = wallet_choices(wallets);
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
@@ -109,6 +109,18 @@ impl HistoryView {
         let mut content = column![title, wallet_selector].spacing(16).padding(32);
 
         // Filter buttons
+        let refresh_label = if is_refreshing {
+            t("Đang làm mới...", "Refreshing...")
+        } else {
+            t("🔄 Làm mới", "🔄 Refresh")
+        };
+        let mut refresh_button = button(text(refresh_label).size(12))
+            .padding(8)
+            .style(secondary_button_style());
+        if !is_refreshing {
+            refresh_button = refresh_button.on_press(HistoryMessage::Refresh);
+        }
+
         let filter_row = row![
             button(text(t("Tất cả", "All")).size(12))
                 .on_press(HistoryMessage::FilterAll)
@@ -137,10 +149,7 @@ impl HistoryView {
                     secondary_button_style()
                 }),
             Space::with_width(Length::Fill),
-            button(text(format!("🔄 {}", t("Làm mới", "Refresh"))).size(12))
-                .on_press(HistoryMessage::Refresh)
-                .padding(8)
-                .style(secondary_button_style()),
+            refresh_button,
         ];
 
         content = content.push(filter_row);
@@ -201,8 +210,12 @@ impl HistoryView {
                     let txid_short = format!("{}...", &tx.txid[..16.min(tx.txid.len())]);
 
                     let explorer_url = match wallet.network {
-                        WalletNetwork::Mainnet => format!("https://blockstream.info/tx/{}", tx.txid),
-                        WalletNetwork::Testnet => format!("https://blockstream.info/testnet/tx/{}", tx.txid),
+                        WalletNetwork::Mainnet => {
+                            format!("https://blockstream.info/tx/{}", tx.txid)
+                        }
+                        WalletNetwork::Testnet => {
+                            format!("https://blockstream.info/testnet/tx/{}", tx.txid)
+                        }
                     };
 
                     let tx_row = container(
@@ -226,9 +239,13 @@ impl HistoryView {
                                     .padding(8)
                                     .style(secondary_button_style()),
                                 Space::with_width(Length::Fill),
-                                text(format!("{}{}", amount_sign, format_btc_and_sat(tx.amount_sat)))
-                                    .size(14)
-                                    .style(text_color(amount_color)),
+                                text(format!(
+                                    "{}{}",
+                                    amount_sign,
+                                    format_btc_and_sat(tx.amount_sat)
+                                ))
+                                .size(14)
+                                .style(text_color(amount_color)),
                             ]
                             .align_y(Alignment::Center),
                             Space::with_height(8),
@@ -248,9 +265,13 @@ impl HistoryView {
                                 )),
                                 Space::with_width(16),
                                 if let Some(fee) = tx.fee_sat {
-                                    text(format!("{}: {}", t("Phí", "Fee"), format_btc_and_sat(fee as i64)))
-                                        .size(12)
-                                        .style(text_color(Colors::TEXT_MUTED))
+                                    text(format!(
+                                        "{}: {}",
+                                        t("Phí", "Fee"),
+                                        format_btc_and_sat(fee as i64)
+                                    ))
+                                    .size(12)
+                                    .style(text_color(Colors::TEXT_MUTED))
                                 } else {
                                     text("")
                                 },
@@ -275,10 +296,7 @@ impl HistoryView {
                     tx_list = tx_list.push(Space::with_height(12));
                 }
 
-                content = content.push(
-                    scrollable(tx_list)
-                        .height(Length::Fixed(400.0))
-                );
+                content = content.push(scrollable(tx_list).height(Length::Fixed(400.0)));
             }
         } else {
             content = content.push(Space::with_height(40));
@@ -298,34 +316,4 @@ impl HistoryView {
             .height(Length::Fill)
             .into()
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct WalletChoice {
-    index: usize,
-    label: String,
-}
-
-impl fmt::Display for WalletChoice {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.label)
-    }
-}
-
-fn wallet_choices(wallets: &[Wallet]) -> Vec<WalletChoice> {
-    wallets
-        .iter()
-        .enumerate()
-        .map(|(index, wallet)| WalletChoice {
-            index,
-            label: format!("{} ({})", wallet.name, wallet.network.as_str()),
-        })
-        .collect()
-}
-
-fn selected_wallet_choice(wallets: &[Wallet], selected_wallet: usize) -> Option<WalletChoice> {
-    wallets.get(selected_wallet).map(|wallet| WalletChoice {
-        index: selected_wallet,
-        label: format!("{} ({})", wallet.name, wallet.network.as_str()),
-    })
 }
