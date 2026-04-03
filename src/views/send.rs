@@ -7,8 +7,9 @@ use iced::{
 
 use crate::i18n::t;
 use crate::theme::{
-    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
-    secondary_button_style, text_color, Colors,
+    card_style, notice_style, pick_list_menu_style, pick_list_style, popup_dialog_style,
+    popup_overlay_style, primary_button_style, secondary_button_style, selected_button_style,
+    text_color, Colors, NoticeTone,
 };
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{validate_bitcoin_address, ChangeStrategy, InputSource, Wallet};
@@ -68,6 +69,7 @@ pub enum SendMessage {
     MaxAmount,
     FromAddressChanged(String),
     ChangeAddressChanged(String),
+    ToggleAdvanced,
     EstimateFee,
     Send,
     ConfirmSend,
@@ -110,6 +112,7 @@ pub struct SendView {
     error: Option<String>,
     success: Option<String>,
     show_confirm: bool,
+    show_advanced: bool,
 }
 
 impl SendView {
@@ -128,6 +131,7 @@ impl SendView {
             error: None,
             success: None,
             show_confirm: false,
+            show_advanced: false,
         }
     }
 
@@ -164,6 +168,7 @@ impl SendView {
         self.amount_error = None;
         self.fee_error = None;
         self.show_confirm = false;
+        self.show_advanced = false;
     }
 
     pub fn set_max_amount(&mut self, amount_sat: u64) {
@@ -243,6 +248,10 @@ impl SendView {
             SendMessage::ChangeAddressChanged(addr) => {
                 self.change_address = addr;
                 self.error = None;
+                None
+            }
+            SendMessage::ToggleAdvanced => {
+                self.show_advanced = !self.show_advanced;
                 None
             }
             SendMessage::EstimateFee => {
@@ -409,17 +418,36 @@ impl SendView {
         let balance_text = if let Some(wallet) = wallet {
             let balance_sat = wallet.balance();
             let balance_btc = balance_sat as f64 / 100_000_000.0;
-            text(format!(
-                "{}: {:.8} BTC",
-                t("Sẵn có", "Available"),
-                balance_btc
-            ))
-            .size(14)
-            .style(text_color(Colors::TEXT_SECONDARY))
+            container(
+                row![
+                    text(format!(
+                        "{}: {:.8} BTC",
+                        t("Sẵn có", "Available"),
+                        balance_btc
+                    ))
+                    .size(14)
+                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    Space::with_width(Length::Fill),
+                    text(format!(
+                        "{}: {}",
+                        t("Mạng", "Network"),
+                        wallet.network.as_str()
+                    ))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
+                ]
+                .align_y(Alignment::Center),
+            )
+            .style(card_style())
+            .padding(14)
         } else {
-            text(t("Chưa chọn ví", "No wallet selected"))
-                .size(14)
-                .style(text_color(Colors::ERROR))
+            container(
+                text(t("Chưa chọn ví", "No wallet selected"))
+                    .size(14)
+                    .style(text_color(Colors::TEXT_PRIMARY)),
+            )
+            .style(notice_style(NoticeTone::Warning))
+            .padding(12)
         };
 
         let to_input = column![
@@ -447,7 +475,7 @@ impl SendView {
         let max_label = if is_calculating_max {
             t("Đang tính...", "Calculating...")
         } else {
-            t("Tối Đa", "Max")
+            t("Dùng tối đa", "Use max")
         };
         let mut max_button = button(text(max_label).size(12))
             .padding(6)
@@ -492,7 +520,7 @@ impl SendView {
         let estimate_label = if is_estimating_fee {
             t("Đang ước tính...", "Estimating...")
         } else {
-            t("Ước tính phí", "Estimate Fee")
+            t("Ước tính tự động", "Auto estimate")
         };
         let mut estimate_btn = button(text(estimate_label).size(14))
             .padding(6)
@@ -537,60 +565,96 @@ impl SendView {
             Space::with_height(0).into()
         };
 
-        let advanced_section = column![
-            text(t(
-                "Tùy chọn nâng cao (không bắt buộc)",
-                "Advanced Options (Optional)"
-            ))
-            .size(16)
-            .style(text_color(Colors::TEXT_PRIMARY)),
-            Space::with_height(8),
-            column![
-                text(t(
-                    "Chỉ số địa chỉ nguồn (phân tách bởi dấu phẩy)",
-                    "From address indexes (comma separated)",
-                ))
-                .size(12)
-                .style(text_color(Colors::TEXT_SECONDARY)),
-                Space::with_height(4),
-                text_input(t("Ví dụ: 0,1,4", "Example: 0,1,4"), &self.from_address)
-                    .on_input(SendMessage::FromAddressChanged)
-                    .padding(10)
+        let advanced_toggle = button(
+            text(if self.show_advanced {
+                t("Ẩn tùy chọn nâng cao", "Hide advanced options")
+            } else {
+                t("Hiện tùy chọn nâng cao", "Show advanced options")
+            })
+            .size(13),
+        )
+        .on_press(SendMessage::ToggleAdvanced)
+        .padding(10)
+        .style(if self.show_advanced {
+            selected_button_style()
+        } else {
+            secondary_button_style()
+        });
+
+        let advanced_section: Element<'_, SendMessage> = if self.show_advanced {
+            container(
+                column![
+                    text(t(
+                        "Tùy chọn nâng cao chỉ cần khi bạn muốn kiểm soát input/change cụ thể.",
+                        "Advanced options are only needed when you want to control specific inputs/change.",
+                    ))
                     .size(12)
-            ]
-            .spacing(2),
-            Space::with_height(8),
-            column![
-                text(t(
-                    "Chỉ số địa chỉ trả lại (để trống = tạo mới)",
-                    "Change address index (empty = derive new)",
-                ))
-                .size(12)
-                .style(text_color(Colors::TEXT_SECONDARY)),
-                Space::with_height(4),
-                text_input(t("Ví dụ: 2", "Example: 2"), &self.change_address)
-                    .on_input(SendMessage::ChangeAddressChanged)
-                    .padding(10)
-                    .size(12)
-            ]
-            .spacing(2),
-        ]
-        .spacing(8);
+                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    Space::with_height(8),
+                    column![
+                        text(t(
+                            "Chỉ số địa chỉ nguồn (phân tách bởi dấu phẩy)",
+                            "From address indexes (comma separated)",
+                        ))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        Space::with_height(4),
+                        text_input(t("Ví dụ: 0,1,4", "Example: 0,1,4"), &self.from_address)
+                            .on_input(SendMessage::FromAddressChanged)
+                            .padding(10)
+                            .size(12)
+                    ]
+                    .spacing(2),
+                    Space::with_height(8),
+                    column![
+                        text(t(
+                            "Chỉ số địa chỉ trả lại (để trống = tạo mới)",
+                            "Change address index (empty = derive new)",
+                        ))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        Space::with_height(4),
+                        text_input(t("Ví dụ: 2", "Example: 2"), &self.change_address)
+                            .on_input(SendMessage::ChangeAddressChanged)
+                            .padding(10)
+                            .size(12)
+                    ]
+                    .spacing(2),
+                ]
+                .spacing(8),
+            )
+            .style(card_style())
+            .padding(16)
+            .width(Length::Fill)
+            .into()
+        } else {
+            Space::with_height(0).into()
+        };
 
         let error_text: Element<'_, SendMessage> = if let Some(error) = &self.error {
-            text(error.as_str())
-                .size(14)
-                .style(text_color(Colors::ERROR))
-                .into()
+            container(
+                text(error.as_str())
+                    .size(14)
+                    .style(text_color(Colors::TEXT_PRIMARY)),
+            )
+            .style(notice_style(NoticeTone::Error))
+            .padding(12)
+            .width(Length::Fill)
+            .into()
         } else {
             Space::with_height(0).into()
         };
 
         let success_text: Element<'_, SendMessage> = if let Some(success) = &self.success {
-            text(success.as_str())
-                .size(14)
-                .style(text_color(Colors::SUCCESS))
-                .into()
+            container(
+                text(success.as_str())
+                    .size(14)
+                    .style(text_color(Colors::TEXT_PRIMARY)),
+            )
+            .style(notice_style(NoticeTone::Success))
+            .padding(12)
+            .width(Length::Fill)
+            .into()
         } else {
             Space::with_height(0).into()
         };
@@ -627,7 +691,8 @@ impl SendView {
             fee_row,
             fee_info,
             Space::with_height(24),
-            container(advanced_section).style(card_style()).padding(16),
+            advanced_toggle,
+            advanced_section,
             Space::with_height(24),
             error_text,
             success_text,
@@ -638,63 +703,103 @@ impl SendView {
         .padding(32);
 
         if self.show_confirm {
-            // Create modal overlay - positioned at top 1/4 of screen
+            let amount_sat = parse_btc_to_sat(&self.amount, "số lượng", "amount").ok();
+            let fee_sat = if self.fee_amount.trim().is_empty() {
+                None
+            } else {
+                parse_btc_to_sat(&self.fee_amount, "phí", "fee").ok()
+            };
+            let balance_sat = wallet.map(Wallet::balance).unwrap_or_default() as u64;
+            let remaining_sat = amount_sat.and_then(|amount| {
+                let total_spend = amount.saturating_add(fee_sat.unwrap_or_default());
+                balance_sat.checked_sub(total_spend)
+            });
+            let source_label = wallet
+                .map(|value| format!("{} ({})", value.name, value.network.as_str()))
+                .unwrap_or_else(|| t("Chưa chọn ví", "No wallet selected").to_string());
+
             let overlay = container(
                 container(
                     column![
                         text(t("Xác nhận giao dịch", "Confirm Transaction"))
                             .size(20)
                             .style(text_color(Colors::TEXT_PRIMARY)),
-                        Space::with_height(16),
-                        text(format!("{}: {}", t("Đến", "To"), self.to_address)).size(14),
-                        Space::with_height(8),
-                        text(format!("{}: {} BTC", t("Số lượng", "Amount"), self.amount)).size(14),
-                        Space::with_height(8),
-                        text(format!("{}: {} BTC", t("Phí", "Fee"), self.fee_amount)).size(14),
-                        Space::with_height(8),
-                        text(format!(
-                            "Change: {}",
-                            if self.change_address.trim().is_empty() {
-                                t("(Tạo mới)", "(Derive new)").to_string()
-                            } else {
-                                self.change_address.clone()
-                            }
+                        Space::with_height(10),
+                        text(t(
+                            "Kiểm tra kỹ thông tin trước khi broadcast lên mạng.",
+                            "Review the details carefully before broadcasting to the network.",
                         ))
-                        .size(14),
+                        .size(13)
+                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        Space::with_height(16),
+                        summary_row(t("Từ ví", "From Wallet"), source_label),
+                        summary_row(t("Đến", "To"), self.to_address.clone()),
+                        summary_row(
+                            t("Số lượng", "Amount"),
+                            amount_sat
+                                .map(format_btc_and_sat)
+                                .unwrap_or_else(|| self.amount.clone()),
+                        ),
+                        summary_row(
+                            t("Phí", "Fee"),
+                            fee_sat.map(format_btc_and_sat).unwrap_or_else(|| {
+                                if self.fee_amount.trim().is_empty() {
+                                    t("Tự động hoặc chưa nhập", "Auto or not entered").to_string()
+                                } else {
+                                    self.fee_amount.clone()
+                                }
+                            }),
+                        ),
+                        summary_row(
+                            t("Địa chỉ trả lại", "Change destination"),
+                            if self.change_address.trim().is_empty() {
+                                t("Tạo địa chỉ mới", "Derive a new address").to_string()
+                            } else {
+                                format!("#{}", self.change_address.trim())
+                            },
+                        ),
+                        if let Some(remaining) = remaining_sat {
+                            container(summary_row(
+                                t("Số dư còn lại", "Remaining balance"),
+                                format_btc_and_sat(remaining),
+                            ))
+                            .style(notice_style(NoticeTone::Info))
+                            .padding(10)
+                            .width(Length::Fill)
+                        } else {
+                            container(Space::with_height(0))
+                        },
                         Space::with_height(16),
                         row![
-                            button(text(t("Xác nhận", "Confirm")).size(14))
-                                .on_press(SendMessage::ConfirmSend)
-                                .padding(10)
-                                .style(primary_button_style()),
-                            Space::with_width(16),
                             button(text(t("Hủy", "Cancel")).size(14))
                                 .on_press(SendMessage::CancelSend)
                                 .padding(10)
                                 .style(secondary_button_style()),
+                            Space::with_width(10),
+                            button(
+                                text(t("Broadcast giao dịch", "Broadcast transaction")).size(14)
+                            )
+                            .on_press(SendMessage::ConfirmSend)
+                            .padding(10)
+                            .style(primary_button_style()),
                         ]
+                        .spacing(8),
                     ]
                     .spacing(8),
                 )
-                .style(card_style())
+                .style(popup_dialog_style())
                 .padding(24)
-                .width(Length::Fixed(400.0)),
+                .width(Length::Fixed(460.0)),
             )
+            .style(popup_overlay_style())
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x(Length::Fill)
-            .align_y(iced::alignment::Vertical::Top)
-            .padding(iced::Padding {
-                top: 80.0,
-                right: 0.0,
-                bottom: 0.0,
-                left: 0.0,
-            });
+            .center_y(Length::Fill);
 
-            // Stack overlay on top of content
             stack![
                 scrollable(content).width(Length::Fill).height(Length::Fill),
-                overlay,
+                overlay
             ]
             .width(Length::Fill)
             .height(Length::Fill)
@@ -706,6 +811,18 @@ impl SendView {
                 .into()
         }
     }
+}
+
+fn summary_row<'a>(label: &'a str, value: String) -> Element<'a, SendMessage> {
+    row![
+        text(label)
+            .size(13)
+            .style(text_color(Colors::TEXT_SECONDARY)),
+        Space::with_width(Length::Fill),
+        text(value).size(13).style(text_color(Colors::TEXT_PRIMARY)),
+    ]
+    .align_y(Alignment::Center)
+    .into()
 }
 
 fn parse_input_source(raw: &str) -> Result<InputSource, String> {

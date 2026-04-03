@@ -1,7 +1,7 @@
 use crate::i18n::t;
 use crate::theme::{
-    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
-    secondary_button_style, text_color, Colors,
+    card_style, pick_list_menu_style, pick_list_style, secondary_button_style,
+    selected_button_style, text_color, Colors,
 };
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
@@ -28,6 +28,8 @@ pub enum HistoryMessage {
     FilterAll,
     FilterIncoming,
     FilterOutgoing,
+    FilterPending,
+    FilterSelfTransfer,
     CopyTxid(String),
     OpenExplorer(String),
 }
@@ -46,6 +48,8 @@ enum Filter {
     All,
     Incoming,
     Outgoing,
+    Pending,
+    SelfTransfer,
 }
 
 impl HistoryView {
@@ -69,6 +73,14 @@ impl HistoryView {
             }
             HistoryMessage::FilterOutgoing => {
                 self.filter = Filter::Outgoing;
+                None
+            }
+            HistoryMessage::FilterPending => {
+                self.filter = Filter::Pending;
+                None
+            }
+            HistoryMessage::FilterSelfTransfer => {
+                self.filter = Filter::SelfTransfer;
                 None
             }
             HistoryMessage::CopyTxid(_) => None, // Handled by clipboard action
@@ -112,7 +124,7 @@ impl HistoryView {
         let refresh_label = if is_refreshing {
             t("Đang làm mới...", "Refreshing...")
         } else {
-            t("🔄 Làm mới", "🔄 Refresh")
+            t("Làm mới", "Refresh")
         };
         let mut refresh_button = button(text(refresh_label).size(12))
             .padding(8)
@@ -126,7 +138,7 @@ impl HistoryView {
                 .on_press(HistoryMessage::FilterAll)
                 .padding(8)
                 .style(if self.filter == Filter::All {
-                    primary_button_style()
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 }),
@@ -135,7 +147,7 @@ impl HistoryView {
                 .on_press(HistoryMessage::FilterIncoming)
                 .padding(8)
                 .style(if self.filter == Filter::Incoming {
-                    primary_button_style()
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 }),
@@ -144,7 +156,25 @@ impl HistoryView {
                 .on_press(HistoryMessage::FilterOutgoing)
                 .padding(8)
                 .style(if self.filter == Filter::Outgoing {
-                    primary_button_style()
+                    selected_button_style()
+                } else {
+                    secondary_button_style()
+                }),
+            Space::with_width(8),
+            button(text(t("Chờ xác nhận", "Pending")).size(12))
+                .on_press(HistoryMessage::FilterPending)
+                .padding(8)
+                .style(if self.filter == Filter::Pending {
+                    selected_button_style()
+                } else {
+                    secondary_button_style()
+                }),
+            Space::with_width(8),
+            button(text(t("Tự chuyển", "Self transfer")).size(12))
+                .on_press(HistoryMessage::FilterSelfTransfer)
+                .padding(8)
+                .style(if self.filter == Filter::SelfTransfer {
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 }),
@@ -162,6 +192,8 @@ impl HistoryView {
                     Filter::All => true,
                     Filter::Incoming => matches!(tx.direction, TxDirection::Incoming),
                     Filter::Outgoing => matches!(tx.direction, TxDirection::Outgoing),
+                    Filter::Pending => !tx.confirmed,
+                    Filter::SelfTransfer => matches!(tx.direction, TxDirection::SelfTransfer),
                 })
                 .collect();
 
@@ -296,7 +328,7 @@ impl HistoryView {
                     tx_list = tx_list.push(Space::with_height(12));
                 }
 
-                content = content.push(scrollable(tx_list).height(Length::Fixed(400.0)));
+                content = content.push(scrollable(tx_list).height(Length::Fill));
             }
         } else {
             content = content.push(Space::with_height(40));

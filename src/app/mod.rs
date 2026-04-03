@@ -5,6 +5,7 @@ mod wallet;
 
 use std::time::Duration;
 
+use chrono::Local;
 use iced::{
     clipboard,
     widget::{column, container, row, text, Space},
@@ -14,6 +15,9 @@ use secrecy::{ExposeSecret, SecretString};
 
 use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile};
+use crate::theme::{
+    notice_style, screen_background_style, secondary_button_style, text_color, Colors, NoticeTone,
+};
 use crate::utils::{normalize_nickname, wallet_count_text};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
@@ -81,6 +85,8 @@ pub enum AppMessage {
     MaxAmountFinished(Result<(u64, u64), String>),
     SendTransactionFinished(Result<SendExecutionResult, String>),
     RevealedMnemonicExpired(u64),
+    DismissStatus,
+    DismissError,
 }
 
 #[derive(Debug, Clone)]
@@ -170,6 +176,11 @@ impl App {
             }
 
             AppMessage::DashboardMessage(DashboardMessage::Refresh) => self.refresh_all_wallets(),
+            AppMessage::DashboardMessage(DashboardMessage::Navigate(page)) => {
+                self.current_page = page;
+                self.sidebar.set_active(page);
+                Task::none()
+            }
 
             AppMessage::WalletsMessage(msg) => self.handle_wallets_message(msg),
             AppMessage::SendMessage(msg) => self.handle_send_message(msg),
@@ -221,6 +232,14 @@ impl App {
             AppMessage::RevealedMnemonicExpired(session_id) => {
                 self.handle_revealed_mnemonic_expired(session_id)
             }
+            AppMessage::DismissStatus => {
+                self.status = None;
+                Task::none()
+            }
+            AppMessage::DismissError => {
+                self.error = None;
+                Task::none()
+            }
         }
     }
 
@@ -270,22 +289,40 @@ impl App {
 
                 let status_bar = if let Some(status) = &self.status {
                     container(
-                        text(status.as_str())
-                            .size(12)
-                            .style(crate::theme::text_color(crate::theme::Colors::SUCCESS)),
+                        row![
+                            text(status.as_str())
+                                .size(12)
+                                .style(text_color(Colors::TEXT_PRIMARY)),
+                            Space::with_width(Length::Fill),
+                            iced::widget::button(text(t("Đóng", "Close")).size(12))
+                                .on_press(AppMessage::DismissStatus)
+                                .padding(6)
+                                .style(secondary_button_style()),
+                        ]
+                        .align_y(iced::Alignment::Center),
                     )
-                    .padding(8)
+                    .padding(10)
+                    .style(notice_style(NoticeTone::Success))
                 } else {
                     container(Space::with_height(0))
                 };
 
                 let error_bar = if let Some(error) = &self.error {
                     container(
-                        text(error.as_str())
-                            .size(12)
-                            .style(crate::theme::text_color(crate::theme::Colors::ERROR)),
+                        row![
+                            text(error.as_str())
+                                .size(12)
+                                .style(text_color(Colors::TEXT_PRIMARY)),
+                            Space::with_width(Length::Fill),
+                            iced::widget::button(text(t("Đóng", "Close")).size(12))
+                                .on_press(AppMessage::DismissError)
+                                .padding(6)
+                                .style(secondary_button_style()),
+                        ]
+                        .align_y(iced::Alignment::Center),
                     )
-                    .padding(8)
+                    .padding(10)
+                    .style(notice_style(NoticeTone::Error))
                 } else {
                     container(Space::with_height(0))
                 };
@@ -300,22 +337,25 @@ impl App {
                             self.display_name()
                         ))
                         .size(14)
-                        .style(crate::theme::text_color(
-                            crate::theme::Colors::TEXT_SECONDARY,
-                        )),
+                        .style(text_color(Colors::TEXT_SECONDARY)),
                         Space::with_width(Length::Fill),
+                        text(self.current_page.title())
+                            .size(14)
+                            .style(text_color(Colors::TEXT_MUTED)),
+                        Space::with_width(12),
                         language_picker,
                     ]
                     .align_y(iced::Alignment::Center),
                 )
-                .padding(8);
+                .padding(12);
 
-                row![
+                container(row![
                     sidebar,
                     column![header_bar, status_bar, error_bar, main_content,].width(Length::Fill)
-                ]
+                ])
                 .width(Length::Fill)
                 .height(Length::Fill)
+                .style(screen_background_style())
                 .into()
             }
         }
@@ -330,8 +370,20 @@ impl App {
             .map(|wallet| wallet.confirmed_balance())
             .sum();
 
-        self.dashboard
-            .update_balances(total, confirmed, self.wallets.len());
+        let pending = total - confirmed;
+        let backup_needed = self
+            .wallets
+            .iter()
+            .filter(|wallet| wallet.has_mnemonic && !wallet.mnemonic_backed_up)
+            .count();
+
+        self.dashboard.update_balances(
+            total,
+            confirmed,
+            pending,
+            self.wallets.len(),
+            backup_needed,
+        );
     }
 
     pub fn refresh_all_wallets(&mut self) -> Task<AppMessage> {
@@ -560,6 +612,9 @@ impl App {
                 self.wallets = payload.wallets;
                 self.save_state();
                 self.update_dashboard();
+                self.dashboard.set_last_synced_label(Some(
+                    Local::now().format("%d/%m/%Y %H:%M:%S").to_string(),
+                ));
                 self.status = Some(format!(
                     "{} {}, {} {}",
                     t("Đã làm mới", "Refreshed"),

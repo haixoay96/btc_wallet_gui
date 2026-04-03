@@ -1,5 +1,7 @@
 use crate::i18n::t;
-use crate::theme::{secondary_button_style, sidebar_style, text_color, Colors};
+use crate::theme::{
+    secondary_button_style, selected_button_style, sidebar_style, text_color, Colors,
+};
 use iced::{
     widget::{button, column, container, row, text, Space},
     Alignment, Element, Length, Padding,
@@ -29,12 +31,12 @@ impl NavItem {
 
     pub fn icon(self) -> &'static str {
         match self {
-            Self::Dashboard => t("T", "D"),
-            Self::Wallets => t("V", "W"),
-            Self::Send => t("G", "S"),
-            Self::Receive => t("N", "R"),
-            Self::History => t("L", "H"),
-            Self::Settings => t("C", "S"),
+            Self::Dashboard => "DB",
+            Self::Wallets => "WL",
+            Self::Send => "SD",
+            Self::Receive => "RC",
+            Self::History => "TX",
+            Self::Settings => "ST",
         }
     }
 
@@ -100,7 +102,7 @@ impl Sidebar {
                     let title = text(item.title()).size(14);
 
                     let style = if is_active {
-                        crate::theme::primary_button_style()
+                        selected_button_style()
                     } else {
                         secondary_button_style()
                     };

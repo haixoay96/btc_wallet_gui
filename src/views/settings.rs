@@ -1,12 +1,13 @@
 use iced::{
-    widget::{button, column, container, scrollable, text, text_input, Space},
-    Element, Length,
+    widget::{button, column, container, row, scrollable, text, text_input, Space},
+    Element, Length, Padding,
 };
 
 use crate::i18n::t;
 use crate::theme::{
-    card_style, info_style, primary_button_style, secondary_button_style, text_color,
-    warning_style, Colors,
+    card_style, danger_button_style, info_style, notice_style, popup_dialog_style,
+    popup_overlay_style, primary_button_style, secondary_button_style, text_color, warning_style,
+    Colors, NoticeTone,
 };
 
 #[derive(Debug, Clone)]
@@ -303,8 +304,8 @@ impl SettingsView {
                 .size(12)
                 .style(text_color(Colors::WARNING)),
             text(t(
-                "Import backup chỉ hỗ trợ ở màn hình khởi tạo khi app chưa có passphrase.",
-                "Backup import is only supported on the initial screen when app has no passphrase yet."
+                "Khôi phục app backup chỉ dùng ở màn hình khởi tạo. Khôi phục ví .enc riêng lẻ dùng tại Wallets > Import.",
+                "Full app backup restore is only for the startup screen. Individual .enc wallet restore is available in Wallets > Import."
             ))
                 .size(12)
                 .style(text_color(Colors::TEXT_SECONDARY)),
@@ -346,32 +347,19 @@ impl SettingsView {
             clear_data_col = clear_data_col.push(
                 column![
                     text(t(
-                        "Xác nhận xóa toàn bộ dữ liệu?",
-                        "Confirm deleting all data?"
+                        "Thao tác này sẽ xóa toàn bộ ví khỏi máy hiện tại.",
+                        "This action will remove every wallet from the current device."
                     ))
                     .size(13)
                     .style(text_color(Colors::ERROR)),
-                    Space::with_height(8),
-                    text_input(
-                        t("Nhập passphrase hiện tại...", "Enter current passphrase..."),
-                        &self.clear_data_passphrase
-                    )
-                    .on_input(SettingsMessage::ClearDataPassphraseChanged)
-                    .secure(true)
-                    .padding(10)
-                    .size(13),
-                    Space::with_height(8),
-                    button(text(t("Xóa toàn bộ ngay", "Delete Everything")).size(13))
-                        .on_press(SettingsMessage::ConfirmClearData)
-                        .padding(10)
-                        .style(primary_button_style()),
-                    Space::with_height(6),
-                    button(text(t("Hủy", "Cancel")).size(13))
-                        .on_press(SettingsMessage::CancelClearData)
-                        .padding(10)
-                        .style(secondary_button_style()),
+                    text(t(
+                        "Bạn sẽ cần app backup hoặc các secret backup riêng của từng ví để khôi phục lại sau này.",
+                        "You will need the app backup or each wallet's own secret backup to restore later.",
+                    ))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
                 ]
-                .spacing(4),
+                .spacing(6),
             );
         }
 
@@ -426,20 +414,93 @@ impl SettingsView {
         );
 
         if let Some(err) = &self.error {
-            content = content.push(text(err.as_str()).size(13).style(text_color(Colors::ERROR)));
+            content = content.push(
+                container(
+                    text(err.as_str())
+                        .size(13)
+                        .style(text_color(Colors::TEXT_PRIMARY)),
+                )
+                .style(notice_style(NoticeTone::Error))
+                .padding(12)
+                .width(Length::Fill),
+            );
         }
 
         if let Some(succ) = &self.success {
             content = content.push(
-                text(succ.as_str())
-                    .size(13)
-                    .style(text_color(Colors::SUCCESS)),
+                container(
+                    text(succ.as_str())
+                        .size(13)
+                        .style(text_color(Colors::TEXT_PRIMARY)),
+                )
+                .style(notice_style(NoticeTone::Success))
+                .padding(12)
+                .width(Length::Fill),
             );
         }
 
-        scrollable(content)
+        let base: Element<'_, SettingsMessage> = scrollable(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .into()
+            .into();
+
+        if self.show_clear_data_confirm {
+            return container(
+                column![
+                    container(Space::with_height(Length::Fill)).height(Length::FillPortion(1)),
+                    container(
+                        column![
+                            text(t("Xác nhận xóa toàn bộ", "Confirm Full Data Deletion"))
+                                .size(20)
+                                .style(text_color(Colors::ERROR)),
+                            Space::with_height(10),
+                            text(t(
+                                "Dữ liệu ví trên máy này sẽ bị xóa vĩnh viễn.",
+                                "Wallet data on this device will be permanently deleted.",
+                            ))
+                            .size(14)
+                            .style(text_color(Colors::TEXT_PRIMARY)),
+                            Space::with_height(8),
+                            text_input(
+                                t("Nhập passphrase hiện tại...", "Enter current passphrase..."),
+                                &self.clear_data_passphrase
+                            )
+                            .on_input(SettingsMessage::ClearDataPassphraseChanged)
+                            .secure(true)
+                            .padding(12)
+                            .size(14),
+                            Space::with_height(12),
+                            row![
+                                button(text(t("Hủy", "Cancel")).size(14))
+                                    .on_press(SettingsMessage::CancelClearData)
+                                    .padding(10)
+                                    .style(secondary_button_style()),
+                                Space::with_width(10),
+                                button(text(t("Xóa toàn bộ ngay", "Delete Everything")).size(14))
+                                    .on_press(SettingsMessage::ConfirmClearData)
+                                    .padding(10)
+                                    .style(danger_button_style()),
+                            ]
+                            .spacing(8),
+                        ]
+                        .padding(24)
+                        .spacing(0),
+                    )
+                    .style(popup_dialog_style())
+                    .width(Length::Fixed(460.0))
+                    .center_x(Length::Fill),
+                    container(Space::with_height(Length::Fill)).height(Length::FillPortion(2)),
+                ]
+                .width(Length::Fill)
+                .height(Length::Fill),
+            )
+            .style(popup_overlay_style())
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .padding(Padding::from([0, 60]))
+            .into();
+        }
+
+        base
     }
 }

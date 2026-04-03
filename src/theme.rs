@@ -9,6 +9,14 @@ type PickListStyleFn = dyn Fn(&Theme, pick_list::Status) -> pick_list::Style;
 type TextInputStyleFn = dyn Fn(&Theme, text_input::Status) -> text_input::Style;
 type TextStyleFn = dyn Fn(&Theme) -> text::Style;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NoticeTone {
+    Info,
+    Success,
+    Warning,
+    Error,
+}
+
 /// Color palette inspired by Exodus wallet
 pub struct Colors;
 
@@ -23,7 +31,6 @@ impl Colors {
     // Accent colors
     pub const ACCENT_PURPLE: Color = Color::from_rgb(0.48, 0.38, 1.0); // #7B61FF
     pub const ACCENT_TEAL: Color = Color::from_rgb(0.0, 0.83, 0.67); // #00D4AA
-    pub const ACCENT_PINK: Color = Color::from_rgb(1.0, 0.42, 0.62); // #FF6B9D
     pub const ACCENT_BLUE: Color = Color::from_rgb(0.4, 0.7, 1.0); // #66B3FF
 
     // Text colors
@@ -42,6 +49,7 @@ impl Colors {
     // Border colors
     pub const BORDER: Color = Color::from_rgb(0.25, 0.25, 0.35); // #404059
     pub const BORDER_FOCUSED: Color = Color::from_rgb(0.48, 0.38, 1.0); // Purple
+    pub const BORDER_SUBTLE: Color = Color::from_rgb(0.20, 0.20, 0.28);
 }
 
 /// Helper function to create a Color with alpha
@@ -54,12 +62,12 @@ pub fn primary_button_style() -> Box<ButtonStyleFn> {
     Box::new(|_theme: &Theme, status: button::Status| {
         let (background, shadow_color) = match status {
             button::Status::Hovered => (
-                Background::Color(Colors::BG_HOVER),
-                color_with_alpha(Colors::ACCENT_PURPLE, 0.5),
+                Background::Color(Color::from_rgb(0.03, 0.76, 0.61)),
+                color_with_alpha(Colors::ACCENT_TEAL, 0.45),
             ),
             _ => (
-                Background::Color(Colors::ACCENT_PURPLE),
-                color_with_alpha(Colors::ACCENT_PURPLE, 0.3),
+                Background::Color(Colors::ACCENT_TEAL),
+                color_with_alpha(Colors::ACCENT_TEAL, 0.32),
             ),
         };
 
@@ -85,7 +93,7 @@ pub fn gradient_button_style() -> Box<ButtonStyleFn> {
     Box::new(|_theme: &Theme, status: button::Status| {
         let (background, shadow_color) = match status {
             button::Status::Hovered => (
-                Background::Color(Colors::BG_HOVER),
+                Background::Color(Color::from_rgb(0.55, 0.45, 1.0)),
                 color_with_alpha(Colors::GRADIENT_START, 0.5),
             ),
             _ => (
@@ -108,6 +116,41 @@ pub fn gradient_button_style() -> Box<ButtonStyleFn> {
                 blur_radius: 12.0,
             },
         }
+    })
+}
+
+pub fn selected_button_style() -> Box<ButtonStyleFn> {
+    Box::new(|_theme: &Theme, status: button::Status| {
+        let background = match status {
+            button::Status::Hovered => {
+                Background::Color(color_with_alpha(Colors::ACCENT_PURPLE, 0.28))
+            }
+            _ => Background::Color(color_with_alpha(Colors::ACCENT_PURPLE, 0.18)),
+        };
+
+        button::Style {
+            background: Some(background),
+            text_color: Colors::TEXT_PRIMARY,
+            border: Border {
+                radius: 12.0.into(),
+                width: 1.0,
+                color: color_with_alpha(Colors::ACCENT_PURPLE, 0.55),
+            },
+            shadow: Shadow::default(),
+        }
+    })
+}
+
+pub fn muted_button_style() -> Box<ButtonStyleFn> {
+    Box::new(|_theme: &Theme, _status: button::Status| button::Style {
+        background: Some(Background::Color(Colors::BG_INPUT)),
+        text_color: Colors::TEXT_MUTED,
+        border: Border {
+            radius: 12.0.into(),
+            width: 1.0,
+            color: Colors::BORDER_SUBTLE,
+        },
+        shadow: Shadow::default(),
     })
 }
 
@@ -170,18 +213,18 @@ pub fn warning_style() -> Box<ButtonStyleFn> {
     Box::new(|_theme: &Theme, status: button::Status| {
         let (background, shadow_color) = match status {
             button::Status::Hovered => (
-                Background::Color(Colors::BG_HOVER),
-                color_with_alpha(Colors::ACCENT_PINK, 0.5),
+                Background::Color(Color::from_rgb(0.96, 0.69, 0.0)),
+                color_with_alpha(Colors::WARNING, 0.5),
             ),
             _ => (
-                Background::Color(Colors::ACCENT_PINK),
-                color_with_alpha(Colors::ACCENT_PINK, 0.3),
+                Background::Color(Colors::WARNING),
+                color_with_alpha(Colors::WARNING, 0.3),
             ),
         };
 
         button::Style {
             background: Some(background),
-            text_color: Colors::TEXT_PRIMARY,
+            text_color: Colors::BG_PRIMARY,
             border: Border {
                 radius: 12.0.into(),
                 width: 0.0,
@@ -219,15 +262,28 @@ pub fn card_style() -> Box<ContainerStyleFn> {
     Box::new(|_theme: &Theme| container::Style {
         background: Some(Background::Color(Colors::BG_CARD)),
         border: Border {
-            radius: 0.0.into(),
-            width: 0.0,
-            color: Colors::BORDER,
+            radius: 18.0.into(),
+            width: 1.0,
+            color: Colors::BORDER_SUBTLE,
         },
         shadow: Shadow {
             color: Color::from_rgba(0.0, 0.0, 0.0, 0.3),
             offset: Vector::new(0.0, 8.0),
             blur_radius: 24.0,
         },
+        text_color: Some(Colors::TEXT_PRIMARY),
+    })
+}
+
+pub fn screen_background_style() -> Box<ContainerStyleFn> {
+    Box::new(|_theme: &Theme| container::Style {
+        background: Some(Background::Color(Colors::BG_PRIMARY)),
+        border: Border {
+            radius: 0.0.into(),
+            width: 0.0,
+            color: Color::TRANSPARENT,
+        },
+        shadow: Shadow::default(),
         text_color: Some(Colors::TEXT_PRIMARY),
     })
 }
@@ -254,9 +310,9 @@ pub fn popup_dialog_style() -> Box<ContainerStyleFn> {
     Box::new(|_theme: &Theme| container::Style {
         background: Some(Background::Color(Colors::BG_CARD)),
         border: Border {
-            radius: 16.0.into(),
-            width: 2.0,
-            color: Colors::ACCENT_PURPLE,
+            radius: 20.0.into(),
+            width: 1.0,
+            color: color_with_alpha(Colors::ACCENT_PURPLE, 0.45),
         },
         shadow: Shadow {
             color: Color::from_rgba(0.0, 0.0, 0.0, 0.8),
@@ -264,6 +320,31 @@ pub fn popup_dialog_style() -> Box<ContainerStyleFn> {
             blur_radius: 48.0,
         },
         text_color: Some(Colors::TEXT_PRIMARY),
+    })
+}
+
+pub fn notice_style(tone: NoticeTone) -> Box<ContainerStyleFn> {
+    Box::new(move |_theme: &Theme| {
+        let (accent, background) = match tone {
+            NoticeTone::Info => (
+                Colors::ACCENT_BLUE,
+                color_with_alpha(Colors::ACCENT_BLUE, 0.12),
+            ),
+            NoticeTone::Success => (Colors::SUCCESS, color_with_alpha(Colors::SUCCESS, 0.12)),
+            NoticeTone::Warning => (Colors::WARNING, color_with_alpha(Colors::WARNING, 0.14)),
+            NoticeTone::Error => (Colors::ERROR, color_with_alpha(Colors::ERROR, 0.14)),
+        };
+
+        container::Style {
+            background: Some(Background::Color(background)),
+            border: Border {
+                radius: 16.0.into(),
+                width: 1.0,
+                color: color_with_alpha(accent, 0.45),
+            },
+            shadow: Shadow::default(),
+            text_color: Some(Colors::TEXT_PRIMARY),
+        }
     })
 }
 

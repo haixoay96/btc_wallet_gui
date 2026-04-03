@@ -3,14 +3,14 @@ use iced::{
         button, column, container, image, mouse_area, opaque, pick_list, row, scrollable, stack,
         text, Space,
     },
-    Alignment, Background, Border, Color, Element, Length, Shadow, Theme,
+    Alignment, Element, Length,
 };
 use qrcode::{types::Color as QrColor, QrCode};
 
 use crate::i18n::t;
 use crate::theme::{
-    card_style, color_with_alpha, pick_list_menu_style, pick_list_style, primary_button_style,
-    secondary_button_style, text_color, Colors,
+    card_style, pick_list_menu_style, pick_list_style, popup_dialog_style, popup_overlay_style,
+    primary_button_style, secondary_button_style, selected_button_style, text_color, Colors,
 };
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{AddressChain, Wallet};
@@ -23,6 +23,7 @@ pub enum ReceiveMessage {
     CloseQrPopup,
     DeriveNewAddress,
     SelectAddress(usize),
+    ToggleAddressHistory,
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +37,7 @@ pub struct ReceiveView {
     selected_index: usize,
     copied: bool,
     show_qr: bool,
+    show_all_addresses: bool,
     qr_address: Option<String>,
     qr_handle: Option<image::Handle>,
     qr_error: Option<String>,
@@ -47,6 +49,7 @@ impl ReceiveView {
             selected_index: 0,
             copied: false,
             show_qr: false,
+            show_all_addresses: false,
             qr_address: None,
             qr_handle: None,
             qr_error: None,
@@ -58,6 +61,7 @@ impl ReceiveView {
             ReceiveMessage::SelectWallet(index) => {
                 self.selected_index = 0;
                 self.copied = false;
+                self.show_all_addresses = false;
                 self.clear_qr_state();
                 Some(ReceiveEvent::SelectWallet(index))
             }
@@ -99,6 +103,10 @@ impl ReceiveView {
                 self.selected_index = index;
                 self.copied = false;
                 self.clear_qr_state();
+                None
+            }
+            ReceiveMessage::ToggleAddressHistory => {
+                self.show_all_addresses = !self.show_all_addresses;
                 None
             }
         }
@@ -147,15 +155,24 @@ impl ReceiveView {
                 .collect::<Vec<_>>();
 
             content = content.push(
-                text(format!(
-                    "{}: {:.8} BTC | {}: {}",
-                    t("Số dư", "Balance"),
-                    balance_btc,
-                    t("Mạng", "Network"),
-                    wallet.network.as_str()
-                ))
-                .size(14)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                container(
+                    row![
+                        text(format!("{}: {:.8} BTC", t("Số dư", "Balance"), balance_btc))
+                            .size(14)
+                            .style(text_color(Colors::TEXT_PRIMARY)),
+                        Space::with_width(Length::Fill),
+                        text(format!(
+                            "{}: {}",
+                            t("Mạng", "Network"),
+                            wallet.network.as_str()
+                        ))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_SECONDARY)),
+                    ]
+                    .align_y(Alignment::Center),
+                )
+                .style(card_style())
+                .padding(14),
             );
 
             let derive_button =
@@ -178,17 +195,25 @@ impl ReceiveView {
             } else {
                 let selected_index = self.selected_index.min(receive_addresses.len() - 1);
                 if let Some(addr) = receive_addresses.get(selected_index) {
-                    content = content.push(Space::with_height(12));
-                    content = content.push(
-                        text(t("Địa chỉ đang chọn:", "Selected Address:"))
-                            .size(16)
-                            .style(text_color(Colors::TEXT_PRIMARY)),
-                    );
                     content = content.push(
                         container(
-                            text(addr.address.clone())
-                                .size(14)
-                                .style(text_color(Colors::ACCENT_TEAL)),
+                            column![
+                                text(t("Địa chỉ nhận hiện tại", "Current receiving address"))
+                                    .size(12)
+                                    .style(text_color(Colors::TEXT_SECONDARY)),
+                                Space::with_height(8),
+                                text(addr.address.clone())
+                                    .size(16)
+                                    .style(text_color(Colors::ACCENT_TEAL)),
+                                Space::with_height(10),
+                                text(t(
+                                    "Chia sẻ địa chỉ này hoặc mở QR để người gửi quét trực tiếp.",
+                                    "Share this address or open its QR code for direct scanning.",
+                                ))
+                                .size(12)
+                                .style(text_color(Colors::TEXT_MUTED)),
+                            ]
+                            .spacing(0),
                         )
                         .style(card_style())
                         .padding(16)
@@ -201,9 +226,9 @@ impl ReceiveView {
                         row![
                             button(
                                 text(if self.copied {
-                                    t("Đã copy!", "Copied!")
+                                    t("Đã sao chép", "Copied")
                                 } else {
-                                    t("Copy địa chỉ", "Copy Address")
+                                    t("Sao chép địa chỉ", "Copy address")
                                 })
                                 .size(14),
                             )
@@ -219,13 +244,13 @@ impl ReceiveView {
                                 text(if qr_visible_for_selected {
                                     t("Ẩn QR", "Hide QR")
                                 } else {
-                                    t("Hiện QR", "Show QR")
+                                    t("Mở QR", "Open QR")
                                 })
                                 .size(14),
                             )
                             .on_press(ReceiveMessage::ToggleQrCode(addr.address.clone()))
                             .padding(10)
-                            .style(secondary_button_style()),
+                            .style(primary_button_style()),
                         ]
                         .align_y(Alignment::Center),
                     );
@@ -241,48 +266,68 @@ impl ReceiveView {
 
                 content = content.push(Space::with_height(16));
                 content = content.push(
-                    text(t("Tất cả địa chỉ", "All Addresses"))
-                        .size(18)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                    button(
+                        text(if self.show_all_addresses {
+                            t("Ẩn danh sách địa chỉ trước đây", "Hide previous addresses")
+                        } else {
+                            t("Hiện tất cả địa chỉ trước đây", "Show previous addresses")
+                        })
+                        .size(13),
+                    )
+                    .on_press(ReceiveMessage::ToggleAddressHistory)
+                    .padding(10)
+                    .style(if self.show_all_addresses {
+                        selected_button_style()
+                    } else {
+                        secondary_button_style()
+                    }),
                 );
 
-                let mut list = column![];
-                for (i, addr) in receive_addresses.iter().enumerate() {
-                    let is_selected = i == selected_index;
-                    let row_content = row![
-                        text(format!("#{}", addr.index))
-                            .size(12)
-                            .style(text_color(Colors::TEXT_MUTED)),
-                        Space::with_width(8),
-                        text(addr.address.clone())
-                            .size(11)
+                if self.show_all_addresses {
+                    content = content.push(
+                        text(t("Tất cả địa chỉ nhận", "All receiving addresses"))
+                            .size(18)
                             .style(text_color(Colors::TEXT_PRIMARY)),
-                        Space::with_width(Length::Fill),
-                        if is_selected {
-                            text(t("Đang chọn", "Selected"))
-                                .size(11)
-                                .style(text_color(Colors::SUCCESS))
-                        } else {
-                            text("")
-                        },
-                    ]
-                    .align_y(Alignment::Center);
-
-                    list = list.push(
-                        button(container(row_content).width(Length::Fill))
-                            .on_press(ReceiveMessage::SelectAddress(i))
-                            .padding(8)
-                            .style(if is_selected {
-                                primary_button_style()
-                            } else {
-                                secondary_button_style()
-                            })
-                            .width(Length::Fill),
                     );
-                    list = list.push(Space::with_height(6));
-                }
 
-                content = content.push(scrollable(list).height(Length::Fill));
+                    let mut list = column![];
+                    for (i, addr) in receive_addresses.iter().enumerate() {
+                        let is_selected = i == selected_index;
+                        let row_content = row![
+                            text(format!("#{}", addr.index))
+                                .size(12)
+                                .style(text_color(Colors::TEXT_MUTED)),
+                            Space::with_width(8),
+                            text(addr.address.clone())
+                                .size(12)
+                                .style(text_color(Colors::TEXT_PRIMARY)),
+                            Space::with_width(Length::Fill),
+                            if is_selected {
+                                text(t("Đang chọn", "Selected"))
+                                    .size(11)
+                                    .style(text_color(Colors::SUCCESS))
+                            } else {
+                                text("")
+                            },
+                        ]
+                        .align_y(Alignment::Center);
+
+                        list = list.push(
+                            button(container(row_content).width(Length::Fill))
+                                .on_press(ReceiveMessage::SelectAddress(i))
+                                .padding(8)
+                                .style(if is_selected {
+                                    selected_button_style()
+                                } else {
+                                    secondary_button_style()
+                                })
+                                .width(Length::Fill),
+                        );
+                        list = list.push(Space::with_height(6));
+                    }
+
+                    content = content.push(scrollable(list).height(Length::Fill));
+                }
             }
         } else {
             content = content.push(
@@ -327,7 +372,7 @@ impl ReceiveView {
                 .align_x(Alignment::Center)
                 .spacing(6),
             )
-            .style(card_style())
+            .style(popup_dialog_style())
             .padding(18)
             .width(Length::Fixed(380.0));
 
@@ -339,7 +384,7 @@ impl ReceiveView {
                 )
                 .on_press(ReceiveMessage::CloseQrPopup),
             )
-            .style(qr_backdrop_style())
+            .style(popup_overlay_style())
             .width(Length::Fill)
             .height(Length::Fill);
 
@@ -414,20 +459,4 @@ fn build_qr_handle(address: &str) -> Result<image::Handle, String> {
     }
 
     Ok(image::Handle::from_rgba(side as u32, side as u32, rgba))
-}
-
-fn qr_backdrop_style() -> Box<dyn Fn(&Theme) -> container::Style> {
-    Box::new(|_theme: &Theme| container::Style {
-        background: Some(Background::Color(color_with_alpha(
-            Colors::BG_PRIMARY,
-            0.75,
-        ))),
-        border: Border {
-            color: Color::TRANSPARENT,
-            width: 0.0,
-            radius: 0.0.into(),
-        },
-        shadow: Shadow::default(),
-        text_color: None,
-    })
 }

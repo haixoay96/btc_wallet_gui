@@ -5,8 +5,9 @@ use iced::{
 
 use crate::i18n::t;
 use crate::theme::{
-    card_style, danger_button_style, popup_dialog_style, popup_overlay_style, primary_button_style,
-    secondary_button_style, text_color, Colors,
+    card_style, danger_button_style, notice_style, popup_dialog_style, popup_overlay_style,
+    primary_button_style, secondary_button_style, selected_button_style, text_color, Colors,
+    NoticeTone,
 };
 use crate::wallet::{Wallet, WalletNetwork};
 
@@ -881,7 +882,7 @@ impl WalletsView {
                     row![
                         text(info.as_str())
                             .size(13)
-                            .style(text_color(Colors::WARNING)),
+                            .style(text_color(Colors::TEXT_PRIMARY)),
                         Space::with_width(Length::Fill),
                         button(text(t("Đóng", "Close")).size(12))
                             .on_press(WalletsMessage::DismissWalletNotice)
@@ -890,7 +891,7 @@ impl WalletsView {
                     ]
                     .align_y(Alignment::Center),
                 )
-                .style(card_style())
+                .style(notice_style(NoticeTone::Info))
                 .padding(10)
                 .width(Length::Fill),
             );
@@ -901,9 +902,9 @@ impl WalletsView {
                 container(
                     text(error.as_str())
                         .size(13)
-                        .style(text_color(Colors::ERROR)),
+                        .style(text_color(Colors::TEXT_PRIMARY)),
                 )
-                .style(card_style())
+                .style(notice_style(NoticeTone::Error))
                 .padding(10)
                 .width(Length::Fill),
             );
@@ -919,7 +920,7 @@ impl WalletsView {
                 .on_press(WalletsMessage::NetworkChanged(WalletNetwork::Testnet))
                 .padding(8)
                 .style(if self.create_network == WalletNetwork::Testnet {
-                    primary_button_style()
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 });
@@ -928,7 +929,7 @@ impl WalletsView {
                 .on_press(WalletsMessage::NetworkChanged(WalletNetwork::Mainnet))
                 .padding(8)
                 .style(if self.create_network == WalletNetwork::Mainnet {
-                    primary_button_style()
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 });
@@ -943,6 +944,12 @@ impl WalletsView {
                     text(t("Tạo ví mới", "Create New Wallet"))
                         .size(18)
                         .style(text_color(Colors::TEXT_PRIMARY)),
+                    text(t(
+                        "Ví mới sẽ tạo mnemonic 12 từ và yêu cầu backup ngay sau khi tạo.",
+                        "A new wallet will generate a 12-word mnemonic and prompt immediate backup.",
+                    ))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
                     Space::with_height(12),
                     name_input,
                     Space::with_height(8),
@@ -977,7 +984,7 @@ impl WalletsView {
                 .on_press(WalletsMessage::ImportNetworkChanged(WalletNetwork::Testnet))
                 .padding(8)
                 .style(if self.import_network == WalletNetwork::Testnet {
-                    primary_button_style()
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 });
@@ -986,7 +993,7 @@ impl WalletsView {
                 .on_press(WalletsMessage::ImportNetworkChanged(WalletNetwork::Mainnet))
                 .padding(8)
                 .style(if self.import_network == WalletNetwork::Mainnet {
-                    primary_button_style()
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 });
@@ -995,7 +1002,7 @@ impl WalletsView {
                 .on_press(WalletsMessage::ImportModeChanged(ImportMode::Bip39))
                 .padding(8)
                 .style(if self.import_mode == ImportMode::Bip39 {
-                    primary_button_style()
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 });
@@ -1004,7 +1011,7 @@ impl WalletsView {
                 .on_press(WalletsMessage::ImportModeChanged(ImportMode::Slip39))
                 .padding(8)
                 .style(if self.import_mode == ImportMode::Slip39 {
-                    primary_button_style()
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 });
@@ -1013,7 +1020,7 @@ impl WalletsView {
                 .on_press(WalletsMessage::ImportModeChanged(ImportMode::Encrypted))
                 .padding(8)
                 .style(if self.import_mode == ImportMode::Encrypted {
-                    primary_button_style()
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 });
@@ -1024,8 +1031,8 @@ impl WalletsView {
                     .style(text_color(Colors::TEXT_PRIMARY)),
                 Space::with_height(8),
                 text(t(
-                    "Ví import sẽ được đánh dấu đã backup.",
-                    "Imported wallet will be marked as backed up."
+                    "Khôi phục từng ví riêng lẻ vào app hiện tại.",
+                    "Restore individual wallets into the current app."
                 ))
                 .size(12)
                 .style(text_color(Colors::TEXT_SECONDARY)),
@@ -1227,9 +1234,10 @@ impl WalletsView {
                                 .size(16)
                                 .style(text_color(Colors::TEXT_PRIMARY)),
                             text(format!(
-                                "{} | {:.8} BTC",
+                                "{} | {:.8} BTC | {}",
                                 wallet.network.as_str(),
-                                balance_btc
+                                balance_btc,
+                                backup_status_text(wallet.has_mnemonic, wallet.mnemonic_backed_up)
                             ))
                             .size(12)
                             .style(text_color(Colors::TEXT_SECONDARY)),
@@ -1248,13 +1256,13 @@ impl WalletsView {
                 .padding(12)
                 .width(Length::Fill)
                 .style(if is_selected {
-                    primary_button_style()
+                    selected_button_style()
                 } else {
                     secondary_button_style()
                 });
 
                 let warning_button: Element<'_, WalletsMessage> = if needs_backup {
-                    button(text("!").size(16).style(text_color(Colors::WARNING)))
+                    button(text(t("Cần backup", "Backup needed")).size(12))
                         .on_press(WalletsMessage::ShowBackupWarning(index))
                         .padding(8)
                         .style(secondary_button_style())
@@ -1263,7 +1271,7 @@ impl WalletsView {
                     Space::with_width(0).into()
                 };
 
-                let delete_btn = button(text("🗑").size(16))
+                let delete_btn = button(text(t("Xóa", "Delete")).size(12))
                     .on_press(WalletsMessage::DeleteWallet(index))
                     .padding(8)
                     .style(danger_button_style());
@@ -1294,6 +1302,8 @@ impl WalletsView {
             ]);
 
             if let Some(selected_wallet) = wallets.get(selected) {
+                content = content.push(Space::with_height(12));
+                content = content.push(wallet_summary_card(selected_wallet));
                 content = content.push(Space::with_height(12));
                 content =
                     content.push(self.backup_panel(selected, selected_wallet, revealed_mnemonic));
@@ -1377,19 +1387,24 @@ impl WalletsView {
     ) -> Element<'a, WalletsMessage> {
         let needs_backup = wallet.has_mnemonic && !wallet.mnemonic_backed_up;
 
-        let mut panel = column![text(t("Backup mnemonic", "Mnemonic Backup"))
+        let mut panel = column![text(t("Backup Center", "Backup Center"))
             .size(18)
             .style(text_color(Colors::TEXT_PRIMARY)),]
         .spacing(8);
 
         if self.notice_wallet_index == Some(selected_index) && needs_backup {
             panel = panel.push(
-                text(t(
-                    "! Wallet này chưa backup mnemonic. Vui lòng backup ngay.",
-                    "! This wallet has not backed up its mnemonic yet. Please back it up now.",
-                ))
-                .size(13)
-                .style(text_color(Colors::WARNING)),
+                container(
+                    text(t(
+                        "Ví này chưa backup mnemonic. Hãy hoàn thành 3 bước bên dưới càng sớm càng tốt.",
+                        "This wallet has not backed up its mnemonic. Please complete the 3 steps below as soon as possible.",
+                    ))
+                    .size(13)
+                    .style(text_color(Colors::TEXT_PRIMARY)),
+                )
+                .style(notice_style(NoticeTone::Warning))
+                .padding(12)
+                .width(Length::Fill),
             );
         }
 
@@ -1413,6 +1428,11 @@ impl WalletsView {
             };
 
             panel = panel
+                .push(
+                    text(t("Bước 1. Mở mnemonic", "Step 1. Reveal the mnemonic"))
+                        .size(14)
+                        .style(text_color(Colors::TEXT_PRIMARY)),
+                )
                 .push(
                     text(t(
                         "Nhập passphrase hiện tại để xem mnemonic",
@@ -1445,12 +1465,17 @@ impl WalletsView {
 
             if test_active {
                 panel = panel.push(
-                    text(t(
-                        "Mnemonic đang được ẩn khi làm bài test backup.",
-                        "Mnemonic is hidden while backup test is active.",
-                    ))
-                    .size(12)
-                    .style(text_color(Colors::WARNING)),
+                    container(
+                        text(t(
+                            "Mnemonic đang được ẩn khi làm bài test backup.",
+                            "Mnemonic is hidden while backup test is active.",
+                        ))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_PRIMARY)),
+                    )
+                    .style(notice_style(NoticeTone::Warning))
+                    .padding(10)
+                    .width(Length::Fill),
                 );
             } else {
                 panel = panel.push(
@@ -1473,6 +1498,15 @@ impl WalletsView {
                     .style(card_style())
                     .padding(12)
                     .width(Length::Fill),
+                );
+
+                panel = panel.push(
+                    text(t(
+                        "Bước 2. Lưu backup an toàn",
+                        "Step 2. Save a safe backup",
+                    ))
+                    .size(14)
+                    .style(text_color(Colors::TEXT_PRIMARY)),
                 );
 
                 panel = panel.push(
@@ -1606,6 +1640,11 @@ impl WalletsView {
                 );
             } else {
                 panel = panel.push(
+                    text(t("Bước 3. Xác minh backup", "Step 3. Verify the backup"))
+                        .size(14)
+                        .style(text_color(Colors::TEXT_PRIMARY)),
+                );
+                panel = panel.push(
                     button(
                         text(if test_active {
                             t("Hủy bài test backup", "Cancel backup test")
@@ -1717,6 +1756,73 @@ fn test_positions(word_count: usize) -> Vec<usize> {
 
     positions.sort_unstable();
     positions
+}
+
+fn wallet_summary_card<'a>(wallet: &'a Wallet) -> Element<'a, WalletsMessage> {
+    let balance_btc = wallet.balance() as f64 / 100_000_000.0;
+    let address_count = wallet.addresses.len();
+    let history_count = wallet.history.len();
+
+    container(
+        column![
+            text(t("Wallet Summary", "Wallet Summary"))
+                .size(18)
+                .style(text_color(Colors::TEXT_PRIMARY)),
+            Space::with_height(10),
+            row![
+                summary_metric(t("Tên ví", "Wallet"), wallet.name.clone()),
+                summary_metric(
+                    t("Trạng thái backup", "Backup status"),
+                    backup_status_text(wallet.has_mnemonic, wallet.mnemonic_backed_up).to_string(),
+                ),
+            ]
+            .spacing(12),
+            Space::with_height(10),
+            row![
+                summary_metric(t("Mạng", "Network"), wallet.network.as_str().to_string()),
+                summary_metric(t("Số dư", "Balance"), format!("{balance_btc:.8} BTC")),
+            ]
+            .spacing(12),
+            Space::with_height(10),
+            row![
+                summary_metric(t("Địa chỉ", "Addresses"), address_count.to_string(),),
+                summary_metric(t("Giao dịch", "Transactions"), history_count.to_string(),),
+            ]
+            .spacing(12),
+        ]
+        .spacing(0),
+    )
+    .style(card_style())
+    .padding(16)
+    .width(Length::Fill)
+    .into()
+}
+
+fn summary_metric<'a>(label: &'a str, value: String) -> Element<'a, WalletsMessage> {
+    container(
+        column![
+            text(label)
+                .size(12)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+            Space::with_height(4),
+            text(value).size(14).style(text_color(Colors::TEXT_PRIMARY)),
+        ]
+        .spacing(0),
+    )
+    .style(card_style())
+    .padding(12)
+    .width(Length::Fill)
+    .into()
+}
+
+fn backup_status_text(has_mnemonic: bool, mnemonic_backed_up: bool) -> &'static str {
+    if !has_mnemonic {
+        t("Không có seed", "No seed")
+    } else if mnemonic_backed_up {
+        t("Đã xác minh", "Verified")
+    } else {
+        t("Chưa backup", "Not backed up")
+    }
 }
 
 fn parse_u8_field(raw: &str, field_name_vi: &str, field_name_en: &str) -> Result<u8, String> {
