@@ -97,6 +97,9 @@ pub struct SendView {
     change_address: String,
     broadcast: bool,
     estimated_fee: Option<u64>,
+    to_address_error: Option<String>,
+    amount_error: Option<String>,
+    fee_error: Option<String>,
     error: Option<String>,
     success: Option<String>,
 }
@@ -111,6 +114,9 @@ impl SendView {
             change_address: String::new(),
             broadcast: false,
             estimated_fee: None,
+            to_address_error: None,
+            amount_error: None,
+            fee_error: None,
             error: None,
             success: None,
         }
@@ -148,13 +154,29 @@ impl SendView {
                 Some(SendEvent::SelectWallet(index))
             }
             SendMessage::ToAddressChanged(addr) => {
-                self.to_address = addr;
-                self.error = None;
+                self.to_address = addr.clone();
+                if !addr.trim().is_empty() {
+                    if let Err(err) = validate_btc_address(&addr) {
+                        self.to_address_error = Some(err);
+                    } else {
+                        self.to_address_error = None;
+                    }
+                } else {
+                    self.to_address_error = None;
+                }
                 None
             }
             SendMessage::AmountChanged(amount) => {
-                self.amount = amount;
-                self.error = None;
+                self.amount = amount.clone();
+                if !amount.trim().is_empty() {
+                    if let Err(err) = parse_btc_to_sat(&amount, "số lượng", "amount") {
+                        self.amount_error = Some(err);
+                    } else {
+                        self.amount_error = None;
+                    }
+                } else {
+                    self.amount_error = None;
+                }
                 self.estimated_fee = None;
                 None
             }
@@ -169,8 +191,16 @@ impl SendView {
                 })
             }
             SendMessage::FeeAmountChanged(fee) => {
-                self.fee_amount = fee;
-                self.error = None;
+                self.fee_amount = fee.clone();
+                if !fee.trim().is_empty() {
+                    if let Err(err) = parse_btc_to_sat(&fee, "phí", "fee") {
+                        self.fee_error = Some(err);
+                    } else {
+                        self.fee_error = None;
+                    }
+                } else {
+                    self.fee_error = None;
+                }
                 None
             }
             SendMessage::FromAddressChanged(addr) => {
@@ -337,7 +367,14 @@ impl SendView {
             )
             .on_input(SendMessage::ToAddressChanged)
             .padding(12)
-            .size(14)
+            .size(14),
+            if let Some(error) = &self.to_address_error {
+                text(error.as_str())
+                    .size(12)
+                    .style(text_color(Colors::ERROR))
+            } else {
+                text("")
+            }
         ]
         .spacing(4);
 
@@ -361,7 +398,11 @@ impl SendView {
             .on_input(SendMessage::AmountChanged)
             .padding(12)
             .size(14),
-            if let Ok(amount_btc) = self.amount.trim().parse::<f64>() {
+            if let Some(error) = &self.amount_error {
+                text(error.as_str())
+                    .size(12)
+                    .style(text_color(Colors::ERROR))
+            } else if let Ok(amount_btc) = self.amount.trim().parse::<f64>() {
                 if amount_btc > 0.0 {
                     let amount_sat = (amount_btc * 100_000_000.0).round() as u64;
                     text(format!("≈ {}", format_btc_and_sat(amount_sat)))
@@ -388,7 +429,11 @@ impl SendView {
             .on_input(SendMessage::FeeAmountChanged)
             .padding(12)
             .size(14),
-            if let Ok(fee_btc) = self.fee_amount.trim().parse::<f64>() {
+            if let Some(error) = &self.fee_error {
+                text(error.as_str())
+                    .size(12)
+                    .style(text_color(Colors::ERROR))
+            } else if let Ok(fee_btc) = self.fee_amount.trim().parse::<f64>() {
                 if fee_btc > 0.0 {
                     let fee_sat = (fee_btc * 100_000_000.0).round() as u64;
                     text(format!("≈ {}", format_btc_and_sat(fee_sat)))
@@ -618,4 +663,48 @@ fn parse_change_strategy(raw: &str) -> Result<ChangeStrategy, String> {
         .parse::<u32>()
         .map_err(|_| t("change index không hợp lệ", "Invalid change index").to_string())?;
     Ok(ChangeStrategy::ExistingIndex(index))
+}
+
+fn validate_btc_address(address: &str) -> Result<(), String> {
+    let addr = address.trim();
+    
+    if addr.is_empty() {
+        return Err(t("Địa chỉ không được rỗng", "Address cannot be empty").to_string());
+    }
+    
+    let len = addr.len();
+    
+    // P2PKH: starts with 1 (mainnet) or m/n (testnet)
+    if addr.starts_with('1') || addr.starts_with('m') || addr.starts_with('n') {
+        if len < 26 || len > 35 {
+            return Err(t("Địa chỉ P2PKH phải có 26-35 ký tự", "P2PKH address must be 26-35 characters").to_string());
+        }
+        return Ok(());
+    }
+    
+    // P2SH: starts with 3 (mainnet) or 2 (testnet)
+    if addr.starts_with('3') || addr.starts_with('2') {
+        if len < 26 || len > 35 {
+            return Err(t("Địa chỉ P2SH phải có 26-35 ký tự", "P2SH address must be 26-35 characters").to_string());
+        }
+        return Ok(());
+    }
+    
+    // Bech32 SegWit: starts with bc1q (mainnet) or tb1q (testnet)
+    if addr.starts_with("bc1q") || addr.starts_with("tb1q") {
+        if len < 42 || len > 62 {
+            return Err(t("Địa chỉ Bech32 phải có 42-62 ký tự", "Bech32 address must be 42-62 characters").to_string());
+        }
+        return Ok(());
+    }
+    
+    // Bech32m Taproot: starts with bc1p (mainnet) or tb1p (testnet)
+    if addr.starts_with("bc1p") || addr.starts_with("tb1p") {
+        if len != 62 {
+            return Err(t("Địa chỉ Taproot phải có 62 ký tự", "Taproot address must be 62 characters").to_string());
+        }
+        return Ok(());
+    }
+    
+    Err(t("Địa chỉ Bitcoin không hợp lệ", "Invalid Bitcoin address").to_string())
 }
