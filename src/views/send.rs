@@ -1,6 +1,6 @@
 use iced::{
     widget::{
-        button, column, container, pick_list, row, scrollable, text, text_input, Space,
+        button, column, container, pick_list, row, scrollable, stack, text, text_input, Space,
     },
     Alignment, Element, Length,
 };
@@ -606,7 +606,7 @@ impl SendView {
         .padding(32);
 
         if self.show_confirm {
-            // Create modal overlay
+            // Create modal overlay - positioned at top 1/4 of screen
             let overlay = container(
                 container(
                     column![
@@ -634,6 +634,16 @@ impl SendView {
                             self.fee_amount
                         ))
                         .size(14),
+                        Space::with_height(8),
+                        text(format!(
+                            "Change: {}",
+                            if self.change_address.trim().is_empty() {
+                                t("(Tạo mới)", "(Derive new)").to_string()
+                            } else {
+                                self.change_address.clone()
+                            }
+                        ))
+                        .size(14),
                         Space::with_height(16),
                         row![
                             button(text(t("Xác nhận", "Confirm")).size(14))
@@ -656,17 +666,14 @@ impl SendView {
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x(Length::Fill)
-            .center_y(Length::Fill);
+            .align_y(iced::alignment::Vertical::Top)
+            .padding(iced::Padding { top: 80.0, right: 0.0, bottom: 0.0, left: 0.0 });
 
-            // Stack content with overlay
-            container(
-                column![
-                    scrollable(content)
-                        .width(Length::Fill)
-                        .height(Length::Fill),
-                    overlay,
-                ]
-            )
+            // Stack overlay on top of content
+            stack![
+                scrollable(content).width(Length::Fill).height(Length::Fill),
+                overlay,
+            ]
             .width(Length::Fill)
             .height(Length::Fill)
             .into()
