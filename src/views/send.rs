@@ -8,7 +8,7 @@ use std::fmt;
 
 use crate::i18n::t;
 use crate::theme::{
-    card_style, info_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, text_color, Colors,
 };
 use crate::wallet::{ChangeStrategy, InputSource, Wallet};
@@ -379,18 +379,18 @@ impl SendView {
         .spacing(4);
 
         let max_button = button(
-            text(t("MAX", "MAX"))
+            text(t("Tối Đa", "Max"))
                 .size(12)
         )
         .on_press(SendMessage::MaxAmount)
         .padding(6)
         .style(primary_button_style());
 
-        let amount_input = column![
-            text(t("Số lượng (BTC)", "Amount (BTC)"))
-                .size(14)
-                .style(text_color(Colors::TEXT_SECONDARY)),
-            Space::with_height(4),
+        let amount_label = text(t("Số lượng (BTC)", "Amount (BTC)"))
+            .size(14)
+            .style(text_color(Colors::TEXT_SECONDARY));
+
+        let amount_input_row = row![
             text_input(
                 t("Nhập số BTC...", "Enter amount in BTC..."),
                 &self.amount
@@ -398,30 +398,40 @@ impl SendView {
             .on_input(SendMessage::AmountChanged)
             .padding(12)
             .size(14),
-            if let Some(error) = &self.amount_error {
-                text(error.as_str())
-                    .size(12)
-                    .style(text_color(Colors::ERROR))
-            } else if let Ok(amount_btc) = self.amount.trim().parse::<f64>() {
-                if amount_btc > 0.0 {
-                    let amount_sat = (amount_btc * 100_000_000.0).round() as u64;
-                    text(format!("≈ {}", format_btc_and_sat(amount_sat)))
-                        .size(12)
-                        .style(text_color(Colors::TEXT_MUTED))
-                } else {
-                    text("")
-                }
-            } else {
-                text("")
-            }
+            Space::with_width(8),
+            max_button,
         ]
-        .spacing(4);
+        .align_y(Alignment::Center);
 
-        let fee_input: Element<'_, SendMessage> = column![
-            text(t("Phí (BTC)", "Fee Amount (BTC)"))
-                .size(14)
-                .style(text_color(Colors::TEXT_SECONDARY)),
-            Space::with_height(4),
+        let amount_info: Element<'_, SendMessage> = if let Some(error) = &self.amount_error {
+            text(error.as_str())
+                .size(12)
+                .style(text_color(Colors::ERROR))
+                .into()
+        } else if let Ok(amount_btc) = self.amount.trim().parse::<f64>() {
+            if amount_btc > 0.0 {
+                let amount_sat = (amount_btc * 100_000_000.0).round() as u64;
+                text(format!("≈ {}", format_btc_and_sat(amount_sat)))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_MUTED))
+                    .into()
+            } else {
+                Space::with_height(0).into()
+            }
+        } else {
+            Space::with_height(0).into()
+        };
+
+        let estimate_btn = button(text(t("Ước tính phí", "Estimate Fee")).size(14))
+            .on_press(SendMessage::EstimateFee)
+            .padding(6)
+            .style(primary_button_style());
+
+        let fee_label = text(t("Phí (BTC)", "Fee Amount (BTC)"))
+            .size(14)
+            .style(text_color(Colors::TEXT_SECONDARY));
+
+        let fee_row = row![
             text_input(
                 t("Nhập phí BTC...", "Enter fee in BTC..."),
                 &self.fee_amount
@@ -429,41 +439,29 @@ impl SendView {
             .on_input(SendMessage::FeeAmountChanged)
             .padding(12)
             .size(14),
-            if let Some(error) = &self.fee_error {
-                text(error.as_str())
-                    .size(12)
-                    .style(text_color(Colors::ERROR))
-            } else if let Ok(fee_btc) = self.fee_amount.trim().parse::<f64>() {
-                if fee_btc > 0.0 {
-                    let fee_sat = (fee_btc * 100_000_000.0).round() as u64;
-                    text(format!("≈ {}", format_btc_and_sat(fee_sat)))
-                        .size(12)
-                        .style(text_color(Colors::TEXT_MUTED))
-                } else {
-                    text("")
-                }
-            } else {
-                text("")
-            },
-            if let Some(fee) = self.estimated_fee {
-                text(format!(
-                    "{}: {}",
-                    t("Ước tính phí", "Estimated fee"),
-                    format_btc_and_sat(fee)
-                ))
-                .size(12)
-                .style(text_color(Colors::SUCCESS))
-            } else {
-                text("")
-            }
+            Space::with_width(8),
+            estimate_btn,
         ]
-        .spacing(4)
-        .into();
+        .align_y(Alignment::Center);
 
-        let estimate_btn = button(text(t("Ước tính phí", "Estimate Fee")).size(14))
-            .on_press(SendMessage::EstimateFee)
-            .padding(10)
-            .style(info_style());
+        let fee_info: Element<'_, SendMessage> = if let Some(error) = &self.fee_error {
+            text(error.as_str())
+                .size(12)
+                .style(text_color(Colors::ERROR))
+                .into()
+        } else if let Ok(fee_btc) = self.fee_amount.trim().parse::<f64>() {
+            if fee_btc > 0.0 {
+                let fee_sat = (fee_btc * 100_000_000.0).round() as u64;
+                text(format!("≈ {}", format_btc_and_sat(fee_sat)))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_MUTED))
+                    .into()
+            } else {
+                Space::with_height(0).into()
+            }
+        } else {
+            Space::with_height(0).into()
+        };
 
         let advanced_section = column![
             text(t(
@@ -566,16 +564,15 @@ impl SendView {
             Space::with_height(24),
             to_input,
             Space::with_height(16),
-            row![
-                amount_input,
-                Space::with_width(8),
-                max_button,
-            ]
-            .align_y(Alignment::Center),
+            amount_label,
+            Space::with_height(4),
+            amount_input_row,
+            amount_info,
             Space::with_height(16),
-            fee_input,
-            Space::with_height(8),
-            estimate_btn,
+            fee_label,
+            Space::with_height(4),
+            fee_row,
+            fee_info,
             Space::with_height(24),
             container(advanced_section).style(card_style()).padding(16),
             Space::with_height(24),
