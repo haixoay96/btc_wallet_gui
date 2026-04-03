@@ -96,7 +96,7 @@ impl App {
     pub fn handle_send_transaction(&mut self, request: SendRequest) -> Task<AppMessage> {
         if let Some(wallet) = self.wallets.get_mut(self.selected_wallet) {
             let tx_options = TxBuildOptions {
-                broadcast: request.broadcast,
+                broadcast: true,
                 input_source: request.input_source.clone(),
                 change_strategy: request.change_strategy.clone(),
             };
@@ -151,6 +151,7 @@ impl App {
                         )
                     };
                     self.send_view.set_success(send_message.clone());
+                    self.send_view.clear_form();
                     self.status = Some(send_message);
                     self.error = None;
                 }

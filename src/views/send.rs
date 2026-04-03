@@ -65,10 +65,10 @@ pub enum SendMessage {
     MaxAmount,
     FromAddressChanged(String),
     ChangeAddressChanged(String),
-    BroadcastChanged(bool),
     EstimateFee,
     Send,
-    ClearForm,
+    ConfirmSend,
+    CancelSend,
 }
 
 #[derive(Debug, Clone)]
@@ -78,7 +78,6 @@ pub struct SendRequest {
     pub fee_sat: Option<u64>,
     pub input_source: InputSource,
     pub change_strategy: ChangeStrategy,
-    pub broadcast: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -102,6 +101,7 @@ pub struct SendView {
     fee_error: Option<String>,
     error: Option<String>,
     success: Option<String>,
+    show_confirm: bool,
 }
 
 impl SendView {
@@ -119,6 +119,7 @@ impl SendView {
             fee_error: None,
             error: None,
             success: None,
+            show_confirm: false,
         }
     }
 
@@ -136,6 +137,26 @@ impl SendView {
     pub fn set_success(&mut self, message: impl Into<String>) {
         self.success = Some(message.into());
         self.error = None;
+    }
+
+    pub fn set_show_confirm(&mut self, show: bool) {
+        self.show_confirm = show;
+    }
+
+    pub fn clear_form(&mut self) {
+        self.to_address.clear();
+        self.amount.clear();
+        self.fee_amount.clear();
+        self.from_address.clear();
+        self.change_address.clear();
+        self.broadcast = false;
+        self.error = None;
+        self.success = None;
+        self.estimated_fee = None;
+        self.to_address_error = None;
+        self.amount_error = None;
+        self.fee_error = None;
+        self.show_confirm = false;
     }
 
     pub fn set_max_amount(&mut self, amount_sat: u64) {
@@ -214,10 +235,6 @@ impl SendView {
                 self.error = None;
                 None
             }
-            SendMessage::BroadcastChanged(broadcast) => {
-                self.broadcast = broadcast;
-                None
-            }
             SendMessage::EstimateFee => {
                 let amount_sat = match parse_btc_to_sat(&self.amount, "số lượng", "amount") {
                     Ok(value) => value,
@@ -240,6 +257,44 @@ impl SendView {
                 Some(SendEvent::EstimateSendFee { amount_sat, input_source })
             }
             SendMessage::Send => {
+                if self.to_address.trim().is_empty() {
+                    self.error = Some(
+                        t(
+                            "Vui lòng nhập địa chỉ nhận",
+                            "Please enter recipient address",
+                        )
+                        .to_string(),
+                    );
+                    return None;
+                }
+
+                let amount_sat = match parse_btc_to_sat(&self.amount, "số lượng", "amount") {
+                    Ok(value) => value,
+                    Err(err) => {
+                        self.error = Some(err);
+                        return None;
+                    }
+                };
+
+                let fee_sat = if !self.fee_amount.trim().is_empty() {
+                    match parse_btc_to_sat(&self.fee_amount, "phí", "fee") {
+                        Ok(value) => Some(value),
+                        Err(err) => {
+                            self.error = Some(err);
+                            return None;
+                        }
+                    }
+                } else {
+                    None
+                };
+
+                // Show confirmation popup instead of sending directly
+                self.show_confirm = true;
+                self.error = None;
+                None
+            }
+            SendMessage::ConfirmSend => {
+                // Actually send the transaction
                 if self.to_address.trim().is_empty() {
                     self.error = Some(
                         t(
@@ -287,25 +342,19 @@ impl SendView {
                     None
                 };
 
+                self.show_confirm = false;
+
                 Some(SendEvent::SendTransaction(SendRequest {
                     to_address: self.to_address.trim().to_string(),
                     amount_sat: Some(amount_sat),
                     fee_sat,
                     input_source,
                     change_strategy,
-                    broadcast: self.broadcast,
                 }))
             }
-            SendMessage::ClearForm => {
-                self.to_address.clear();
-                self.amount.clear();
-                self.fee_amount.clear();
-                self.from_address.clear();
-                self.change_address.clear();
-                self.broadcast = false;
-                self.error = None;
-                self.success = None;
-                self.estimated_fee = None;
+            SendMessage::CancelSend => {
+                // Cancel confirmation
+                self.show_confirm = false;
                 None
             }
         }
@@ -500,29 +549,6 @@ impl SendView {
                     .size(12)
             ]
             .spacing(2),
-            Space::with_height(8),
-            row![
-                text(t("Broadcast ngay", "Broadcast Immediately"))
-                    .size(14)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
-                Space::with_width(Length::Fill),
-                button(
-                    text(if self.broadcast {
-                        t("CÓ", "YES")
-                    } else {
-                        t("KHÔNG", "NO")
-                    })
-                    .size(12)
-                )
-                .on_press(SendMessage::BroadcastChanged(!self.broadcast))
-                .padding(6)
-                .style(if self.broadcast {
-                    primary_button_style()
-                } else {
-                    secondary_button_style()
-                })
-            ]
-            .align_y(Alignment::Center)
         ]
         .spacing(8);
 
@@ -550,11 +576,6 @@ impl SendView {
             .width(Length::Fill)
             .style(primary_button_style());
 
-        let clear_btn = button(text(t("Xóa form", "Clear Form")).size(14))
-            .on_press(SendMessage::ClearForm)
-            .padding(10)
-            .style(secondary_button_style());
-
         let content = column![
             title,
             Space::with_height(8),
@@ -579,15 +600,82 @@ impl SendView {
             error_text,
             success_text,
             Space::with_height(16),
-            row![send_btn, Space::with_width(16), clear_btn].width(Length::Fill),
+            send_btn,
         ]
         .spacing(8)
         .padding(32);
 
-        scrollable(content)
+        if self.show_confirm {
+            // Create modal overlay
+            let overlay = container(
+                container(
+                    column![
+                        text(t("Xác nhận giao dịch", "Confirm Transaction"))
+                            .size(20)
+                            .style(text_color(Colors::TEXT_PRIMARY)),
+                        Space::with_height(16),
+                        text(format!(
+                            "{}: {}",
+                            t("Đến", "To"),
+                            self.to_address
+                        ))
+                        .size(14),
+                        Space::with_height(8),
+                        text(format!(
+                            "{}: {} BTC",
+                            t("Số lượng", "Amount"),
+                            self.amount
+                        ))
+                        .size(14),
+                        Space::with_height(8),
+                        text(format!(
+                            "{}: {} BTC",
+                            t("Phí", "Fee"),
+                            self.fee_amount
+                        ))
+                        .size(14),
+                        Space::with_height(16),
+                        row![
+                            button(text(t("Xác nhận", "Confirm")).size(14))
+                                .on_press(SendMessage::ConfirmSend)
+                                .padding(10)
+                                .style(primary_button_style()),
+                            Space::with_width(16),
+                            button(text(t("Hủy", "Cancel")).size(14))
+                                .on_press(SendMessage::CancelSend)
+                                .padding(10)
+                                .style(secondary_button_style()),
+                        ]
+                    ]
+                    .spacing(8),
+                )
+                .style(card_style())
+                .padding(24)
+                .width(Length::Fixed(400.0))
+            )
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x(Length::Fill)
+            .center_y(Length::Fill);
+
+            // Stack content with overlay
+            container(
+                column![
+                    scrollable(content)
+                        .width(Length::Fill)
+                        .height(Length::Fill),
+                    overlay,
+                ]
+            )
             .width(Length::Fill)
             .height(Length::Fill)
             .into()
+        } else {
+            scrollable(content)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into()
+        }
     }
 }
 
