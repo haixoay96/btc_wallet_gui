@@ -173,13 +173,14 @@ jobs:
           done
         fi
         
-        # Linux: copy AppImage with platform suffix
+        # Linux: copy AppImage with platform suffix and set executable
         if [ -d "artifacts/btc_wallet_gui_linux_x64" ]; then
           find artifacts/btc_wallet_gui_linux_x64 -name "*.AppImage" | while read appimage; do
             APPIMAGE_NAME=$(basename "$appimage")
             NEW_NAME="${APPIMAGE_NAME/.AppImage/_Linux_x64.AppImage}"
             cp "$appimage" "release_files/$NEW_NAME"
-            echo "Copied: $NEW_NAME"
+            chmod +x "release_files/$NEW_NAME"
+            echo "Copied and set executable: $NEW_NAME"
           done
         fi
         
