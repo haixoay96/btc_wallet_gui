@@ -109,6 +109,9 @@ impl App {
                     self.wallets_view.clear_export_sensitive_inputs();
                     return task;
                 }
+                WalletsEvent::CopyAddress(address) => {
+                    return clipboard::write(address);
+                }
             }
         }
         Task::none()

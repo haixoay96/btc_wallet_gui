@@ -1,6 +1,6 @@
 use iced::{
-    widget::{button, column, container, row, scrollable, text, text_input, Space},
-    Alignment, Element, Length, Padding,
+    widget::{button, column, container, mouse_area, row, scrollable, text, text_input, Space},
+    Alignment, Element, Length, Padding, Background,
 };
 
 use crate::i18n::t;
@@ -9,7 +9,7 @@ use crate::theme::{
     primary_button_style, secondary_button_style, selected_button_style, text_color, Colors,
     NoticeTone,
 };
-use crate::wallet::{Wallet, WalletNetwork};
+use crate::wallet::{AddressChain, Wallet, WalletNetwork};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImportMode {
@@ -59,6 +59,9 @@ pub enum WalletsMessage {
     BackupWordChanged(usize, String),
     SubmitBackupTest(usize),
     DismissWalletNotice,
+    ToggleExternalAddresses,
+    ToggleInternalAddresses,
+    CopyAddress(String),
 }
 
 #[derive(Debug, Clone)]
@@ -99,6 +102,7 @@ pub enum WalletsEvent {
         share_count: u8,
         slip39_passphrase: String,
     },
+    CopyAddress(String),
 }
 
 pub struct WalletsView {
@@ -125,6 +129,9 @@ pub struct WalletsView {
     slip39_export_threshold: String,
     slip39_export_share_count: String,
     slip39_export_passphrase: String,
+    show_external_addresses: bool,
+    show_internal_addresses: bool,
+    copied_address: Option<String>,
     info: Option<String>,
     error: Option<String>,
 }
@@ -154,6 +161,9 @@ impl WalletsView {
             slip39_export_threshold: "2".to_string(),
             slip39_export_share_count: "3".to_string(),
             slip39_export_passphrase: String::new(),
+            show_external_addresses: false,
+            show_internal_addresses: false,
+            copied_address: None,
             info: None,
             error: None,
         }
@@ -727,6 +737,18 @@ impl WalletsView {
                     checks,
                 })
             }
+            WalletsMessage::ToggleExternalAddresses => {
+                self.show_external_addresses = !self.show_external_addresses;
+                None
+            }
+            WalletsMessage::ToggleInternalAddresses => {
+                self.show_internal_addresses = !self.show_internal_addresses;
+                None
+            }
+            WalletsMessage::CopyAddress(address) => {
+                self.copied_address = Some(address.clone());
+                Some(WalletsEvent::CopyAddress(address))
+            }
             WalletsMessage::DismissWalletNotice => {
                 self.notice_wallet_index = None;
                 self.info = None;
@@ -1208,17 +1230,46 @@ impl WalletsView {
                 wallet_list = wallet_list.push(Space::with_height(8));
             }
 
-            content = content.push(column![
-                text(t("Danh sách ví", "Your Wallets"))
-                    .size(18)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
-                Space::with_height(12),
-                wallet_list,
-            ]);
+            content = content.push(
+                container(
+                    column![
+                        text(t("Danh sách ví", "Your Wallets"))
+                            .size(18)
+                            .style(text_color(Colors::TEXT_PRIMARY)),
+                        Space::with_height(12),
+                        wallet_list,
+                    ]
+                    .spacing(0)
+                )
+                .style(card_style())
+                .padding(16)
+                .width(Length::Fill)
+            );
 
             if let Some(selected_wallet) = wallets.get(selected) {
                 content = content.push(Space::with_height(12));
                 content = content.push(wallet_summary_card(selected_wallet));
+                content = content.push(Space::with_height(12));
+                content = content.push(
+                    container(
+                        column![
+                            text(t("Danh sách địa chỉ", "Addresses"))
+                                .size(18)
+                                .style(text_color(Colors::TEXT_PRIMARY)),
+                            Space::with_height(12),
+                            wallet_addresses_detail(
+                                selected_wallet, 
+                                self.copied_address.as_deref(),
+                                self.show_external_addresses,
+                                self.show_internal_addresses,
+                            ),
+                        ]
+                        .spacing(0)
+                    )
+                    .style(card_style())
+                    .padding(16)
+                    .width(Length::Fill)
+                );
                 content = content.push(Space::with_height(12));
                 content =
                     content.push(self.backup_panel(selected, selected_wallet, revealed_mnemonic));
@@ -1667,7 +1718,8 @@ fn test_positions(word_count: usize) -> Vec<usize> {
 
 fn wallet_summary_card<'a>(wallet: &'a Wallet) -> Element<'a, WalletsMessage> {
     let balance_btc = wallet.balance() as f64 / 100_000_000.0;
-    let address_count = wallet.addresses.len();
+    let external_count = wallet.addresses.iter().filter(|a| a.chain == AddressChain::External).count();
+    let internal_count = wallet.addresses.iter().filter(|a| a.chain == AddressChain::Internal).count();
     let history_count = wallet.history.len();
 
     container(
@@ -1692,8 +1744,17 @@ fn wallet_summary_card<'a>(wallet: &'a Wallet) -> Element<'a, WalletsMessage> {
             .spacing(12),
             Space::with_height(10),
             row![
-                summary_metric(t("Địa chỉ", "Addresses"), address_count.to_string(),),
-                summary_metric(t("Giao dịch", "Transactions"), history_count.to_string(),),
+                summary_metric(
+                    t("Tổng địa chỉ", "Total Addresses"),
+                    format!("{} ({} {}, {} {})", 
+                        external_count + internal_count, 
+                        external_count, 
+                        t("nhận", "receive"),
+                        internal_count,
+                        t("thay đổi", "change")
+                    )
+                ),
+                summary_metric(t("Giao dịch", "Transactions"), history_count.to_string()),
             ]
             .spacing(12),
         ]
@@ -1703,6 +1764,252 @@ fn wallet_summary_card<'a>(wallet: &'a Wallet) -> Element<'a, WalletsMessage> {
     .padding(16)
     .width(Length::Fill)
     .into()
+}
+
+fn wallet_addresses_detail<'a>(
+    wallet: &'a Wallet, 
+    copied_address: Option<&'a str>,
+    show_external: bool,
+    show_internal: bool,
+) -> Element<'a, WalletsMessage> {
+    let external_addresses = wallet.addresses.iter()
+        .filter(|a| a.chain == AddressChain::External)
+        .collect::<Vec<_>>();
+
+    let internal_addresses = wallet.addresses.iter()
+        .filter(|a| a.chain == AddressChain::Internal)
+        .collect::<Vec<_>>();
+
+    let mut col = column![];
+
+    // External addresses section container
+    let mut external_section = column![];
+    
+    // External addresses toggle button
+    external_section = external_section.push(
+        mouse_area(
+            container(
+                row![
+                    text(format!("{}{}({})", 
+                        if show_external {
+                            t("Ẩn", "Hide")
+                        } else {
+                            t("Hiện", "Show")
+                        },
+                        t(" địa chỉ nhận tiền ", " Receiving Addresses "),
+                        external_addresses.len()
+                    ))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    Space::with_width(Length::Fill)
+                ]
+                .align_y(Alignment::Center)
+            )
+            .width(Length::Fill)
+            .center_x(Length::Fill)
+        )
+        .on_press(WalletsMessage::ToggleExternalAddresses)
+    );
+
+    // External addresses list
+    if show_external {
+        external_section = external_section.push(Space::with_height(8));
+        if external_addresses.is_empty() {
+            external_section = external_section.push(
+                text(t("Chưa có địa chỉ nhận", "No receiving addresses"))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_MUTED))
+            );
+        } else {
+            let mut external_list = column![];
+            for (i, addr) in external_addresses.iter().enumerate() {
+                let is_copied = copied_address == Some(addr.address.as_str());
+                
+                let row_content = row![
+                    text(format!("#{}", addr.index))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_MUTED)),
+                    Space::with_width(8),
+                    text(addr.address.clone())
+                        .size(12)
+                        .style(text_color(Colors::TEXT_PRIMARY)),
+                    Space::with_width(Length::Fill),
+                    if is_copied {
+                        text(t("Đã sao chép", "Copied"))
+                            .size(11)
+                            .style(text_color(Colors::SUCCESS))
+                    } else {
+                        text("")
+                    },
+                ]
+                .align_y(Alignment::Center);
+
+                external_list = external_list.push(
+                    button(container(row_content).width(Length::Fill))
+                        .on_press(WalletsMessage::CopyAddress(addr.address.clone()))
+                        .padding(8)
+                        .style(secondary_button_style())
+                        .width(Length::Fill)
+                );
+                
+                if i < external_addresses.len() - 1 {
+                    external_list = external_list.push(Space::with_height(4));
+                }
+            }
+            external_section = external_section.push(scrollable(external_list).height(Length::Shrink));
+        }
+    }
+
+    let external_container_height = if show_external {
+        Length::Shrink
+    } else {
+        Length::Fixed(40.0)
+    };
+
+    let external_column = if show_external {
+        column![external_section.spacing(0)]
+            .width(Length::Fill)
+    } else {
+        column![Space::with_height(Length::Fill), external_section.spacing(0), Space::with_height(Length::Fill)]
+            .width(Length::Fill)
+            .height(external_container_height)
+    };
+
+    col = col.push(
+        container(external_column)
+            .width(Length::Fill)
+            .height(external_container_height)
+            .center_x(Length::Fill)
+            .style(|_theme: &_| {
+                container::Style {
+                    background: Some(Background::Color(Colors::BG_CARD)),
+                    border: iced::Border {
+                        color: Colors::BORDER_SUBTLE,
+                        width: 1.0,
+                        radius: 12.0.into(),
+                    },
+                    text_color: None,
+                    shadow: iced::Shadow::default(),
+                }
+            })
+            .padding(12)
+    );
+    col = col.push(Space::with_height(12));
+
+    // Internal addresses section container
+    let mut internal_section = column![];
+    
+    // Internal addresses toggle button
+    internal_section = internal_section.push(
+        mouse_area(
+            container(
+                row![
+                    text(format!("{}{}({})", 
+                        if show_internal {
+                            t("Ẩn", "Hide")
+                        } else {
+                            t("Hiện", "Show")
+                        },
+                        t(" địa chỉ thay đổi ", " Change Addresses "),
+                        internal_addresses.len()
+                    ))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    Space::with_width(Length::Fill)
+                ]
+                .align_y(Alignment::Center)
+            )
+            .width(Length::Fill)
+            .center_x(Length::Fill)
+        )
+        .on_press(WalletsMessage::ToggleInternalAddresses)
+    );
+
+    // Internal addresses list
+    if show_internal {
+        internal_section = internal_section.push(Space::with_height(8));
+        if internal_addresses.is_empty() {
+            internal_section = internal_section.push(
+                text(t("Chưa có địa chỉ đổi", "No change addresses"))
+                    .size(12)
+                    .style(text_color(Colors::TEXT_MUTED))
+            );
+        } else {
+            let mut internal_list = column![];
+            for (i, addr) in internal_addresses.iter().enumerate() {
+                let is_copied = copied_address == Some(addr.address.as_str());
+                
+                let row_content = row![
+                    text(format!("#{}", addr.index))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_MUTED)),
+                    Space::with_width(8),
+                    text(addr.address.clone())
+                        .size(12)
+                        .style(text_color(Colors::TEXT_PRIMARY)),
+                    Space::with_width(Length::Fill),
+                    if is_copied {
+                        text(t("Đã sao chép", "Copied"))
+                            .size(11)
+                            .style(text_color(Colors::SUCCESS))
+                    } else {
+                        text("")
+                    },
+                ]
+                .align_y(Alignment::Center);
+
+                internal_list = internal_list.push(
+                    button(container(row_content).width(Length::Fill))
+                        .on_press(WalletsMessage::CopyAddress(addr.address.clone()))
+                        .padding(8)
+                        .style(secondary_button_style())
+                        .width(Length::Fill)
+                );
+                
+                if i < internal_addresses.len() - 1 {
+                    internal_list = internal_list.push(Space::with_height(4));
+                }
+            }
+            internal_section = internal_section.push(scrollable(internal_list).height(Length::Shrink));
+        }
+    }
+
+    let internal_container_height = if show_internal {
+        Length::Shrink
+    } else {
+        Length::Fixed(40.0)
+    };
+
+    let internal_column = if show_internal {
+        column![internal_section.spacing(0)]
+            .width(Length::Fill)
+    } else {
+        column![Space::with_height(Length::Fill), internal_section.spacing(0), Space::with_height(Length::Fill)]
+            .width(Length::Fill)
+            .height(internal_container_height)
+    };
+
+    col = col.push(
+        container(internal_column)
+            .width(Length::Fill)
+            .height(internal_container_height)
+            .center_x(Length::Fill)
+            .style(|_theme: &_| {
+                container::Style {
+                    background: Some(Background::Color(Colors::BG_CARD)),
+                    border: iced::Border {
+                        color: Colors::BORDER_SUBTLE,
+                        width: 1.0,
+                        radius: 12.0.into(),
+                    },
+                    text_color: None,
+                    shadow: iced::Shadow::default(),
+                }
+            })
+            .padding(12)
+    );
+
+    col.into()
 }
 
 fn summary_metric<'a>(label: &'a str, value: String) -> Element<'a, WalletsMessage> {
