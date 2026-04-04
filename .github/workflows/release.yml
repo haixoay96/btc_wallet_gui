@@ -133,7 +133,7 @@ jobs:
       with:
         path: artifacts
 
-    - name: Prepare release files
+    - name: Prepare release files (all platforms zipped)
       run: |
         mkdir -p release_files
         
@@ -142,11 +142,9 @@ jobs:
           APP_PATH=$(find artifacts/btc_wallet_gui_macos_intel -name "*.app" -type d | head -n 1)
           if [ -n "$APP_PATH" ]; then
             APP_NAME=$(basename "$APP_PATH" .app)
-            ZIP_NAME="${APP_NAME}_macOS_Intel.app.zip"
+            ZIP_NAME="${APP_NAME}_macOS_Intel.zip"
             (cd "$(dirname "$APP_PATH")" && zip -r -9 "$OLDPWD/release_files/$ZIP_NAME" "$(basename "$APP_PATH")")
-            echo "Zipped macOS Intel: $ZIP_NAME"
-          else
-            echo "Warning: No .app found for macOS Intel"
+            echo "Zipped: $ZIP_NAME"
           fi
         fi
         
@@ -155,36 +153,33 @@ jobs:
           APP_PATH=$(find artifacts/btc_wallet_gui_macos_arm64 -name "*.app" -type d | head -n 1)
           if [ -n "$APP_PATH" ]; then
             APP_NAME=$(basename "$APP_PATH" .app)
-            ZIP_NAME="${APP_NAME}_macOS_ARM64.app.zip"
+            ZIP_NAME="${APP_NAME}_macOS_ARM64.zip"
             (cd "$(dirname "$APP_PATH")" && zip -r -9 "$OLDPWD/release_files/$ZIP_NAME" "$(basename "$APP_PATH")")
-            echo "Zipped macOS ARM64: $ZIP_NAME"
-          else
-            echo "Warning: No .app found for macOS ARM64"
+            echo "Zipped: $ZIP_NAME"
           fi
         fi
         
-        # Windows: copy installer with platform suffix
+        # Windows: zip installer .exe
         if [ -d "artifacts/btc_wallet_gui_windows_x64" ]; then
           find artifacts/btc_wallet_gui_windows_x64 -name "*-setup.exe" | while read exe; do
-            EXE_NAME=$(basename "$exe")
-            NEW_NAME="${EXE_NAME/-setup.exe/_Windows_x64-setup.exe}"
-            cp "$exe" "release_files/$NEW_NAME"
-            echo "Copied: $NEW_NAME"
+            EXE_NAME=$(basename "$exe" .exe)
+            ZIP_NAME="${EXE_NAME}_Windows_x64.zip"
+            (cd "$(dirname "$exe")" && zip -j -9 "$OLDPWD/release_files/$ZIP_NAME" "$(basename "$exe")")
+            echo "Zipped: $ZIP_NAME"
           done
         fi
         
-        # Linux: copy AppImage with platform suffix and set executable
+        # Linux: zip AppImage
         if [ -d "artifacts/btc_wallet_gui_linux_x64" ]; then
           find artifacts/btc_wallet_gui_linux_x64 -name "*.AppImage" | while read appimage; do
-            APPIMAGE_NAME=$(basename "$appimage")
-            NEW_NAME="${APPIMAGE_NAME/.AppImage/_Linux_x64.AppImage}"
-            cp "$appimage" "release_files/$NEW_NAME"
-            chmod +x "release_files/$NEW_NAME"
-            echo "Copied and set executable: $NEW_NAME"
+            APPIMAGE_NAME=$(basename "$appimage" .AppImage)
+            ZIP_NAME="${APPIMAGE_NAME}_Linux_x64.zip"
+            (cd "$(dirname "$appimage")" && zip -j -9 "$OLDPWD/release_files/$ZIP_NAME" "$(basename "$appimage")")
+            echo "Zipped: $ZIP_NAME"
           done
         fi
         
-        echo "=== Release files prepared ==="
+        echo "=== All release zip files ==="
         ls -la release_files/
 
     - name: Create Release
@@ -196,6 +191,6 @@ jobs:
         prerelease: false
         generate_release_notes: true
         files: |
-          release_files/*
+          release_files/*.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
