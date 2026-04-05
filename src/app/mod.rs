@@ -7,9 +7,9 @@ use std::time::Duration;
 
 use chrono::Local;
 use iced::{
-    clipboard,
+    clipboard, keyboard,
     widget::{column, container, row, text, Space},
-    Element, Length, Task,
+    Element, Length, Subscription, Task,
 };
 use secrecy::{ExposeSecret, SecretString};
 
@@ -762,5 +762,45 @@ impl App {
         self.error = None;
 
         Task::none()
+    }
+
+    pub fn subscription(&self) -> Subscription<AppMessage> {
+        keyboard::on_key_press(|key_code, modifiers| {
+            // Ctrl+? to toggle shortcuts help
+            if modifiers.control() && key_code == keyboard::Key::Character("/".into()) {
+                Some(AppMessage::ToggleShortcutsHelp)
+            }
+            // Esc to close popups
+            else if key_code == keyboard::Key::Named(keyboard::key::Named::Escape) {
+                Some(AppMessage::ToggleShortcutsHelp)
+            }
+            // Ctrl+1-6 for navigation
+            else if modifiers.control() {
+                match key_code {
+                    keyboard::Key::Character(c) if c == "1" => {
+                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Dashboard)))
+                    }
+                    keyboard::Key::Character(c) if c == "2" => {
+                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Wallets)))
+                    }
+                    keyboard::Key::Character(c) if c == "3" => {
+                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Send)))
+                    }
+                    keyboard::Key::Character(c) if c == "4" => {
+                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Receive)))
+                    }
+                    keyboard::Key::Character(c) if c == "5" => {
+                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::History)))
+                    }
+                    keyboard::Key::Character(c) if c == "6" => {
+                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Settings)))
+                    }
+                    _ => None,
+                }
+            }
+            else {
+                None
+            }
+        })
     }
 }

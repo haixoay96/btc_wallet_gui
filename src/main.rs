@@ -15,6 +15,7 @@ use iced_fonts::BOOTSTRAP_FONT_BYTES;
 
 pub fn main() -> iced::Result {
     iced::application(App::title, App::update, App::view)
+        .subscription(App::subscription)
         .window_size(Size::new(1200.0, 800.0))
         .window(window::Settings {
             size: Size::new(1200.0, 800.0),
