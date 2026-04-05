@@ -13,7 +13,7 @@ use iced::{
 };
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::components::{Toast, ToastManager};
+use crate::components::{Toast, ToastManager, shortcuts_help_popup};
 use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile};
 use crate::theme::{
@@ -75,6 +75,9 @@ pub struct App {
     // Copy tracking
     pub last_copied_address: Option<String>,
     pub last_copied_time: Option<String>,
+    
+    // Keyboard shortcuts help popup
+    pub show_shortcuts_help: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -94,6 +97,7 @@ pub enum AppMessage {
     SendTransactionFinished(Result<SendExecutionResult, String>),
     RevealedMnemonicExpired(u64),
     ToastCleanup,
+    ToggleShortcutsHelp,
     DismissStatus,
     DismissError,
 }
@@ -163,6 +167,7 @@ impl App {
                 toast_manager: ToastManager::new(),
                 last_copied_address: None,
                 last_copied_time: None,
+                show_shortcuts_help: false,
             },
             // Start toast cleanup task
             Task::perform(
@@ -259,6 +264,10 @@ impl App {
                     },
                     |_| AppMessage::ToastCleanup,
                 )
+            }
+            AppMessage::ToggleShortcutsHelp => {
+                self.show_shortcuts_help = !self.show_shortcuts_help;
+                Task::none()
             }
             AppMessage::DismissStatus => {
                 Task::none()
@@ -562,6 +571,7 @@ impl App {
         self.toast_manager = ToastManager::new();
         self.last_copied_address = None;
         self.last_copied_time = None;
+        self.show_shortcuts_help = false;
 
         self.login_view = LoginView::new();
         self.login_view

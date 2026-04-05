@@ -1,4 +1,5 @@
 use crate::i18n::t;
+use crate::components::skeleton_wallet_cards;
 use crate::theme::{
     card_style, notice_style, primary_button_style, secondary_button_style, text_color, Colors,
     NoticeTone,
@@ -251,6 +252,9 @@ impl DashboardView {
                 .padding(28)
                 .width(Length::Fill),
             );
+        } else if is_refreshing {
+            // Show skeleton loading state
+            content = content.push(skeleton_wallet_cards(3).map(|_| DashboardMessage::Refresh));
         } else {
             content = content
                 .push(balance_card)

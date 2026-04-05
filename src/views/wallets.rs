@@ -4,6 +4,7 @@ use iced::{
 };
 
 use crate::i18n::t;
+use crate::components::info_box;
 use crate::theme::{
     card_style, danger_button_style, notice_style, popup_dialog_style, popup_overlay_style,
     primary_button_style, secondary_button_style, selected_button_style, text_color, Colors,
@@ -1030,12 +1031,18 @@ impl WalletsView {
                     .padding(12)
                     .size(14);
 
-                    let mut shares_form = column![text(t(
-                        "Nhập tối thiểu K share, mỗi ô là 1 cụm từ SLIP-0039",
-                        "Enter at least K shares, each field is one SLIP-0039 phrase",
-                    ))
-                    .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY))]
+                    let mut shares_form = column![
+                        info_box(
+                            "SLIP-0039 là gì?",
+                            "SLIP-0039 (Shamir Secret Sharing) chia mnemonic thành nhiều mảnh. Cần tối thiểu K mảnh để khôi phục ví."
+                        ).map(|_| WalletsMessage::ImportModeChanged(ImportMode::Slip39)),
+                        text(t(
+                            "Nhập tối thiểu K share, mỗi ô là 1 cụm từ SLIP-0039",
+                            "Enter at least K shares, each field is one SLIP-0039 phrase",
+                        ))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_SECONDARY))
+                    ]
                     .spacing(8);
 
                     for (index, share_value) in self.import_slip39_shares.iter().enumerate() {

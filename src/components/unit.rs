@@ -9,6 +9,12 @@ pub enum BtcUnit {
     MilliBtc,
 }
 
+impl std::fmt::Display for BtcUnit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.label())
+    }
+}
+
 impl BtcUnit {
     pub fn all() -> Vec<Self> {
         vec![Self::Btc, Self::Satoshi, Self::MilliBtc]

@@ -6,6 +6,7 @@ use iced::{
 };
 
 use crate::i18n::t;
+use crate::components::{BtcUnit, format_amount_with_unit, help_icon, info_box};
 use crate::theme::{
     card_style, notice_style, pick_list_menu_style, pick_list_style, popup_dialog_style,
     popup_overlay_style, primary_button_style, secondary_button_style, selected_button_style,
@@ -76,6 +77,7 @@ pub enum SendMessage {
     Send,
     ConfirmSend,
     CancelSend,
+    ChangeUnit(BtcUnit),
 }
 
 #[derive(Debug, Clone)]
@@ -115,6 +117,7 @@ pub struct SendView {
     success: Option<String>,
     show_confirm: bool,
     show_advanced: bool,
+    unit: BtcUnit,
 }
 
 impl SendView {
@@ -134,6 +137,7 @@ impl SendView {
             success: None,
             show_confirm: false,
             show_advanced: false,
+            unit: BtcUnit::default(),
         }
     }
 
@@ -381,6 +385,10 @@ impl SendView {
                 self.show_confirm = false;
                 None
             }
+            SendMessage::ChangeUnit(unit) => {
+                self.unit = unit;
+                None
+            }
         }
     }
 
@@ -486,15 +494,30 @@ impl SendView {
             max_button = max_button.on_press(SendMessage::MaxAmount);
         }
 
-        let amount_label = text(t("Số lượng (BTC)", "Amount (BTC)"))
-            .size(14)
-            .style(text_color(Colors::TEXT_SECONDARY));
+        let amount_label = row![
+            text(t("Số lượng", "Amount"))
+                .size(14)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+            Space::with_width(8),
+            pick_list(BtcUnit::all(), Some(self.unit), SendMessage::ChangeUnit)
+                .width(Length::Fixed(90.0))
+                .padding(6)
+                .style(pick_list_style())
+                .menu_style(pick_list_menu_style()),
+            Space::with_width(8),
+            help_icon().map(|_| SendMessage::EstimateFee),
+        ]
+        .align_y(Alignment::Center);
 
+        let unit_symbol = self.unit.symbol();
         let amount_input_row = row![
-            text_input(t("Nhập số BTC...", "Enter amount in BTC..."), &self.amount)
-                .on_input(SendMessage::AmountChanged)
-                .padding(12)
-                .size(14),
+            text_input(
+                &format!("Nhập số {}...", unit_symbol),
+                &self.amount,
+            )
+            .on_input(SendMessage::AmountChanged)
+            .padding(12)
+            .size(14),
             Space::with_width(8),
             max_button,
         ]
@@ -508,7 +531,12 @@ impl SendView {
         } else if let Ok(amount_btc) = self.amount.trim().parse::<f64>() {
             if amount_btc > 0.0 {
                 let amount_sat = (amount_btc * 100_000_000.0).round() as u64;
-                text(format!("≈ {}", format_btc_and_sat(amount_sat)))
+                let display = match self.unit {
+                    BtcUnit::Btc => format_btc_with_spaces(amount_sat),
+                    BtcUnit::Satoshi => format_number_with_spaces(amount_sat, 3),
+                    BtcUnit::MilliBtc => format!("{:.5}", amount_sat as f64 / 100_000.0),
+                };
+                text(format!("{} {}", display, self.unit.symbol()))
                     .size(12)
                     .style(text_color(Colors::TEXT_MUTED))
                     .into()
