@@ -512,15 +512,9 @@ impl SendView {
         }
 
         let amount_label = row![
-            text(t("Số lượng", "Amount"))
+            text(t("Số lượng (BTC)", "Amount (BTC)"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
-            Space::with_width(8),
-            pick_list(BtcUnit::all(), Some(self.unit), SendMessage::ChangeUnit)
-                .width(Length::Fixed(90.0))
-                .padding(6)
-                .style(pick_list_style())
-                .menu_style(pick_list_menu_style()),
             Space::with_width(8),
             button(text(Bootstrap::QuestionCircle.to_string()).size(12).font(iced_fonts::BOOTSTRAP_FONT).style(text_color(Colors::TEXT_MUTED)))
                 .on_press(SendMessage::ShowAmountHelp)
@@ -529,10 +523,9 @@ impl SendView {
         ]
         .align_y(Alignment::Center);
 
-        let unit_symbol = self.unit.symbol();
         let amount_input_row = row![
             text_input(
-                &format!("Nhập số {}...", unit_symbol),
+                t("Nhập số BTC...", "Enter amount in BTC..."),
                 &self.amount,
             )
             .on_input(SendMessage::AmountChanged)
@@ -556,10 +549,19 @@ impl SendView {
                     BtcUnit::Satoshi => format_number_with_spaces(amount_sat, 3),
                     BtcUnit::MilliBtc => format!("{:.5}", amount_sat as f64 / 100_000.0),
                 };
-                text(format!("{} {}", display, self.unit.symbol()))
-                    .size(12)
-                    .style(text_color(Colors::TEXT_MUTED))
-                    .into()
+                row![
+                    text(format!("≈ {} {}", display, self.unit.symbol()))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_MUTED)),
+                    Space::with_width(8),
+                    pick_list(BtcUnit::all(), Some(self.unit), SendMessage::ChangeUnit)
+                        .width(Length::Fixed(80.0))
+                        .padding(4)
+                        .style(pick_list_style())
+                        .menu_style(pick_list_menu_style()),
+                ]
+                .align_y(Alignment::Center)
+                .into()
             } else {
                 Space::with_height(0).into()
             }
@@ -590,15 +592,9 @@ impl SendView {
         }
 
         let fee_label = row![
-            text(t("Phí giao dịch", "Transaction Fee"))
+            text(t("Phí (BTC)", "Fee (BTC)"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
-            Space::with_width(8),
-            pick_list(BtcUnit::all(), Some(self.unit), SendMessage::ChangeUnit)
-                .width(Length::Fixed(90.0))
-                .padding(6)
-                .style(pick_list_style())
-                .menu_style(pick_list_menu_style()),
             Space::with_width(8),
             button(text(Bootstrap::QuestionCircle.to_string()).size(12).font(iced_fonts::BOOTSTRAP_FONT).style(text_color(Colors::TEXT_MUTED)))
                 .on_press(SendMessage::ShowFeeHelp)
@@ -609,7 +605,7 @@ impl SendView {
 
         let fee_row = row![
             text_input(
-                &format!("Nhập phí {}...", unit_symbol),
+                t("Nhập phí BTC...", "Enter fee in BTC..."),
                 &self.fee_amount
             )
             .on_input(SendMessage::FeeAmountChanged)
@@ -633,10 +629,19 @@ impl SendView {
                     BtcUnit::Satoshi => format_number_with_spaces(fee_sat, 3),
                     BtcUnit::MilliBtc => format!("{:.5}", fee_sat as f64 / 100_000.0),
                 };
-                text(format!("{} {}", display, self.unit.symbol()))
-                    .size(12)
-                    .style(text_color(Colors::TEXT_MUTED))
-                    .into()
+                row![
+                    text(format!("{} {}", display, self.unit.symbol()))
+                        .size(12)
+                        .style(text_color(Colors::TEXT_MUTED)),
+                    Space::with_width(8),
+                    pick_list(BtcUnit::all(), Some(self.unit), SendMessage::ChangeUnit)
+                        .width(Length::Fixed(80.0))
+                        .padding(4)
+                        .style(pick_list_style())
+                        .menu_style(pick_list_menu_style()),
+                ]
+                .align_y(Alignment::Center)
+                .into()
             } else {
                 Space::with_height(0).into()
             }
