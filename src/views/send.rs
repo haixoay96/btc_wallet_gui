@@ -15,6 +15,7 @@ use crate::theme::{
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{validate_bitcoin_address, ChangeStrategy, InputSource, Wallet};
 use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
+use iced_fonts::Bootstrap;
 
 fn format_btc_and_sat(amount_sat: u64) -> String {
     let formatted_btc = format_btc_with_spaces(amount_sat);
@@ -78,6 +79,8 @@ pub enum SendMessage {
     ConfirmSend,
     CancelSend,
     ChangeUnit(BtcUnit),
+    ShowAmountHelp,
+    ShowFeeHelp,
 }
 
 #[derive(Debug, Clone)]
@@ -118,6 +121,8 @@ pub struct SendView {
     show_confirm: bool,
     show_advanced: bool,
     unit: BtcUnit,
+    show_amount_help: bool,
+    show_fee_help: bool,
 }
 
 impl SendView {
@@ -138,6 +143,8 @@ impl SendView {
             show_confirm: false,
             show_advanced: false,
             unit: BtcUnit::default(),
+            show_amount_help: false,
+            show_fee_help: false,
         }
     }
 
@@ -389,6 +396,16 @@ impl SendView {
                 self.unit = unit;
                 None
             }
+            SendMessage::ShowAmountHelp => {
+                self.show_amount_help = !self.show_amount_help;
+                self.show_fee_help = false;
+                None
+            }
+            SendMessage::ShowFeeHelp => {
+                self.show_fee_help = !self.show_fee_help;
+                self.show_amount_help = false;
+                None
+            }
         }
     }
 
@@ -505,7 +522,10 @@ impl SendView {
                 .style(pick_list_style())
                 .menu_style(pick_list_menu_style()),
             Space::with_width(8),
-            help_icon().map(|_| SendMessage::EstimateFee),
+            button(text(Bootstrap::QuestionCircle.to_string()).size(12).font(iced_fonts::BOOTSTRAP_FONT).style(text_color(Colors::TEXT_MUTED)))
+                .on_press(SendMessage::ShowAmountHelp)
+                .padding(4)
+                .style(secondary_button_style()),
         ]
         .align_y(Alignment::Center);
 
@@ -547,6 +567,16 @@ impl SendView {
             Space::with_height(0).into()
         };
 
+        // Amount help box
+        let amount_help: Element<'_, SendMessage> = if self.show_amount_help {
+            info_box(
+                "Hướng dẫn nhập số lượng",
+                "Nhập số BTC bạn muốn gửi. Ví dụ: 0.001 BTC = 100,000 satoshi. Phí giao dịch sẽ được trừ riêng."
+            ).map(|_| SendMessage::AmountChanged(self.amount.clone()))
+        } else {
+            Space::with_height(0).into()
+        };
+
         let estimate_label = if is_estimating_fee {
             t("Đang ước tính...", "Estimating...")
         } else {
@@ -559,13 +589,27 @@ impl SendView {
             estimate_btn = estimate_btn.on_press(SendMessage::EstimateFee);
         }
 
-        let fee_label = text(t("Phí (BTC)", "Fee Amount (BTC)"))
-            .size(14)
-            .style(text_color(Colors::TEXT_SECONDARY));
+        let fee_label = row![
+            text(t("Phí giao dịch", "Transaction Fee"))
+                .size(14)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+            Space::with_width(8),
+            pick_list(BtcUnit::all(), Some(self.unit), SendMessage::ChangeUnit)
+                .width(Length::Fixed(90.0))
+                .padding(6)
+                .style(pick_list_style())
+                .menu_style(pick_list_menu_style()),
+            Space::with_width(8),
+            button(text(Bootstrap::QuestionCircle.to_string()).size(12).font(iced_fonts::BOOTSTRAP_FONT).style(text_color(Colors::TEXT_MUTED)))
+                .on_press(SendMessage::ShowFeeHelp)
+                .padding(4)
+                .style(secondary_button_style()),
+        ]
+        .align_y(Alignment::Center);
 
         let fee_row = row![
             text_input(
-                t("Nhập phí BTC...", "Enter fee in BTC..."),
+                &format!("Nhập phí {}...", unit_symbol),
                 &self.fee_amount
             )
             .on_input(SendMessage::FeeAmountChanged)
@@ -584,13 +628,28 @@ impl SendView {
         } else if let Ok(fee_btc) = self.fee_amount.trim().parse::<f64>() {
             if fee_btc > 0.0 {
                 let fee_sat = (fee_btc * 100_000_000.0).round() as u64;
-                text(format!("≈ {}", format_btc_and_sat(fee_sat)))
+                let display = match self.unit {
+                    BtcUnit::Btc => format_btc_with_spaces(fee_sat),
+                    BtcUnit::Satoshi => format_number_with_spaces(fee_sat, 3),
+                    BtcUnit::MilliBtc => format!("{:.5}", fee_sat as f64 / 100_000.0),
+                };
+                text(format!("{} {}", display, self.unit.symbol()))
                     .size(12)
                     .style(text_color(Colors::TEXT_MUTED))
                     .into()
             } else {
                 Space::with_height(0).into()
             }
+        } else {
+            Space::with_height(0).into()
+        };
+
+        // Fee help box
+        let fee_help: Element<'_, SendMessage> = if self.show_fee_help {
+            info_box(
+                "Hướng dẫn nhập phí",
+                "Phí giao dịch tính bằng BTC. Phí cao hơn = giao dịch được xác nhận nhanh hơn. Bấm 'Ước tính tự động' để lấy phí hiện tại."
+            ).map(|_| SendMessage::FeeAmountChanged(self.fee_amount.clone()))
         } else {
             Space::with_height(0).into()
         };
@@ -715,11 +774,15 @@ impl SendView {
             Space::with_height(4),
             amount_input_row,
             amount_info,
+            Space::with_height(4),
+            amount_help,
             Space::with_height(16),
             fee_label,
             Space::with_height(4),
             fee_row,
             fee_info,
+            Space::with_height(4),
+            fee_help,
             Space::with_height(24),
             advanced_toggle,
             advanced_section,
