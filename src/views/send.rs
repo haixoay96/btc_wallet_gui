@@ -13,10 +13,12 @@ use crate::theme::{
 };
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{validate_bitcoin_address, ChangeStrategy, InputSource, Wallet};
+use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
 
 fn format_btc_and_sat(amount_sat: u64) -> String {
-    let amount_btc = amount_sat as f64 / 100_000_000.0;
-    format!("{:.8} BTC ({} sat)", amount_btc, amount_sat)
+    let formatted_btc = format_btc_with_spaces(amount_sat);
+    let formatted_sat = format_number_with_spaces(amount_sat, 3);
+    format!("{} BTC ({} sat)", formatted_btc, formatted_sat)
 }
 
 fn parse_btc_to_sat(raw: &str, field_vi: &str, field_en: &str) -> Result<u64, String> {

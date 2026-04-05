@@ -18,7 +18,6 @@ impl App {
         creating_new: bool,
     ) -> Task<AppMessage> {
         let passphrase = SecretString::from(passphrase);
-        self.status = None;
         self.error = None;
 
         match Storage::new() {
@@ -105,7 +104,7 @@ impl App {
                         }
 
                         if had_existing_state {
-                            self.status = Some(format!(
+                            self.add_success_toast(format!(
                                 "{} {}, {} {}",
                                 t("Chào mừng quay lại,", "Welcome back,"),
                                 self.display_name(),
@@ -113,7 +112,7 @@ impl App {
                                 wallet_count_text(self.wallets.len())
                             ));
                         } else {
-                            self.status = Some(format!(
+                            self.add_success_toast(format!(
                                 "{} {}! {}",
                                 t("Xin chào,", "Welcome,"),
                                 self.display_name(),
@@ -145,7 +144,6 @@ impl App {
         passphrase: String,
     ) -> Task<AppMessage> {
         let passphrase = SecretString::from(passphrase);
-        self.status = None;
         self.error = None;
 
         if passphrase.expose_secret().trim().is_empty() {
@@ -207,7 +205,7 @@ impl App {
                                 return Task::none();
                             }
                         }
-                        self.status = Some(format!(
+                        self.add_success_toast(format!(
                             "{} {} {} {}",
                             t("Đã import", "Imported"),
                             wallet_count_text(self.wallets.len()),

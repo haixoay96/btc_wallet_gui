@@ -13,6 +13,7 @@ use iced::{
 };
 use secrecy::{ExposeSecret, SecretString};
 
+use crate::components::{Toast, ToastManager};
 use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile};
 use crate::theme::{
@@ -67,6 +68,13 @@ pub struct App {
     pub is_calculating_max: bool,
     pub is_sending: bool,
     pub revealed_mnemonic_session_id: u64,
+    
+    // Toast notification system
+    pub toast_manager: ToastManager,
+    
+    // Copy tracking
+    pub last_copied_address: Option<String>,
+    pub last_copied_time: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -85,6 +93,7 @@ pub enum AppMessage {
     MaxAmountFinished(Result<(u64, u64), String>),
     SendTransactionFinished(Result<SendExecutionResult, String>),
     RevealedMnemonicExpired(u64),
+    ToastCleanup,
     DismissStatus,
     DismissError,
 }
@@ -151,8 +160,17 @@ impl App {
                 is_calculating_max: false,
                 is_sending: false,
                 revealed_mnemonic_session_id: 0,
+                toast_manager: ToastManager::new(),
+                last_copied_address: None,
+                last_copied_time: None,
             },
-            Task::none(),
+            // Start toast cleanup task
+            Task::perform(
+                async move {
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                },
+                |_| AppMessage::ToastCleanup,
+            ),
         )
     }
 
@@ -232,8 +250,17 @@ impl App {
             AppMessage::RevealedMnemonicExpired(session_id) => {
                 self.handle_revealed_mnemonic_expired(session_id)
             }
+            AppMessage::ToastCleanup => {
+                self.toast_manager.cleanup_expired();
+                // Schedule next cleanup in 2 seconds
+                Task::perform(
+                    async move {
+                        tokio::time::sleep(Duration::from_secs(2)).await;
+                    },
+                    |_| AppMessage::ToastCleanup,
+                )
+            }
             AppMessage::DismissStatus => {
-                self.status = None;
                 Task::none()
             }
             AppMessage::DismissError => {
@@ -250,7 +277,7 @@ impl App {
                 .height(Length::Fill)
                 .into(),
             AppState::Main => {
-                let sidebar = self.sidebar.view().map(AppMessage::SidebarMessage);
+                let sidebar = self.sidebar.view(self.wallets.len()).map(AppMessage::SidebarMessage);
                 let _selected_wallet = self.wallets.get(self.selected_wallet);
 
                 let main_content = match self.current_page {
@@ -285,26 +312,6 @@ impl App {
                         .view(&self.wallets, self.selected_wallet, self.is_refreshing)
                         .map(AppMessage::HistoryMessage),
                     NavItem::Settings => self.settings_view.view().map(AppMessage::SettingsMessage),
-                };
-
-                let status_bar = if let Some(status) = &self.status {
-                    container(
-                        row![
-                            text(status.as_str())
-                                .size(12)
-                                .style(text_color(Colors::TEXT_PRIMARY)),
-                            Space::with_width(Length::Fill),
-                            iced::widget::button(text(t("Đóng", "Close")).size(12))
-                                .on_press(AppMessage::DismissStatus)
-                                .padding(6)
-                                .style(secondary_button_style()),
-                        ]
-                        .align_y(iced::Alignment::Center),
-                    )
-                    .padding(10)
-                    .style(notice_style(NoticeTone::Success))
-                } else {
-                    container(Space::with_height(0))
                 };
 
                 let error_bar = if let Some(error) = &self.error {
@@ -349,14 +356,54 @@ impl App {
                 )
                 .padding(12);
 
-                container(row![
+                let base_content = container(row![
                     sidebar,
-                    column![header_bar, status_bar, error_bar, main_content,].width(Length::Fill)
+                    column![header_bar, error_bar, main_content,].width(Length::Fill)
                 ])
                 .width(Length::Fill)
                 .height(Length::Fill)
-                .style(screen_background_style())
-                .into()
+                .style(screen_background_style());
+
+                // Toast notification layer on top - centered horizontally
+                if self.toast_manager.has_toasts() {
+                    if let Some(toast_view) = self.toast_manager.view() {
+                        use iced::widget::stack;
+                        
+                        // Dùng row với 2 Space ở 2 bên để đẩy toast vào giữa
+                        let centered_row = row![
+                            Space::with_width(Length::Fill),
+                            column![
+                                Space::with_height(20),
+                                toast_view.map(|_| AppMessage::DismissStatus),
+                            ]
+                            .spacing(0),
+                            Space::with_width(Length::Fill),
+                        ]
+                        .width(Length::Fill)
+                        .spacing(0);
+                        
+                        let toast_overlay = container(
+                            column![
+                                centered_row,
+                                Space::with_height(Length::Fill),
+                            ]
+                            .spacing(0)
+                            .width(Length::Fill),
+                        )
+                        .width(Length::Fill)
+                        .height(Length::Fill);
+                        
+                        return stack![
+                            base_content,
+                            toast_overlay
+                        ]
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .into();
+                    }
+                }
+
+                base_content.into()
             }
         }
     }
@@ -388,7 +435,7 @@ impl App {
 
     pub fn refresh_all_wallets(&mut self) -> Task<AppMessage> {
         if self.wallets.is_empty() {
-            self.status = Some(t("Không có ví để làm mới", "No wallets to refresh").to_string());
+            self.add_info_toast(t("Không có ví để làm mới", "No wallets to refresh").to_string());
             return Task::none();
         }
 
@@ -397,8 +444,7 @@ impl App {
         }
 
         self.is_refreshing = true;
-        self.status =
-            Some(t("Đang làm mới dữ liệu ví...", "Refreshing wallet data...").to_string());
+        self.add_info_toast(t("Đang làm mới dữ liệu ví...", "Refreshing wallet data...").to_string());
         self.error = None;
 
         let wallets = self.wallets.clone();
@@ -507,13 +553,15 @@ impl App {
         self.wallet_vault.clear();
         self.selected_wallet = 0;
         self.current_page = NavItem::Dashboard;
-        self.status = None;
         self.error = None;
         self.is_refreshing = false;
         self.is_estimating_fee = false;
         self.is_calculating_max = false;
         self.is_sending = false;
         self.revealed_mnemonic_session_id = 0;
+        self.toast_manager = ToastManager::new();
+        self.last_copied_address = None;
+        self.last_copied_time = None;
 
         self.login_view = LoginView::new();
         self.login_view
@@ -581,6 +629,32 @@ impl App {
         self.storage_passphrase.as_ref()
     }
 
+    pub fn add_toast(&mut self, toast: Toast) {
+        self.toast_manager.add_toast(toast);
+    }
+
+    pub fn add_success_toast(&mut self, message: String) {
+        self.toast_manager.add_toast(Toast::success(message));
+    }
+
+    pub fn add_error_toast(&mut self, message: String) {
+        self.toast_manager.add_toast(Toast::error(message));
+    }
+
+    pub fn add_info_toast(&mut self, message: String) {
+        self.toast_manager.add_toast(Toast::info(message));
+    }
+
+    pub fn add_warning_toast(&mut self, message: String) {
+        self.toast_manager.add_toast(Toast::warning(message));
+    }
+
+    pub fn track_copy(&mut self, address: String) {
+        let now = Local::now();
+        self.last_copied_address = Some(address);
+        self.last_copied_time = Some(now.format("%H:%M:%S").to_string());
+    }
+
     pub fn passphrase_matches(&self, candidate: &str) -> bool {
         self.current_passphrase()
             .map(|value| value.expose_secret() == candidate)
@@ -623,7 +697,7 @@ impl App {
                 self.dashboard.set_last_synced_label(Some(
                     Local::now().format("%d/%m/%Y %H:%M:%S").to_string(),
                 ));
-                self.status = Some(format!(
+                self.add_success_toast(format!(
                     "{} {}, {} {}",
                     t("Đã làm mới", "Refreshed"),
                     wallet_count_text(payload.refreshed_wallets),
@@ -669,7 +743,7 @@ impl App {
         }
 
         self.clear_revealed_mnemonic();
-        self.status = Some(format!(
+        self.add_info_toast(format!(
             "{} {} {}",
             t("Mnemonic đã tự động khóa sau", "Mnemonic auto-locked after"),
             REVEALED_MNEMONIC_TTL_SECS,

@@ -88,7 +88,7 @@ impl App {
                             "Đổi passphrase thành công",
                             "Passphrase updated successfully",
                         ));
-                        self.status = Some(
+                        self.add_info_toast(
                             t(
                                 "Đổi passphrase thành công",
                                 "Passphrase updated successfully",
@@ -159,7 +159,7 @@ impl App {
                             export_path.display()
                         );
                         self.settings_view.set_success(message.clone());
-                        self.status = Some(message);
+                        self.add_info_toast(message);
                         self.error = None;
                     }
                     Err(err) => {

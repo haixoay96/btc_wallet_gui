@@ -153,7 +153,7 @@ impl App {
                         "Ví mới đã tạo. Hãy backup mnemonic ngay và hoàn thành bài test.",
                         "New wallet created. Please back up the mnemonic now and complete the backup test.",
                     ));
-                    self.status = Some(format!(
+                    self.add_success_toast(format!(
                         "{} '{name}'. {}",
                         t("Đã tạo ví thành công", "Wallet created successfully"),
                         t("Cần backup mnemonic.", "Mnemonic backup is required.")
@@ -193,7 +193,7 @@ impl App {
                         "Import mnemonic thành công. Ví này đã được đánh dấu backup.",
                         "Mnemonic import succeeded. This wallet has been marked as backed up.",
                     ));
-                    self.status = Some(format!(
+                    self.add_success_toast(format!(
                         "{} '{name}' {}",
                         t("Đã import ví", "Imported wallet"),
                         t("từ mnemonic", "from mnemonic")
@@ -237,7 +237,7 @@ impl App {
                         "Import SLIP-0039 thành công. Ví này đã được đánh dấu backup.",
                         "SLIP-0039 import succeeded. This wallet has been marked as backed up.",
                     ));
-                    self.status = Some(format!(
+                    self.add_success_toast(format!(
                         "{} '{name}' {}",
                         t("Đã import ví", "Imported wallet"),
                         t("từ SLIP-0039", "from SLIP-0039")
@@ -328,7 +328,7 @@ impl App {
                                     "Import file .enc thành công. Ví này đã được đánh dấu backup.",
                                     "Encrypted .enc import succeeded. This wallet has been marked as backed up.",
                                 ));
-                                self.status = Some(format!(
+                                self.add_success_toast(format!(
                                     "{} '{name}' {}",
                                     t("Đã import ví", "Imported wallet"),
                                     source_label
@@ -376,7 +376,7 @@ impl App {
         if index < self.wallets.len() {
             self.clear_revealed_mnemonic();
             self.selected_wallet = index;
-            self.status = Some(format!(
+            self.add_info_toast(format!(
                 "{}: {}",
                 t("Đã chọn ví", "Selected wallet"),
                 self.wallets[index].name
@@ -404,7 +404,7 @@ impl App {
 
             let save_succeeded = self.save_state();
             self.update_dashboard();
-            self.status = Some(format!("{} '{name}'", t("Đã xóa ví", "Deleted wallet")));
+            self.add_info_toast(format!("{} '{name}'", t("Đã xóa ví", "Deleted wallet")));
             if save_succeeded {
                 self.error = None;
             }
@@ -422,7 +422,7 @@ impl App {
             match wallet.derive_next_addresses(secrets.as_ref(), count) {
                 Ok(addresses) => {
                     let save_succeeded = self.save_state();
-                    self.status = Some(format!(
+                    self.add_success_toast(format!(
                         "{} {}",
                         t("Đã tạo", "Derived"),
                         address_count_text(addresses.len())
@@ -491,7 +491,7 @@ impl App {
         }
 
         self.wallets_view.mark_mnemonic_revealed(wallet_index);
-        self.status = Some(format!(
+        self.add_info_toast(format!(
             "{} '{wallet_name}'",
             t("Đã mở khóa mnemonic cho ví", "Mnemonic unlocked for wallet")
         ));
@@ -575,7 +575,7 @@ impl App {
 
                 let save_succeeded = self.save_state();
                 self.wallets_view.mark_backup_verified(wallet_index);
-                self.status = Some(format!(
+                self.add_success_toast(format!(
                     "{} '{wallet_name}'",
                     t(
                         "Ví đã vượt qua bài test backup mnemonic",
@@ -648,7 +648,7 @@ impl App {
                     export_path.display()
                 );
                 self.wallets_view.set_info(message.clone());
-                self.status = Some(message);
+                self.add_info_toast(message);
                 self.error = None;
             }
             Err(err) => {
@@ -725,7 +725,7 @@ impl App {
                     export_path.display()
                 );
                 self.wallets_view.set_info(message.clone());
-                self.status = Some(message);
+                self.add_info_toast(message);
                 self.error = None;
             }
             Err(err) => {
@@ -817,7 +817,7 @@ impl App {
                     export_directory.display()
                 );
                 self.wallets_view.set_info(message.clone());
-                self.status = Some(message);
+                self.add_info_toast(message);
                 self.error = None;
             }
             Err(err) => {
@@ -835,14 +835,12 @@ impl App {
             match event {
                 ReceiveEvent::SelectWallet(index) => return self.handle_select_wallet(index),
                 ReceiveEvent::CopyAddress(addr) => {
-                    self.status = Some(
-                        t(
-                            "Đã copy địa chỉ vào clipboard",
-                            "Copied address to clipboard",
-                        )
-                        .to_string(),
-                    );
-                    self.error = None;
+                    self.track_copy(addr.clone());
+                    self.add_success_toast(format!(
+                        "{} {}",
+                        t("Đã copy địa chỉ", "Copied address"),
+                        &addr[..8.min(addr.len())]
+                    ));
                     return clipboard::write(addr);
                 }
                 ReceiveEvent::DeriveAddresses(count) => return self.handle_derive_addresses(count),

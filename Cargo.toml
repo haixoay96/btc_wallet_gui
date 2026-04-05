@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 iced = { version = "0.13", features = ["tokio", "advanced", "image"] }
+iced_aw = { version = "0.12", default-features = false }
+iced_fonts = { version = "0.1", features = ["bootstrap"] }
 anyhow = "1.0"
 argon2 = "0.5"
 base64 = "0.22"

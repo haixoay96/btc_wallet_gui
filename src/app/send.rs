@@ -43,7 +43,7 @@ impl App {
         };
 
         self.is_estimating_fee = true;
-        self.status = Some(t("Đang ước tính phí...", "Estimating fee...").to_string());
+        self.add_info_toast(t("Đang ước tính phí...", "Estimating fee...").to_string());
         self.error = None;
 
         Task::perform(
@@ -82,8 +82,7 @@ impl App {
         }
 
         self.is_calculating_max = true;
-        self.status =
-            Some(t("Đang tính số lượng tối đa...", "Calculating max amount...").to_string());
+        self.add_info_toast(t("Đang tính số lượng tối đa...", "Calculating max amount...").to_string());
         self.error = None;
 
         Task::perform(
@@ -145,7 +144,7 @@ impl App {
         }
 
         self.is_sending = true;
-        self.status = Some(t("Đang gửi giao dịch...", "Sending transaction...").to_string());
+        self.add_info_toast(t("Đang gửi giao dịch...", "Sending transaction...").to_string());
         self.error = None;
 
         let wallet_id = wallet.account_xpub.clone();
@@ -191,7 +190,7 @@ impl App {
         match result {
             Ok(fee) => {
                 self.send_view.set_fee_amount(fee);
-                self.status = Some(format!("{}: {fee} sat", t("Phí ước tính", "Estimated fee")));
+                self.add_success_toast(format!("{}: {fee} sat", t("Phí ước tính", "Estimated fee")));
                 self.error = None;
             }
             Err(err) => {
@@ -216,7 +215,7 @@ impl App {
             Ok((max_amount, fee)) => {
                 self.send_view.set_max_amount(max_amount);
                 self.send_view.set_fee_amount(fee);
-                self.status = Some(format!(
+                self.add_success_toast(format!(
                     "{}: {} sat (- {} sat {})",
                     t("Số lượng tối đa", "Max amount"),
                     max_amount,
@@ -282,7 +281,7 @@ impl App {
                 };
                 self.send_view.set_success(send_message.clone());
                 self.send_view.clear_form();
-                self.status = Some(send_message);
+                self.add_info_toast(send_message);
                 if save_succeeded {
                     self.error = None;
                 }

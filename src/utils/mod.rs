@@ -15,6 +15,9 @@ use crate::storage::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
 const ENCRYPTED_SECRET_EXPORT_FORMAT: &str = "btc_wallet_gui_encrypted_export";
 const ENCRYPTED_SECRET_EXPORT_VERSION: u8 = 1;
 
+// Re-export format functions from components
+pub use crate::components::{format_btc_with_spaces, format_number_with_spaces};
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum DecryptedSecretExport {
     Mnemonic {

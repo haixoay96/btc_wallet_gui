@@ -1182,7 +1182,10 @@ impl WalletsView {
                         .spacing(4),
                         Space::with_width(Length::Fill),
                         if is_selected {
-                            text("✓").size(20).style(text_color(Colors::SUCCESS))
+                            text(iced_fonts::Bootstrap::Check.to_string())
+                                .size(16)
+                                .font(iced_fonts::BOOTSTRAP_FONT)
+                                .style(text_color(Colors::SUCCESS))
                         } else {
                             text("")
                         },

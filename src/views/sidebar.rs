@@ -4,8 +4,9 @@ use crate::theme::{
 };
 use iced::{
     widget::{button, column, container, row, text, Space},
-    Alignment, Element, Length, Padding,
+    Alignment, Element, Length, Padding, Font,
 };
+use iced_fonts::{BOOTSTRAP_FONT, BOOTSTRAP_FONT_BYTES};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NavItem {
@@ -29,15 +30,16 @@ impl NavItem {
         ]
     }
 
-    pub fn icon(self) -> &'static str {
+    pub fn icon_char(self) -> String {
         match self {
-            Self::Dashboard => "DB",
-            Self::Wallets => "WL",
-            Self::Send => "SD",
-            Self::Receive => "RC",
-            Self::History => "TX",
-            Self::Settings => "ST",
+            Self::Dashboard => iced_fonts::Bootstrap::Speedometer,
+            Self::Wallets => iced_fonts::Bootstrap::Wallet,
+            Self::Send => iced_fonts::Bootstrap::BoxArrowUp,
+            Self::Receive => iced_fonts::Bootstrap::BoxArrowDown,
+            Self::History => iced_fonts::Bootstrap::ClockHistory,
+            Self::Settings => iced_fonts::Bootstrap::Gear,
         }
+        .to_string()
     }
 
     pub fn title(self) -> &'static str {
@@ -86,7 +88,7 @@ impl Sidebar {
         }
     }
 
-    pub fn view(&self) -> Element<'_, SidebarMessage> {
+    pub fn view(&self, wallet_count: usize) -> Element<'_, SidebarMessage> {
         let logo = text("₿").size(48).style(text_color(Colors::ACCENT_PURPLE));
 
         let logo_container = container(logo)
@@ -98,8 +100,35 @@ impl Sidebar {
                 .into_iter()
                 .map(|item| {
                     let is_active = self.active == item;
-                    let icon = text(item.icon()).size(18);
+                    let icon = text(item.icon_char())
+                        .size(20)
+                        .font(BOOTSTRAP_FONT)
+                        .style(text_color(if is_active {
+                            Colors::ACCENT_TEAL
+                        } else {
+                            Colors::TEXT_SECONDARY
+                        }));
                     let title = text(item.title()).size(14);
+
+                    let item_row = if item == NavItem::Wallets && wallet_count > 0 {
+                        let badge = container(
+                            text(format!("{}", wallet_count))
+                                .size(11)
+                                .style(text_color(Colors::TEXT_PRIMARY)),
+                        )
+                        .padding(Padding::from([2, 6]));
+
+                        row![
+                            icon, 
+                            Space::with_width(8), 
+                            title,
+                            Space::with_width(8), 
+                            badge
+                        ]
+                        .align_y(Alignment::Center)
+                    } else {
+                        row![icon, Space::with_width(12), title].align_y(Alignment::Center)
+                    };
 
                     let style = if is_active {
                         selected_button_style()
@@ -107,7 +136,7 @@ impl Sidebar {
                         secondary_button_style()
                     };
 
-                    button(row![icon, Space::with_width(12), title].align_y(Alignment::Center))
+                    button(item_row)
                         .on_press(SidebarMessage::Navigate(item))
                         .padding(12)
                         .width(Length::Fill)

@@ -5,6 +5,8 @@ use crate::theme::{
 };
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
+use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
+use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 use chrono::DateTime;
 use iced::{
     widget::{button, column, container, pick_list, row, scrollable, text, Space},
@@ -17,8 +19,10 @@ fn format_timestamp(timestamp: u64) -> String {
 }
 
 fn format_btc_and_sat(amount_sat: i64) -> String {
-    let amount_btc = amount_sat as f64 / 100_000_000.0;
-    format!("{:.8} BTC ({} sat)", amount_btc.abs(), amount_sat.abs())
+    let abs_sat = amount_sat.unsigned_abs();
+    let formatted_btc = format_btc_with_spaces(abs_sat);
+    let formatted_sat = format_number_with_spaces(abs_sat, 3);
+    format!("{} BTC ({} sat)", formatted_btc, formatted_sat)
 }
 
 #[derive(Debug, Clone)]
@@ -309,11 +313,25 @@ impl HistoryView {
                                 },
                                 Space::with_width(Length::Fill),
                                 if let Some(block_time) = tx.block_time {
-                                    text(format_timestamp(block_time))
-                                        .size(12)
-                                        .style(text_color(Colors::TEXT_MUTED))
+                                    let time_text: Element<'_, HistoryMessage> = row![
+                                        text(format_timestamp(block_time))
+                                            .size(12)
+                                            .style(text_color(Colors::TEXT_MUTED)),
+                                        Space::with_width(4),
+                                        text(Bootstrap::Check.to_string())
+                                            .size(12)
+                                            .font(BOOTSTRAP_FONT)
+                                            .style(text_color(Colors::SUCCESS)),
+                                    ]
+                                    .align_y(Alignment::Center)
+                                    .into();
+                                    time_text
                                 } else {
-                                    text("")
+                                    let pending_text: Element<'_, HistoryMessage> = text(t("Chờ xác nhận", "Pending"))
+                                        .size(11)
+                                        .style(text_color(Colors::WARNING))
+                                        .into();
+                                    pending_text
                                 },
                             ]
                             .align_y(Alignment::Center),
