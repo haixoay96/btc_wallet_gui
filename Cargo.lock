@@ -578,7 +578,6 @@ dependencies = [
  "directories",
  "getrandom 0.3.4",
  "iced",
- "iced_aw",
  "iced_fonts",
  "printpdf",
  "qrcode",
@@ -2038,19 +2037,6 @@ dependencies = [
  "iced_winit",
  "image 0.24.9",
  "thiserror 1.0.69",
-]
-
-[[package]]
-name = "iced_aw"
-version = "0.12.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "582c517a94ce3205da98e9c10b26bb71aa36b7d7d084441d826dc912711d1bac"
-dependencies = [
- "cfg-if",
- "getrandom 0.3.4",
- "iced",
- "iced_fonts",
- "web-time",
 ]
 
 [[package]]
