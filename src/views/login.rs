@@ -3,6 +3,7 @@ use iced::{
     Alignment, Element, Length, Padding,
 };
 
+use crate::components::{calculate_strength, strength_bar};
 use crate::i18n::{t, AppLanguage};
 use crate::theme::{
     card_style, gradient_button_style, input_style, muted_button_style, notice_style,
@@ -10,6 +11,7 @@ use crate::theme::{
     NoticeTone,
 };
 use crate::views::language_selector::LanguageSelector;
+use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
 #[derive(Debug, Clone)]
 pub enum LoginMessage {
@@ -20,6 +22,8 @@ pub enum LoginMessage {
     BrowseBackupPath,
     Submit,
     SetMode(LoginMode),
+    TogglePassphraseVisibility,
+    ToggleConfirmPassphraseVisibility,
 }
 
 #[derive(Debug, Clone)]
@@ -55,6 +59,8 @@ pub struct LoginView {
     can_create_new_passphrase: bool,
     error: Option<String>,
     language_selector: LanguageSelector,
+    show_passphrase: bool,
+    show_confirm_passphrase: bool,
 }
 
 impl LoginView {
@@ -68,6 +74,8 @@ impl LoginView {
             can_create_new_passphrase: true,
             error: None,
             language_selector: LanguageSelector::new(),
+            show_passphrase: false,
+            show_confirm_passphrase: false,
         }
     }
 
@@ -104,6 +112,8 @@ impl LoginView {
     pub fn clear_sensitive_inputs(&mut self) {
         self.passphrase.clear();
         self.confirm_passphrase.clear();
+        self.show_passphrase = false;
+        self.show_confirm_passphrase = false;
     }
 
     pub fn set_backup_path(&mut self, path: String) {
@@ -200,6 +210,7 @@ impl LoginView {
                 self.set_mode(mode);
                 if self.mode != LoginMode::NewWallet {
                     self.confirm_passphrase.clear();
+                    self.show_confirm_passphrase = false;
                 }
                 if self.mode != LoginMode::ImportBackup {
                     self.backup_path.clear();
@@ -207,7 +218,16 @@ impl LoginView {
                 if self.mode == LoginMode::ExistingWallet {
                     self.nickname.clear();
                 }
+                self.show_passphrase = false;
                 self.error = None;
+                None
+            }
+            LoginMessage::TogglePassphraseVisibility => {
+                self.show_passphrase = !self.show_passphrase;
+                None
+            }
+            LoginMessage::ToggleConfirmPassphraseVisibility => {
+                self.show_confirm_passphrase = !self.show_confirm_passphrase;
                 None
             }
         }
@@ -324,35 +344,74 @@ impl LoginView {
                 .size(12)
                 .style(text_color(Colors::TEXT_SECONDARY)),
             Space::with_height(4),
-            text_input(
-                t("Nhập passphrase...", "Enter passphrase..."),
-                &self.passphrase,
-            )
-            .on_input(LoginMessage::PassphraseChanged)
-            .on_submit(LoginMessage::Submit)
-            .secure(true)
-            .padding(12)
-            .size(16)
-            .style(input_style()),
+            row![
+                text_input(
+                    t("Nhập passphrase...", "Enter passphrase..."),
+                    &self.passphrase,
+                )
+                .on_input(LoginMessage::PassphraseChanged)
+                .on_submit(LoginMessage::Submit)
+                .secure(!self.show_passphrase)
+                .padding(12)
+                .size(16)
+                .style(input_style()),
+                button(
+                    text(if self.show_passphrase {
+                        Bootstrap::EyeSlash.to_string()
+                    } else {
+                        Bootstrap::Eye.to_string()
+                    })
+                    .size(16)
+                    .font(BOOTSTRAP_FONT)
+                    .style(text_color(Colors::TEXT_MUTED)),
+                )
+                .on_press(LoginMessage::TogglePassphraseVisibility)
+                .padding(10)
+                .style(secondary_button_style()),
+            ]
+            .spacing(8)
+            .align_y(Alignment::Center),
         ]
         .spacing(0);
 
         let confirm_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
+            let strength = calculate_strength(&self.passphrase);
+            let strength_widget = strength_bar(strength, true).map(|_| LoginMessage::Submit);
+            
             column![
                 text(t("Xác nhận passphrase", "Confirm passphrase"))
                     .size(12)
                     .style(text_color(Colors::TEXT_SECONDARY)),
                 Space::with_height(4),
-                text_input(
-                    t("Xác nhận passphrase...", "Confirm passphrase..."),
-                    &self.confirm_passphrase,
-                )
-                .on_input(LoginMessage::ConfirmPassphraseChanged)
-                .on_submit(LoginMessage::Submit)
-                .secure(true)
-                .padding(12)
-                .size(16)
-                .style(input_style()),
+                row![
+                    text_input(
+                        t("Xác nhận passphrase...", "Confirm passphrase..."),
+                        &self.confirm_passphrase,
+                    )
+                    .on_input(LoginMessage::ConfirmPassphraseChanged)
+                    .on_submit(LoginMessage::Submit)
+                    .secure(!self.show_confirm_passphrase)
+                    .padding(12)
+                    .size(16)
+                    .style(input_style()),
+                    button(
+                        text(if self.show_confirm_passphrase {
+                            Bootstrap::EyeSlash.to_string()
+                        } else {
+                            Bootstrap::Eye.to_string()
+                        })
+                        .size(16)
+                        .font(BOOTSTRAP_FONT)
+                        .style(text_color(Colors::TEXT_MUTED)),
+                    )
+                    .on_press(LoginMessage::ToggleConfirmPassphraseVisibility)
+                    .padding(10)
+                    .style(secondary_button_style()),
+                ]
+                .spacing(8)
+                .align_y(Alignment::Center),
+                Space::with_height(8),
+                strength_widget,
             ]
             .spacing(0)
             .into()

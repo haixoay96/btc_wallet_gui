@@ -8,6 +8,7 @@ use iced::{
 use qrcode::{types::Color as QrColor, QrCode};
 
 use crate::i18n::t;
+use crate::components::warning_box;
 use crate::theme::{
     card_style, pick_list_menu_style, pick_list_style, popup_dialog_style, popup_overlay_style,
     primary_button_style, secondary_button_style, selected_button_style, text_color, Colors,
@@ -173,6 +174,15 @@ impl ReceiveView {
                 )
                 .style(card_style())
                 .padding(14),
+            );
+
+            // Address reuse warning
+            content = content.push(
+                warning_box(
+                    t("Không nên tái sử dụng địa chỉ", "Address reuse warning"),
+                    t("Để bảo mật tốt hơn, hãy tạo địa chỉ mới cho mỗi giao dịch nhận. Điều này giúp bảo vệ quyền riêng tư của bạn trên blockchain.", 
+                      "For better privacy, derive a new address for each receiving transaction. This helps protect your privacy on the blockchain."),
+                ).map(|_| ReceiveMessage::DeriveNewAddress),
             );
 
             let derive_button =

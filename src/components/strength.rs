@@ -3,6 +3,7 @@ use iced::{
     Color, Element, Length,
 };
 
+use crate::i18n::t;
 use crate::theme::{card_style, text_color, Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
@@ -104,8 +105,6 @@ pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'
     let bar_color = strength.color();
     let progress = strength.progress();
 
-    let bar_width = (progress as f32 / 4.0) * 100.0;
-
     let filled_bar = container(Space::with_width(Length::Fill))
         .style(move |_| iced::widget::container::Style {
             background: Some(iced::Background::Color(bar_color)),
@@ -135,15 +134,20 @@ pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'
     ];
 
     if show_label && strength != PassphraseStrength::None {
+        let label = strength.label();
+        let label_en = strength.label_en();
+        let icon = strength.icon();
+        let color = strength.color();
+        
         let label_row = row![
-            text(strength.icon())
+            text(icon)
                 .size(11)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(strength.color())),
+                .style(text_color(color)),
             Space::with_width(4),
-            text(strength.label())
+            text(t(label, label_en))
                 .size(11)
-                .style(text_color(strength.color())),
+                .style(text_color(color)),
         ]
         .spacing(4)
         .align_y(iced::Alignment::Center);
