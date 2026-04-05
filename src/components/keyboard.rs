@@ -1,13 +1,13 @@
 use crate::i18n::t;
 use iced::{
     widget::{button, column, container, row, text, Space},
-    Element, Length, Task,
+    Color, Element, Length,
 };
 
-use crate::theme::{card_style, popup_dialog_style, secondary_button_style, text_color, Colors};
+use crate::theme::{popup_dialog_style, text_color, Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
-/// Keyboard shortcuts available in the app
+/// Keyboard shortcut definition
 pub struct KeyboardShortcut {
     pub keys: Vec<&'static str>,
     pub description_vi: &'static str,
@@ -62,25 +62,24 @@ impl KeyboardShortcut {
                 description_vi: "Đóng popup",
                 description_en: "Close popup",
             },
-            Self {
-                keys: vec!["Ctrl", "?"],
-                description_vi: "Hiện phím tắt",
-                description_en: "Show shortcuts",
-            },
         ]
     }
 }
 
-/// Keyboard shortcut message
-#[derive(Debug, Clone)]
-pub enum KeyboardMessage {
-    KeyPressed(String),
-    ToggleHelp,
-    CloseHelp,
+fn key_badge(key: &str) -> Element<'static, ()> {
+    let key_owned = key.to_string();
+    container(text(key_owned).size(11).style(text_color(Colors::TEXT_PRIMARY)))
+        .style(|_| iced::widget::container::Style {
+            background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.2))),
+            border: iced::border::rounded(4),
+            ..Default::default()
+        })
+        .padding([2, 6])
+        .into()
 }
 
 /// Keyboard shortcuts help popup
-pub fn shortcuts_help_popup() -> Element<'static, KeyboardMessage> {
+pub fn shortcuts_help_popup() -> Element<'static, ()> {
     let shortcuts = KeyboardShortcut::all();
 
     let mut items = column![];
@@ -89,18 +88,7 @@ pub fn shortcuts_help_popup() -> Element<'static, KeyboardMessage> {
             shortcut
                 .keys
                 .into_iter()
-                .map(|key| {
-                    container(text(key).size(11).style(text_color(Colors::TEXT_PRIMARY)))
-                        .style(move |_| iced::widget::container::Style {
-                            background: Some(iced::Background::Color(Color::from_rgba(
-                                0.5, 0.5, 0.5, 0.2,
-                            ))),
-                            border: iced::border::rounded(4),
-                            padding: iced::Padding::from([2, 6]),
-                            ..Default::default()
-                        })
-                        .into()
-                })
+                .map(|key| key_badge(key))
                 .collect::<Vec<_>>(),
         )
         .spacing(4)
@@ -132,9 +120,7 @@ pub fn shortcuts_help_popup() -> Element<'static, KeyboardMessage> {
                         .font(BOOTSTRAP_FONT)
                         .style(text_color(Colors::TEXT_SECONDARY)),
                 )
-                .on_press(KeyboardMessage::CloseHelp)
-                .padding(6)
-                .style(secondary_button_style()),
+                .padding(6),
             ]
             .align_y(iced::Alignment::Center),
             Space::with_height(12),

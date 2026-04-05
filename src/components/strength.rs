@@ -47,13 +47,13 @@ impl PassphraseStrength {
         }
     }
 
-    pub fn progress(&self) -> f32 {
+    pub fn progress(&self) -> u16 {
         match self {
-            Self::None => 0.0,
-            Self::Weak => 0.25,
-            Self::Medium => 0.5,
-            Self::Strong => 0.75,
-            Self::VeryStrong => 1.0,
+            Self::None => 0,
+            Self::Weak => 1,
+            Self::Medium => 2,
+            Self::Strong => 3,
+            Self::VeryStrong => 4,
         }
     }
 
@@ -104,38 +104,40 @@ pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'
     let bar_color = strength.color();
     let progress = strength.progress();
 
-    let bar = container(
-        row![container(Space::with_width(Length::Fill))
-            .style(move |_| iced::widget::container::Style {
-                background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.2))),
-                border: iced::border::rounded(4),
-                ..Default::default()
-            })
-            .width(Length::Fill)]
-        .width(Length::Fill),
-    )
-    .width(Length::Fill)
-    .style(move |_| iced::widget::container::Style {
-        background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.1))),
-        border: iced::border::rounded(4),
-        ..Default::default()
-    });
+    let bar_width = (progress as f32 / 4.0) * 100.0;
 
     let filled_bar = container(Space::with_width(Length::Fill))
         .style(move |_| iced::widget::container::Style {
             background: Some(iced::Background::Color(bar_color)),
-            border: iced::border::rounded(4),
+            border: iced::border::rounded(3),
             ..Default::default()
         })
-        .width(Length::FillPortion((progress * 10.0).round() as u16))
+        .width(iced::Length::FillPortion(if progress == 0 { 1 } else { progress }))
         .height(6);
 
-    let mut content = column![container(filled_bar).width(Length::Fill)];
+    let empty_bar = container(Space::with_width(Length::Fill))
+        .style(move |_| iced::widget::container::Style {
+            background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.15))),
+            border: iced::border::rounded(3),
+            ..Default::default()
+        })
+        .width(iced::Length::FillPortion(if progress == 4 { 1 } else { 4 - progress }))
+        .height(6);
+
+    let mut content = column![
+        row![
+            filled_bar,
+            if progress < 4 { empty_bar } else { 
+                container(Space::with_width(0)).into() 
+            }
+        ]
+        .spacing(2)
+    ];
 
     if show_label && strength != PassphraseStrength::None {
         let label_row = row![
             text(strength.icon())
-                .size(12)
+                .size(11)
                 .font(BOOTSTRAP_FONT)
                 .style(text_color(strength.color())),
             Space::with_width(4),
@@ -146,7 +148,7 @@ pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'
         .spacing(4)
         .align_y(iced::Alignment::Center);
 
-        content = content.push(Space::with_height(4));
+        content = content.push(Space::with_height(3));
         content = content.push(label_row);
     }
 

@@ -1,5 +1,5 @@
 use iced::{
-    widget::{column, container, row, Space},
+    widget::{column, container, Space},
     Color, Element, Length,
 };
 
@@ -14,7 +14,15 @@ pub enum SkeletonType {
     Card,
 }
 
-/// Create a shimmer animation effect placeholder
+fn skeleton_bg_style() -> impl Fn(&iced::Theme) -> iced::widget::container::Style {
+    |_| iced::widget::container::Style {
+        background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.15))),
+        border: iced::border::rounded(4),
+        ..Default::default()
+    }
+}
+
+/// Create a placeholder
 pub fn skeleton(skeleton_type: SkeletonType, size: (f32, f32)) -> Element<'static, ()> {
     match skeleton_type {
         SkeletonType::Circle => {
@@ -31,32 +39,24 @@ pub fn skeleton(skeleton_type: SkeletonType, size: (f32, f32)) -> Element<'stati
         SkeletonType::Rectangle => {
             let (width, height) = size;
             container(Space::with_width(width).height(height))
-                .style(move |_| iced::widget::container::Style {
-                    background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.2))),
-                    border: iced::border::rounded(4),
-                    ..Default::default()
-                })
+                .style(skeleton_bg_style())
                 .into()
         }
         SkeletonType::Text => {
             let (width, height) = size;
             container(Space::with_width(width).height(height))
-                .style(move |_| iced::widget::container::Style {
-                    background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.15))),
-                    border: iced::border::rounded(4),
-                    ..Default::default()
-                })
+                .style(skeleton_bg_style())
                 .into()
         }
         SkeletonType::Card => {
             let (width, height) = size;
             container(
                 column![
-                    skeleton(SkeletonType::Text, (width * 0.4, 20)),
+                    skeleton(SkeletonType::Text, (width * 0.4, 20.0)),
                     Space::with_height(10),
-                    skeleton(SkeletonType::Text, (width * 0.7, 30)),
+                    skeleton(SkeletonType::Text, (width * 0.7, 30.0)),
                     Space::with_height(10),
-                    skeleton(SkeletonType::Text, (width * 0.5, 14)),
+                    skeleton(SkeletonType::Text, (width * 0.5, 14.0)),
                 ],
             )
             .style(card_style())

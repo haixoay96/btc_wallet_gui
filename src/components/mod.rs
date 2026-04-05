@@ -1,20 +1,17 @@
 mod toast;
-// TODO: Phase 2 - Uncomment when integrating views
-// mod strength;
-// mod unit;
-// mod skeleton;
-// mod tooltip;
-// mod keyboard;
+mod strength;
+mod unit;
+mod skeleton;
+mod tooltip;
+mod keyboard;
 
-// Re-export toast types
+// Re-export all component types
 pub use toast::{Toast, ToastManager, ToastType};
-
-// TODO: Phase 2 - Re-exports
-// pub use strength::{PassphraseStrength, calculate_strength, strength_bar, requirements_checklist};
-// pub use unit::{BtcUnit, format_amount_with_unit};
-// pub use skeleton::{skeleton, skeleton_list, skeleton_wallet_cards, skeleton_transactions, SkeletonType};
-// pub use tooltip::{help_tooltip, help_icon, info_box, warning_box};
-// pub use keyboard::{KeyboardShortcut, KeyboardMessage, shortcuts_help_popup};
+pub use strength::{PassphraseStrength, calculate_strength, strength_bar, requirements_checklist};
+pub use unit::{BtcUnit, format_amount_with_unit};
+pub use skeleton::{skeleton, skeleton_list, skeleton_wallet_cards, skeleton_transactions, SkeletonType};
+pub use tooltip::{help_tooltip, help_icon, info_box, warning_box};
+pub use keyboard::{KeyboardShortcut, shortcuts_help_popup};
 
 /// Format BTC amount with space separators
 pub fn format_btc_with_spaces(amount_sat: u64) -> String {
