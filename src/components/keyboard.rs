@@ -1,0 +1,150 @@
+use crate::i18n::t;
+use iced::{
+    widget::{button, column, container, row, text, Space},
+    Element, Length, Task,
+};
+
+use crate::theme::{card_style, popup_dialog_style, secondary_button_style, text_color, Colors};
+use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
+
+/// Keyboard shortcuts available in the app
+pub struct KeyboardShortcut {
+    pub keys: Vec<&'static str>,
+    pub description_vi: &'static str,
+    pub description_en: &'static str,
+}
+
+impl KeyboardShortcut {
+    pub fn all() -> Vec<Self> {
+        vec![
+            Self {
+                keys: vec!["Ctrl", "1"],
+                description_vi: "Dashboard",
+                description_en: "Dashboard",
+            },
+            Self {
+                keys: vec!["Ctrl", "2"],
+                description_vi: "Ví",
+                description_en: "Wallets",
+            },
+            Self {
+                keys: vec!["Ctrl", "3"],
+                description_vi: "Gửi",
+                description_en: "Send",
+            },
+            Self {
+                keys: vec!["Ctrl", "4"],
+                description_vi: "Nhận",
+                description_en: "Receive",
+            },
+            Self {
+                keys: vec!["Ctrl", "5"],
+                description_vi: "Lịch sử",
+                description_en: "History",
+            },
+            Self {
+                keys: vec!["Ctrl", "6"],
+                description_vi: "Cài đặt",
+                description_en: "Settings",
+            },
+            Self {
+                keys: vec!["Ctrl", "C"],
+                description_vi: "Sao chép địa chỉ",
+                description_en: "Copy address",
+            },
+            Self {
+                keys: vec!["Ctrl", "Enter"],
+                description_vi: "Gửi form",
+                description_en: "Submit form",
+            },
+            Self {
+                keys: vec!["Esc"],
+                description_vi: "Đóng popup",
+                description_en: "Close popup",
+            },
+            Self {
+                keys: vec!["Ctrl", "?"],
+                description_vi: "Hiện phím tắt",
+                description_en: "Show shortcuts",
+            },
+        ]
+    }
+}
+
+/// Keyboard shortcut message
+#[derive(Debug, Clone)]
+pub enum KeyboardMessage {
+    KeyPressed(String),
+    ToggleHelp,
+    CloseHelp,
+}
+
+/// Keyboard shortcuts help popup
+pub fn shortcuts_help_popup() -> Element<'static, KeyboardMessage> {
+    let shortcuts = KeyboardShortcut::all();
+
+    let mut items = column![];
+    for shortcut in shortcuts {
+        let keys_row = row(
+            shortcut
+                .keys
+                .into_iter()
+                .map(|key| {
+                    container(text(key).size(11).style(text_color(Colors::TEXT_PRIMARY)))
+                        .style(move |_| iced::widget::container::Style {
+                            background: Some(iced::Background::Color(Color::from_rgba(
+                                0.5, 0.5, 0.5, 0.2,
+                            ))),
+                            border: iced::border::rounded(4),
+                            padding: iced::Padding::from([2, 6]),
+                            ..Default::default()
+                        })
+                        .into()
+                })
+                .collect::<Vec<_>>(),
+        )
+        .spacing(4)
+        .align_y(iced::Alignment::Center);
+
+        let item = row![
+            keys_row,
+            Space::with_width(12),
+            text(t(shortcut.description_vi, shortcut.description_en))
+                .size(12)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+        ]
+        .align_y(iced::Alignment::Center);
+
+        items = items.push(item);
+        items = items.push(Space::with_height(6));
+    }
+
+    let content = container(
+        column![
+            row![
+                text(t("Phím tắt", "Keyboard Shortcuts"))
+                    .size(18)
+                    .style(text_color(Colors::TEXT_PRIMARY)),
+                Space::with_width(Length::Fill),
+                button(
+                    text(Bootstrap::X.to_string())
+                        .size(14)
+                        .font(BOOTSTRAP_FONT)
+                        .style(text_color(Colors::TEXT_SECONDARY)),
+                )
+                .on_press(KeyboardMessage::CloseHelp)
+                .padding(6)
+                .style(secondary_button_style()),
+            ]
+            .align_y(iced::Alignment::Center),
+            Space::with_height(12),
+            items,
+        ]
+        .spacing(0),
+    )
+    .style(popup_dialog_style())
+    .padding(20)
+    .width(Length::Fixed(350.0));
+
+    container(content).width(Length::Fill).height(Length::Fill).into()
+}
