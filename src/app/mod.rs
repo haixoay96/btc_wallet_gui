@@ -19,7 +19,7 @@ use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile};
 use crate::theme::{
     notice_style, screen_background_style, secondary_button_style, text_color, Colors, NoticeTone,
 };
-use crate::utils::{normalize_nickname, wallet_count_text};
+use crate::utils::{normalize_nickname, wallet_count_text, export::{export_history_csv, export_history_pdf}};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::{HistoryEvent, HistoryMessage, HistoryView},
@@ -32,6 +32,7 @@ use crate::views::{
     wallets::{WalletsMessage, WalletsView},
 };
 use crate::wallet::{Wallet, WalletSecretsRef, WalletSecretsVault};
+use std::path::PathBuf;
 
 const REVEALED_MNEMONIC_TTL_SECS: u64 = 60;
 
@@ -97,6 +98,9 @@ pub enum AppMessage {
     RevealedMnemonicExpired(u64),
     ToastCleanup,
     ToggleShortcutsHelp,
+    PickExportCsvPath,
+    PickExportPdfPath,
+    ExportFinished(Result<(), String>),
     GlobalEscKey,
     DismissStatus,
     DismissError,
@@ -233,11 +237,117 @@ impl App {
                         match event {
                             HistoryEvent::Refresh => return self.refresh_all_wallets(),
                             HistoryEvent::ExportCsv => {
-                                self.add_info_toast(t("Tính năng export CSV đang phát triển", "CSV export feature in development").to_string());
+                                if let Some(wallet) = self.wallets.get(self.selected_wallet) {
+                                    let wallet_clone = wallet.clone();
+                                    return Task::perform(
+                                        async move {
+                                            tokio::task::spawn_blocking(move || {
+                                                rfd::FileDialog::new()
+                                                    .set_title(t("Lưu lịch sử CSV", "Save history as CSV"))
+                                                    .add_filter(t("File CSV", "CSV file"), &["csv"])
+                                                    .set_file_name("history_export.csv")
+                                                    .save_file()
+                                            })
+                                            .await
+                                            .unwrap_or(None)
+                                            .and_then(|path| {
+                                                let mut wtr = String::new();
+                                                wtr.push_str("\u{FEFF}");
+                                                wtr.push_str("Date,Time,Type,Amount BTC,Amount Sat,Confirmations,TxID\n");
+                                                for tx in &wallet_clone.history {
+                                                    let date_str = if let Some(ts) = tx.block_time {
+                                                        let dt = chrono::DateTime::from_timestamp(ts as i64, 0).unwrap_or_default();
+                                                        format!("{},{}", dt.format("%Y-%m-%d"), dt.format("%H:%M:%S"))
+                                                    } else {
+                                                        "Pending,Pending".to_string()
+                                                    };
+                                                    let type_str = match tx.direction {
+                                                        crate::wallet::TxDirection::Incoming => "IN",
+                                                        crate::wallet::TxDirection::Outgoing => "OUT",
+                                                        crate::wallet::TxDirection::SelfTransfer => "SELF",
+                                                    };
+                                                    let amount_btc = tx.amount_sat as f64 / 100_000_000.0;
+                                                    wtr.push_str(&format!("{},{},{:.8},{},{},{}\n",
+                                                        date_str, type_str, amount_btc,
+                                                        tx.amount_sat, tx.confirmations, tx.txid));
+                                                }
+                                                std::fs::write(&path, wtr).ok()
+                                            })
+                                        },
+                                        |result| {
+                                            if result.is_some() {
+                                                AppMessage::ExportFinished(Ok(()))
+                                            } else {
+                                                AppMessage::DismissStatus
+                                            }
+                                        },
+                                    );
+                                }
                                 return Task::none();
                             }
                             HistoryEvent::ExportPdf => {
-                                self.add_info_toast(t("Tính năng export PDF đang phát triển", "PDF export feature in development").to_string());
+                                if let Some(wallet) = self.wallets.get(self.selected_wallet) {
+                                    let wallet_clone = wallet.clone();
+                                    return Task::perform(
+                                        async move {
+                                            tokio::task::spawn_blocking(move || {
+                                                rfd::FileDialog::new()
+                                                    .set_title(t("Lưu lịch sử PDF", "Save history as PDF"))
+                                                    .add_filter(t("File PDF", "PDF file"), &["pdf"])
+                                                    .set_file_name("history_export.pdf")
+                                                    .save_file()
+                                            })
+                                            .await
+                                            .unwrap_or(None)
+                                            .and_then(|path| {
+                                                use printpdf::{BuiltinFont, Mm, PdfDocument};
+                                                let (doc, page, layer) = PdfDocument::new(
+                                                    "Transaction History",
+                                                    Mm(210.0),
+                                                    Mm(297.0),
+                                                    "History Layer",
+                                                );
+                                                let current_layer = doc.get_page(page).get_layer(layer);
+                                                let font_regular = doc.add_builtin_font(BuiltinFont::Helvetica).ok()?;
+                                                let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold).ok()?;
+                                                current_layer.use_text(
+                                                    format!("Bitcoin Wallet - {}", wallet_clone.name),
+                                                    18.0, Mm(15.0), Mm(280.0), &font_bold,
+                                                );
+                                                let mut y_pos = 260.0;
+                                                for tx in &wallet_clone.history {
+                                                    if y_pos < 15.0 {
+                                                        break;
+                                                    }
+                                                    let date_str = if let Some(ts) = tx.block_time {
+                                                        let dt = chrono::DateTime::from_timestamp(ts as i64, 0).unwrap_or_default();
+                                                        dt.format("%d/%m/%Y").to_string()
+                                                    } else {
+                                                        "Pending".to_string()
+                                                    };
+                                                    let amount_btc = tx.amount_sat as f64 / 100_000_000.0;
+                                                    current_layer.use_text(date_str, 8.0, Mm(15.0), Mm(y_pos), &font_regular);
+                                                    current_layer.use_text(format!("{:.8}", amount_btc), 8.0, Mm(65.0), Mm(y_pos), &font_regular);
+                                                    current_layer.use_text(&tx.txid[..16.min(tx.txid.len())], 8.0, Mm(115.0), Mm(y_pos), &font_regular);
+                                                    y_pos -= 10.0;
+                                                }
+                                                if let Ok(file) = std::fs::File::create(&path) {
+                                                    let mut writer = std::io::BufWriter::new(file);
+                                                    doc.save(&mut writer).ok()
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                        },
+                                        |result| {
+                                            if result.is_some() {
+                                                AppMessage::ExportFinished(Ok(()))
+                                            } else {
+                                                AppMessage::DismissStatus
+                                            }
+                                        },
+                                    );
+                                }
                                 return Task::none();
                             }
                         }
@@ -291,6 +401,21 @@ impl App {
                 } else if self.settings_view.show_clear_data_confirm {
                     self.settings_view.update(SettingsMessage::ToggleClearDataConfirm);
                 }
+                Task::none()
+            }
+            AppMessage::ExportFinished(result) => {
+                match result {
+                    Ok(_) => {
+                        self.add_success_toast(t("Xuất file thành công!", "Export successful!").to_string());
+                    }
+                    Err(e) => {
+                        self.error = Some(format!("{}: {}", t("Lỗi export", "Export error"), e));
+                    }
+                }
+                Task::none()
+            }
+            AppMessage::PickExportCsvPath | AppMessage::PickExportPdfPath => {
+                // These are handled in the async task
                 Task::none()
             }
             AppMessage::DismissStatus => {
