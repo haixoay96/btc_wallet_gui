@@ -49,34 +49,41 @@ pub fn modal<'a, Message: 'a + Clone>(
     ]
     .align_y(Alignment::Center);
 
-    // 3. Card nội dung
+    // 3. Card nội dung - Width cố định, căn giữa
     let popup_card = container(
         column![
             header,
             Space::with_height(16),
             content
         ]
-        .spacing(0),
+        .spacing(0)
+        .width(Length::Fill),
     )
     .style(popup_dialog_style())
     .padding(24)
-    .width(Length::Fixed(450.0)); // Width cố định đẹp mắt
+    .width(Length::Fixed(450.0));
 
-    // 4. Layout positioning: Top 1/4 màn hình
-    // FillPortion(1) -> Content -> FillPortion(3) => Content nằm ở vạch 25%
-    let layout = container(
-        column![
-            Space::with_height(Length::FillPortion(1)),
-            container(popup_card).align_x(Alignment::Center),
-            Space::with_height(Length::FillPortion(3)),
-        ]
-        .spacing(0),
-    )
+    // 4. Wrapper căn giữa: Space -> Card -> Space (tỉ lệ 1:0:3 => cách top 25%)
+    let centered_wrapper = row![
+        Space::with_width(Length::Fill),
+        container(
+            column![
+                Space::with_height(Length::FillPortion(1)),
+                popup_card,
+                Space::with_height(Length::FillPortion(3)),
+            ]
+            .spacing(0)
+            .height(Length::Fill),
+        )
+        .width(Length::Shrink),
+        Space::with_width(Length::Fill),
+    ]
     .width(Length::Fill)
-    .height(Length::Fill);
+    .height(Length::Fill)
+    .spacing(0);
 
     // 5. Stack layering
-    stack![base, overlay, layout]
+    stack![base, overlay, centered_wrapper]
         .width(Length::Fill)
         .height(Length::Fill)
         .into()

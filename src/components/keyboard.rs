@@ -78,7 +78,7 @@ fn key_badge(key: &str) -> Element<'static, ()> {
         .into()
 }
 
-/// Keyboard shortcuts help popup
+/// Keyboard shortcuts help content (không wrap container full screen)
 pub fn shortcuts_help_popup() -> Element<'static, ()> {
     let shortcuts = KeyboardShortcut::all();
 
@@ -107,30 +107,11 @@ pub fn shortcuts_help_popup() -> Element<'static, ()> {
         items = items.push(Space::with_height(6));
     }
 
-    let content = container(
-        column![
-            row![
-                text(t("Phím tắt", "Keyboard Shortcuts"))
-                    .size(18)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
-                Space::with_width(Length::Fill),
-                button(
-                    text(Bootstrap::X.to_string())
-                        .size(14)
-                        .font(BOOTSTRAP_FONT)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
-                )
-                .padding(6),
-            ]
-            .align_y(iced::Alignment::Center),
-            Space::with_height(12),
-            items,
-        ]
-        .spacing(0),
-    )
-    .style(popup_dialog_style())
-    .padding(20)
-    .width(Length::Fixed(350.0));
-
-    container(content).width(Length::Fill).height(Length::Fill).into()
+    column![
+        Space::with_height(12),
+        items,
+    ]
+    .spacing(0)
+    .width(Length::Fill)
+    .into()
 }
