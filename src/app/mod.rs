@@ -98,6 +98,7 @@ pub enum AppMessage {
     RevealedMnemonicExpired(u64),
     ToastCleanup,
     ToggleShortcutsHelp,
+    GlobalEscKey,
     DismissStatus,
     DismissError,
 }
@@ -267,6 +268,23 @@ impl App {
             }
             AppMessage::ToggleShortcutsHelp => {
                 self.show_shortcuts_help = !self.show_shortcuts_help;
+                Task::none()
+            }
+            AppMessage::GlobalEscKey => {
+                // Close popups in priority order
+                if self.show_shortcuts_help {
+                    self.show_shortcuts_help = false;
+                } else if self.send_view.show_confirm {
+                    self.send_view.update(SendMessage::CancelSend);
+                } else if self.receive_view.show_qr {
+                    self.receive_view.update(ReceiveMessage::CloseQrPopup);
+                } else if self.wallets_view.confirm_delete_index.is_some() {
+                    self.wallets_view.update(WalletsMessage::CancelDelete);
+                } else if self.wallets_view.notice_wallet_index.is_some() {
+                    self.wallets_view.update(WalletsMessage::DismissWalletNotice);
+                } else if self.settings_view.show_clear_data_confirm {
+                    self.settings_view.update(SettingsMessage::ToggleClearDataConfirm);
+                }
                 Task::none()
             }
             AppMessage::DismissStatus => {
@@ -805,7 +823,7 @@ impl App {
             }
             // Esc to close popups
             else if key_code == keyboard::Key::Named(keyboard::key::Named::Escape) {
-                Some(AppMessage::ToggleShortcutsHelp)
+                Some(AppMessage::GlobalEscKey)
             }
             // Ctrl+1-6 for navigation
             else if modifiers.control() {

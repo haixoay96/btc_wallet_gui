@@ -41,7 +41,7 @@ pub struct SettingsView {
     new_passphrase: String,
     confirm_passphrase: String,
     show_about: bool,
-    show_clear_data_confirm: bool,
+    pub show_clear_data_confirm: bool,
     clear_data_passphrase: String,
     error: Option<String>,
     success: Option<String>,

@@ -119,9 +119,9 @@ pub struct WalletsView {
     import_slip39_passphrase: String,
     import_slip39_shares: Vec<String>,
     show_import_mnemonic_form: bool,
-    confirm_delete_index: Option<usize>,
+    pub confirm_delete_index: Option<usize>,
 
-    notice_wallet_index: Option<usize>,
+    pub notice_wallet_index: Option<usize>,
     mnemonic_passphrase: String,
     revealed_wallet_index: Option<usize>,
     backup_test_wallet_index: Option<usize>,

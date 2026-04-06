@@ -119,7 +119,7 @@ pub struct SendView {
     fee_error: Option<String>,
     error: Option<String>,
     success: Option<String>,
-    show_confirm: bool,
+    pub show_confirm: bool,
     show_advanced: bool,
     unit: BtcUnit,
     show_amount_help: bool,

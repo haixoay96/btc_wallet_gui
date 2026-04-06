@@ -37,7 +37,7 @@ pub enum ReceiveEvent {
 pub struct ReceiveView {
     selected_index: usize,
     copied: bool,
-    show_qr: bool,
+    pub show_qr: bool,
     show_all_addresses: bool,
     qr_address: Option<String>,
     qr_handle: Option<image::Handle>,
