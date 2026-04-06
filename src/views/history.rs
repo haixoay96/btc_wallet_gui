@@ -507,10 +507,22 @@ impl HistoryView {
                                 ].align_y(Alignment::Center),
                                 Space::with_height(4),
                                 row![
-                                    text(if tx.confirmed {
-                                        format!("✓ {} ({} conf)", t("Đã xác nhận", "Confirmed"), tx.confirmations)
+                                    if tx.confirmed {
+                                        text(Bootstrap::Check.to_string())
+                                            .font(BOOTSTRAP_FONT)
+                                            .size(11)
+                                            .style(text_color(Colors::SUCCESS))
                                     } else {
-                                        format!("⏳ {}", t("Chờ xác nhận", "Pending"))
+                                        text(Bootstrap::Clock.to_string()) // Or ArrowRepeat
+                                            .font(BOOTSTRAP_FONT)
+                                            .size(11)
+                                            .style(text_color(Colors::WARNING))
+                                    },
+                                    Space::with_width(4),
+                                    text(if tx.confirmed {
+                                        format!("{} ({} conf)", t("Đã xác nhận", "Confirmed"), tx.confirmations)
+                                    } else {
+                                        t("Chờ xác nhận", "Pending").to_string()
                                     })
                                     .size(11)
                                     .style(text_color(if tx.confirmed { Colors::SUCCESS } else { Colors::WARNING })),
