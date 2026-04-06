@@ -14,6 +14,7 @@ use iced::{
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal, error_card, HelpDismissals};
+use crate::error::AppError;
 use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile, AddressBook};
 use crate::theme::{
@@ -62,7 +63,7 @@ pub struct App {
     pub language_selector: LanguageSelector,
 
     pub current_page: NavItem,
-    pub error: Option<String>,
+    pub error: Option<AppError>,
     pub is_refreshing: bool,
     pub is_estimating_fee: bool,
     pub is_calculating_max: bool,
@@ -249,7 +250,7 @@ impl App {
                         .spawn();
 
                     if let Err(e) = result {
-                        self.error = Some(format!("Không thể mở trình duyệt: {}", e));
+                        self.error = Some(AppError::unknown(&format!("{}: {}", t("Không thể mở trình duyệt", "Cannot open browser"), e)));
                     }
                     Task::none()
                 }
@@ -430,7 +431,7 @@ impl App {
                         self.add_success_toast(t("Xuất file thành công!", "Export successful!").to_string());
                     }
                     Err(e) => {
-                        self.error = Some(format!("{}: {}", t("Lỗi export", "Export error"), e));
+                        self.error = Some(AppError::storage("storage", &format!("{}: {}", t("Lỗi export", "Export error"), e)));
                     }
                 }
                 Task::none()
@@ -570,12 +571,20 @@ impl App {
                     NavItem::Settings => self.settings_view.view().map(AppMessage::SettingsMessage),
                 };
 
-                let error_bar = if let Some(error) = &self.error {
+                let error_bar = if let Some(app_error) = &self.error {
+                    let mut detail = app_error.user_message();
+                    if let Some(ctx) = app_error.context() {
+                        detail.push_str(&format!("\n📋 {}", ctx));
+                    }
                     container(
                         error_card(
-                            t("Đã xảy ra lỗi", "An error occurred").to_string(),
-                            error.clone(),
-                            Some(AppMessage::DismissError),
+                            app_error.title(),
+                            format!("{}\n\n💡 {}", detail, app_error.suggestion()),
+                            if app_error.is_retryable() {
+                                Some(AppMessage::DismissError)
+                            } else {
+                                None
+                            },
                         ),
                     )
                     .padding(10)
@@ -752,12 +761,9 @@ impl App {
             Storage::new().and_then(|storage| storage.save_language_preference(self.language));
         if let Err(err) = result {
             if self.error.is_none() {
-                self.error = Some(format!(
-                    "{}: {err}",
-                    t(
-                        "Không thể lưu cài đặt ngôn ngữ",
-                        "Could not save language preference"
-                    )
+                self.error = Some(AppError::storage(
+                    "language_preference",
+                    &format!("{}: {err}", t("Không thể lưu cài đặt ngôn ngữ", "Could not save language preference")),
                 ));
             }
         }
@@ -774,20 +780,17 @@ impl App {
                 let state = match self.persisted_state() {
                     Ok(state) => state,
                     Err(err) => {
-                        self.error = Some(format!(
-                            "{}: {err}",
-                            t(
-                                "Không thể gom dữ liệu ví",
-                                "Failed to assemble wallet state"
-                            )
+                        self.error = Some(AppError::storage(
+                            "assemble_state",
+                            &format!("{}: {err}", t("Không thể gom dữ liệu ví", "Failed to assemble wallet state")),
                         ));
                         return false;
                     }
                 };
                 if let Err(err) = storage.save_state(&state, passphrase.expose_secret()) {
-                    self.error = Some(format!(
-                        "{}: {err}",
-                        t("Không thể lưu trạng thái", "Failed to save app state")
+                    self.error = Some(AppError::storage(
+                        "save_state",
+                        &format!("{}: {err}", t("Không thể lưu trạng thái", "Failed to save app state")),
                     ));
                     false
                 } else {
@@ -800,9 +803,9 @@ impl App {
                 }
             }
             Err(err) => {
-                self.error = Some(format!(
-                    "{}: {err}",
-                    t("Không thể khởi tạo storage", "Failed to initialize storage")
+                self.error = Some(AppError::storage(
+                    "init_storage",
+                    &format!("{}: {err}", t("Không thể khởi tạo storage", "Failed to initialize storage")),
                 ));
                 false
             }
@@ -990,18 +993,17 @@ impl App {
                     payload.refreshed_txs,
                     t("giao dịch", "transaction(s)")
                 ));
-                let refresh_error = if payload.errors.is_empty() {
+                let refresh_error: Option<AppError> = if payload.errors.is_empty() {
                     None
                 } else {
-                    Some(format!(
-                        "{}: {}",
-                        t("Một số ví làm mới lỗi", "Some wallets failed to refresh"),
-                        payload.errors.join(" | ")
+                    Some(AppError::api(
+                        "refresh_errors",
+                        &format!("{}: {}", t("Một số ví làm mới lỗi", "Some wallets failed to refresh"), payload.errors.join(" | ")),
                     ))
                 };
                 self.error = match (save_error, refresh_error) {
                     (Some(save_error), Some(refresh_error)) => {
-                        Some(format!("{save_error} | {refresh_error}"))
+                        Some(AppError::unknown(&format!("{} | {}", save_error.user_message(), refresh_error.user_message())))
                     }
                     (Some(save_error), None) => Some(save_error),
                     (None, Some(refresh_error)) => Some(refresh_error),
@@ -1009,9 +1011,9 @@ impl App {
                 };
             }
             Err(err) => {
-                self.error = Some(format!(
-                    "{}: {err}",
-                    t("Làm mới ví thất bại", "Wallet refresh failed")
+                self.error = Some(AppError::api(
+                    "wallet_refresh",
+                    &format!("{}: {err}", t("Làm mới ví thất bại", "Wallet refresh failed")),
                 ));
             }
         }

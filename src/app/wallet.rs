@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use anyhow::anyhow;
 use iced::{clipboard, Task};
 use secrecy::{ExposeSecret, SecretString};
@@ -164,13 +165,13 @@ impl App {
                 }
                 Err(message) => {
                     self.wallets_view.set_error(message.clone());
-                    self.error = Some(message);
+                    self.error = Some(AppError::crypto("wallet_operation", &message));
                 }
             },
             Err(err) => {
                 let message = format!("{}: {err}", t("Tạo ví thất bại", "Failed to create wallet"));
                 self.wallets_view.set_error(message.clone());
-                self.error = Some(message);
+                self.error = Some(AppError::crypto("wallet_operation", &message));
             }
         }
         Task::none()
@@ -204,7 +205,7 @@ impl App {
                 }
                 Err(message) => {
                     self.wallets_view.set_error(message.clone());
-                    self.error = Some(message);
+                    self.error = Some(AppError::crypto("wallet_operation", &message));
                 }
             },
             Err(err) => {
@@ -213,7 +214,7 @@ impl App {
                     t("Import mnemonic thất bại", "Mnemonic import failed")
                 );
                 self.wallets_view.set_error(message.clone());
-                self.error = Some(message);
+                self.error = Some(AppError::crypto("wallet_operation", &message));
             }
         }
         Task::none()
@@ -248,7 +249,7 @@ impl App {
                 }
                 Err(message) => {
                     self.wallets_view.set_error(message.clone());
-                    self.error = Some(message);
+                    self.error = Some(AppError::crypto("wallet_operation", &message));
                 }
             },
             Err(err) => {
@@ -257,7 +258,7 @@ impl App {
                     t("Import SLIP-0039 thất bại", "SLIP-0039 import failed")
                 );
                 self.wallets_view.set_error(message.clone());
-                self.error = Some(message);
+                self.error = Some(AppError::crypto("wallet_operation", &message));
             }
         }
         Task::none()
@@ -339,7 +340,7 @@ impl App {
                             }
                             Err(message) => {
                                 self.wallets_view.set_error(message.clone());
-                                self.error = Some(message);
+                                self.error = Some(AppError::crypto("wallet_operation", &message));
                             }
                         }
                     }
@@ -352,7 +353,7 @@ impl App {
                             )
                         );
                         self.wallets_view.set_error(message.clone());
-                        self.error = Some(message);
+                        self.error = Some(AppError::crypto("wallet_operation", &message));
                     }
                 }
             }
@@ -365,7 +366,7 @@ impl App {
                     )
                 );
                 self.wallets_view.set_error(message.clone());
-                self.error = Some(message);
+                self.error = Some(AppError::crypto("wallet_operation", &message));
             }
         }
 
@@ -414,7 +415,7 @@ impl App {
 
     pub fn handle_derive_addresses(&mut self, count: u32) -> Task<AppMessage> {
         let Some(secrets) = self.wallet_secret_by_index(self.selected_wallet) else {
-            self.error = Some(t("Thiếu secret của ví", "Wallet secret is missing").to_string());
+            self.error = Some(AppError::crypto("wallet_secret", t("Thiếu secret của ví", "Wallet secret is missing")));
             return Task::none();
         };
 
@@ -432,17 +433,14 @@ impl App {
                     }
                 }
                 Err(err) => {
-                    self.error = Some(format!(
-                        "{}: {err}",
-                        t(
-                            "Không thể tạo địa chỉ mới",
-                            "Could not derive new addresses"
-                        )
+                    self.error = Some(AppError::api(
+                        "address_derivation",
+                        &format!("{}: {err}", t("Không thể tạo địa chỉ mới", "Could not derive new addresses")),
                     ));
                 }
             }
         } else {
-            self.error = Some(t("Chưa chọn ví", "No wallet selected").to_string());
+            self.error = Some(AppError::validation("wallet", t("Chưa chọn ví", "No wallet selected")));
         }
         Task::none()
     }

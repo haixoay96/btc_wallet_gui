@@ -2,6 +2,7 @@
 
 mod app;
 mod components;
+mod error;
 mod i18n;
 mod storage;
 mod theme;

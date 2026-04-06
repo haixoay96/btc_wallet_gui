@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use iced::Task;
 use secrecy::{ExposeSecret, SecretString};
 
@@ -29,7 +30,7 @@ impl App {
                         "Application data already exists. Please login with your current passphrase.",
                     )
                     .to_string();
-                    self.error = Some(message.clone());
+                    self.error = Some(AppError::crypto("login", &message));
                     self.login_view.set_error(message);
                     return Task::none();
                 }
@@ -43,7 +44,7 @@ impl App {
                                     "No existing data found. Please create a new passphrase or import backup on this screen.",
                                 )
                                 .to_string();
-                                self.error = Some(message.clone());
+                                self.error = Some(AppError::crypto("login", &message));
                                 self.login_view.set_error(message);
                                 return Task::none();
                             }
@@ -71,13 +72,13 @@ impl App {
                                                 "Failed to initialize new app data",
                                             )
                                         );
-                                        self.error = Some(message.clone());
+                                        self.error = Some(AppError::crypto("login", &message));
                                         self.login_view.set_error(message);
                                         return Task::none();
                                     }
                                 }
                                 Err(message) => {
-                                    self.error = Some(message.clone());
+                                    self.error = Some(AppError::crypto("login", &message));
                                     self.login_view.set_error(message);
                                     return Task::none();
                                 }
@@ -97,7 +98,7 @@ impl App {
                                         "Failed to restore wallet secrets",
                                     )
                                 );
-                                self.error = Some(message.clone());
+                                self.error = Some(AppError::crypto("login", &message));
                                 self.login_view.set_error(message);
                                 return Task::none();
                             }
@@ -122,15 +123,15 @@ impl App {
                     }
                     Err(err) => {
                         let message = format!("{}: {err}", t("Đăng nhập thất bại", "Login failed"));
-                        self.error = Some(message.clone());
+                        self.error = Some(AppError::crypto("login", &message));
                         self.login_view.set_error(message);
                     }
                 }
             }
             Err(err) => {
-                self.error = Some(format!(
-                    "{}: {err}",
-                    t("Không thể khởi tạo storage", "Failed to initialize storage")
+                self.error = Some(AppError::storage(
+                    "init_storage",
+                    &format!("{}: {err}", t("Không thể khởi tạo storage", "Failed to initialize storage")),
                 ));
             }
         }
@@ -152,7 +153,7 @@ impl App {
                 "Passphrase must not be empty",
             )
             .to_string();
-            self.error = Some(message.clone());
+            self.error = Some(AppError::crypto("login", &message));
             self.login_view.set_error(message);
             return Task::none();
         }
@@ -167,7 +168,7 @@ impl App {
                         "Application data already exists. Import backup here is only allowed before creating a passphrase.",
                     )
                     .to_string();
-                    self.error = Some(message.clone());
+                    self.error = Some(AppError::crypto("login", &message));
                     self.login_view.set_error(message);
                     return Task::none();
                 }
@@ -182,7 +183,7 @@ impl App {
                                     "Failed to save imported backup into app storage",
                                 )
                             );
-                            self.error = Some(message.clone());
+                            self.error = Some(AppError::crypto("login", &message));
                             self.login_view.set_error(message);
                             return Task::none();
                         }
@@ -200,7 +201,7 @@ impl App {
                                         "Failed to restore wallet secrets",
                                     )
                                 );
-                                self.error = Some(message.clone());
+                                self.error = Some(AppError::crypto("login", &message));
                                 self.login_view.set_error(message);
                                 return Task::none();
                             }
@@ -219,7 +220,7 @@ impl App {
                             "{}: {err}",
                             t("Import backup thất bại", "Backup import failed")
                         );
-                        self.error = Some(message.clone());
+                        self.error = Some(AppError::crypto("login", &message));
                         self.login_view.set_error(message);
                     }
                 }
@@ -229,7 +230,7 @@ impl App {
                     "{}: {err}",
                     t("Không thể khởi tạo storage", "Failed to initialize storage")
                 );
-                self.error = Some(message.clone());
+                self.error = Some(AppError::crypto("login", &message));
                 self.login_view.set_error(message);
             }
         }

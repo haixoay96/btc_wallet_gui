@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use iced::Task;
 
 use crate::i18n::t;
@@ -28,20 +29,20 @@ impl App {
                 let editing_id = self.send_view.editing_contact_id.clone();
                 
                 if name.trim().is_empty() || address.trim().is_empty() {
-                    self.error = Some(t("Tên và địa chỉ không được để trống", "Name and address are required").to_string());
+                    self.error = Some(AppError::validation("contact", t("Tên và địa chỉ không được để trống", "Name and address are required")));
                     return Task::none();
                 }
-                
+
                 // Validate BTC address before saving
                 if let Some(wallet) = self.wallets.get(self.selected_wallet) {
                     if let Err(e) = validate_address_for_network(&address, wallet.network) {
-                        self.error = Some(format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e));
+                        self.error = Some(AppError::validation("address", &format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e)));
                         return Task::none();
                     }
                 } else {
                     // If no wallet selected, validate as mainnet
                     if let Err(e) = validate_address_for_network(&address, crate::wallet::WalletNetwork::Mainnet) {
-                        self.error = Some(format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e));
+                        self.error = Some(AppError::validation("address", &format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e)));
                         return Task::none();
                     }
                 }
@@ -170,7 +171,7 @@ impl App {
         let Some(wallet) = self.wallets.get(self.selected_wallet).cloned() else {
             let message = t("Chưa chọn ví", "No wallet selected").to_string();
             self.send_view.set_error(message.clone());
-            self.error = Some(message);
+            self.error = Some(AppError::unknown(&message));
             return Task::none();
         };
 
@@ -203,13 +204,13 @@ impl App {
         let Some(wallet) = self.wallets.get(self.selected_wallet).cloned() else {
             let message = t("Chưa chọn ví", "No wallet selected").to_string();
             self.send_view.set_error(message.clone());
-            self.error = Some(message);
+            self.error = Some(AppError::unknown(&message));
             return Task::none();
         };
         if wallet.balance() <= 0 {
             let message = t("Số dư bằng 0", "Balance is zero").to_string();
             self.send_view.set_error(message.clone());
-            self.error = Some(message);
+            self.error = Some(AppError::unknown(&message));
             return Task::none();
         }
 
@@ -239,13 +240,13 @@ impl App {
         let Some(wallet) = self.wallets.get(self.selected_wallet).cloned() else {
             let message = t("Chưa chọn ví", "No wallet selected").to_string();
             self.send_view.set_error(message.clone());
-            self.error = Some(message);
+            self.error = Some(AppError::unknown(&message));
             return Task::none();
         };
         let Some(secrets) = self.wallet_secret_by_index(self.selected_wallet) else {
             let message = t("Thiếu secret của ví", "Wallet secret is missing").to_string();
             self.send_view.set_error(message.clone());
-            self.error = Some(message);
+            self.error = Some(AppError::unknown(&message));
             return Task::none();
         };
 
@@ -271,7 +272,7 @@ impl App {
 
         if let Err(err) = validate_address_for_network(&request.to_address, wallet.network) {
             self.send_view.set_error(err.clone());
-            self.error = Some(err);
+            self.error = Some(AppError::validation("address", &err));
             return Task::none();
         }
 
@@ -327,9 +328,9 @@ impl App {
             }
             Err(err) => {
                 self.send_view.set_error(err.clone());
-                self.error = Some(format!(
-                    "{}: {err}",
-                    t("Ước tính phí thất bại", "Fee estimation failed")
+                self.error = Some(AppError::api(
+                    "fee_estimation",
+                    &format!("{}: {err}", t("Ước tính phí thất bại", "Fee estimation failed")),
                 ));
             }
         }
@@ -358,12 +359,9 @@ impl App {
             }
             Err(err) => {
                 self.send_view.set_error(err.clone());
-                self.error = Some(format!(
-                    "{}: {err}",
-                    t(
-                        "Không thể tính số lượng tối đa",
-                        "Cannot calculate max amount"
-                    )
+                self.error = Some(AppError::api(
+                    "max_amount",
+                    &format!("{}: {err}", t("Không thể tính số lượng tối đa", "Cannot calculate max amount")),
                 ));
             }
         }
@@ -420,9 +418,9 @@ impl App {
             }
             Err(err) => {
                 self.send_view.set_error(err.clone());
-                self.error = Some(format!(
-                    "{}: {err}",
-                    t("Gửi giao dịch thất bại", "Send transaction failed")
+                self.error = Some(AppError::api(
+                    "send_transaction",
+                    &format!("{}: {err}", t("Gửi giao dịch thất bại", "Send transaction failed")),
                 ));
             }
         }
