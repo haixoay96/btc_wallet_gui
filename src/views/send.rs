@@ -6,7 +6,8 @@ use iced::{
 };
 
 use crate::i18n::t;
-use crate::components::{BtcUnit, info_box, modal};
+use crate::components::{BtcUnit, info_box, modal, help_topic_panel};
+use crate::components::help_content::send_screen_topics;
 use crate::theme::{
     card_style, notice_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, selected_button_style, text_color, Colors, NoticeTone,
@@ -82,6 +83,7 @@ pub enum SendMessage {
     ShowFeeHelp,
     ToggleAddressHelp,
     PassphraseConfirmChanged(String),
+    ToggleHelpTopic(String),
 }
 
 #[derive(Debug, Clone)]
@@ -126,6 +128,9 @@ pub struct SendView {
     show_fee_help: bool,
     show_address_help: bool,
     passphrase_confirm: String,
+    
+    // Help topics expansion state
+    expanded_help_topics: std::collections::HashSet<String>,
 }
 
 impl SendView {
@@ -150,6 +155,7 @@ impl SendView {
             show_fee_help: false,
             show_address_help: false,
             passphrase_confirm: String::new(),
+            expanded_help_topics: std::collections::HashSet::new(),
         }
     }
 
@@ -417,6 +423,14 @@ impl SendView {
             }
             SendMessage::PassphraseConfirmChanged(p) => {
                 self.passphrase_confirm = p;
+                None
+            }
+            SendMessage::ToggleHelpTopic(topic_id) => {
+                if self.expanded_help_topics.contains(&topic_id) {
+                    self.expanded_help_topics.remove(&topic_id);
+                } else {
+                    self.expanded_help_topics.insert(topic_id);
+                }
                 None
             }
         }
@@ -811,7 +825,7 @@ impl SendView {
             send_btn = send_btn.on_press(SendMessage::Send);
         }
 
-        let content = column![
+        let mut content = column![
             title,
             Space::with_height(8),
             wallet_selector,
@@ -843,9 +857,49 @@ impl SendView {
             success_text,
             Space::with_height(16),
             send_btn,
+            Space::with_height(24),
+            // Help topics section
+            text(t("Trợ giúp", "Help"))
+                .size(14)
+                .style(text_color(Colors::TEXT_PRIMARY)),
+            Space::with_height(8),
         ]
         .spacing(8)
         .padding(32);
+
+        // Add help topics
+        let help_topics = send_screen_topics();
+        let lang = crate::i18n::current_language();
+        for topic in help_topics {
+            let is_expanded = self.expanded_help_topics.contains(topic.id);
+            let title = match lang {
+                crate::i18n::AppLanguage::Vietnamese => topic.title_vi,
+                crate::i18n::AppLanguage::English => topic.title_en,
+            };
+            let desc = match lang {
+                crate::i18n::AppLanguage::Vietnamese => topic.description_vi,
+                crate::i18n::AppLanguage::English => topic.description_en,
+            };
+            let detail: Option<&'static str> = match lang {
+                crate::i18n::AppLanguage::Vietnamese => topic.detail_vi,
+                crate::i18n::AppLanguage::English => topic.detail_en,
+            };
+            let panel: Element<'_, SendMessage> = help_topic_panel(
+                topic.id,
+                topic.icon,
+                title,
+                desc,
+                detail,
+                is_expanded,
+                SendMessage::ToggleHelpTopic(topic.id.to_string()),
+            );
+            content = content.push(panel);
+            content = content.push(Space::with_height(8));
+        }
+
+        let content = column![
+            content
+        ];
 
         let base_content: Element<'_, SendMessage> = scrollable(content).width(Length::Fill).height(Length::Fill).into();
 

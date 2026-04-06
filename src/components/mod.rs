@@ -6,16 +6,30 @@ mod tooltip;
 mod keyboard;
 mod modal;
 mod error;
+pub mod help_content;
+mod help_dismissals;
 
 // Re-export all component types
 pub use toast::{Toast, ToastManager, ToastType};
 pub use strength::{PassphraseStrength, calculate_strength, strength_bar, requirements_checklist};
 pub use unit::{BtcUnit, format_amount_with_unit};
 pub use skeleton::{skeleton, skeleton_list, skeleton_wallet_cards, skeleton_transactions, SkeletonType};
-pub use tooltip::{info_box, warning_box};
+pub use tooltip::{
+    info_box, warning_box, tooltip_bubble, help_topic_panel, help_button,
+    TooltipContent, HelpTopic,
+};
 pub use keyboard::{KeyboardShortcut, shortcuts_help_popup};
 pub use modal::modal;
 pub use error::error_card;
+
+// Help system exports
+pub use help_content::{
+    send_screen_topics, wallets_screen_topics, history_screen_topics,
+    settings_screen_topics, get_topic_by_id,
+};
+pub use help_dismissals::{
+    HelpDismissals, help_hint_banner, show_help_reset_button,
+};
 
 /// Format BTC amount with space separators
 pub fn format_btc_with_spaces(amount_sat: u64) -> String {

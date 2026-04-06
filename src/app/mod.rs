@@ -13,7 +13,7 @@ use iced::{
 };
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal, error_card};
+use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal, error_card, HelpDismissals};
 use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile};
 use crate::theme::{
@@ -82,6 +82,9 @@ pub struct App {
     // Keyboard focus tracking
     pub focus_search_history: bool,
     pub focus_paste_send: bool,
+    
+    // Help system
+    pub help_dismissals: HelpDismissals,
 }
 
 #[derive(Debug, Clone)]
@@ -113,6 +116,7 @@ pub enum AppMessage {
     KeyboardSubmitForm,
     KeyboardSaveState,
     KeyboardFocusSearch,
+    ResetHelpDismissals,
 }
 
 #[derive(Debug, Clone)]
@@ -182,6 +186,7 @@ impl App {
                 show_shortcuts_help: false,
                 focus_search_history: false,
                 focus_paste_send: false,
+                help_dismissals: HelpDismissals::new(),
             },
             // Start toast cleanup task
             Task::perform(
@@ -495,6 +500,12 @@ impl App {
                         |_| AppMessage::DismissStatus,
                     );
                 }
+                Task::none()
+            }
+            
+            AppMessage::ResetHelpDismissals => {
+                self.help_dismissals.clear_all();
+                self.add_success_toast(t("Đã khôi phục tất cả gợi ý", "Restored all help hints").to_string());
                 Task::none()
             }
         }
