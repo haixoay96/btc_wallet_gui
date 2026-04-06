@@ -54,3 +54,8 @@ pub fn t<'a>(vi: &'a str, en: &'a str) -> &'a str {
         AppLanguage::English => en,
     }
 }
+
+/// Keyboard shortcut translation helper
+pub fn t_key(vi: &'static str, en: &'static str) -> &'static str {
+    t(vi, en)
+}

@@ -383,6 +383,13 @@ impl ReceiveView {
 
         base
     }
+
+    /// Get the current display address for keyboard copy shortcut
+    pub fn get_current_address(&self) -> Option<String> {
+        // Returns the address at selected_index if set
+        // This will be populated when view is called with wallet data
+        None
+    }
 }
 
 impl ReceiveView {

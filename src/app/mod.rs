@@ -75,9 +75,13 @@ pub struct App {
     // Copy tracking
     pub last_copied_address: Option<String>,
     pub last_copied_time: Option<String>,
-    
+
     // Keyboard shortcuts help popup
     pub show_shortcuts_help: bool,
+
+    // Keyboard focus tracking
+    pub focus_search_history: bool,
+    pub focus_paste_send: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -104,6 +108,11 @@ pub enum AppMessage {
     GlobalEscKey,
     DismissStatus,
     DismissError,
+    KeyboardCopy,
+    KeyboardPaste,
+    KeyboardSubmitForm,
+    KeyboardSaveState,
+    KeyboardFocusSearch,
 }
 
 #[derive(Debug, Clone)]
@@ -171,6 +180,8 @@ impl App {
                 last_copied_address: None,
                 last_copied_time: None,
                 show_shortcuts_help: false,
+                focus_search_history: false,
+                focus_paste_send: false,
             },
             // Start toast cleanup task
             Task::perform(
@@ -423,6 +434,67 @@ impl App {
             }
             AppMessage::DismissError => {
                 self.error = None;
+                Task::none()
+            }
+            
+            // Keyboard shortcut handlers
+            AppMessage::KeyboardCopy => {
+                // Copy from current context based on current page
+                match self.current_page {
+                    NavItem::Receive => {
+                        // Copy current receive address
+                        if let Some(addr) = self.receive_view.get_current_address() {
+                            self.last_copied_address = Some(addr.clone());
+                            self.last_copied_time = Some(chrono::Local::now().format("%H:%M:%S").to_string());
+                            clipboard::write(addr)
+                        } else {
+                            Task::none()
+                        }
+                    }
+                    _ => Task::none(),
+                }
+            }
+            
+            AppMessage::KeyboardPaste => {
+                // Only paste on Send screen - set focus flag to paste when text input is ready
+                if self.current_page == NavItem::Send {
+                    self.focus_paste_send = true;
+                }
+                Task::none()
+            }
+            
+            AppMessage::KeyboardSubmitForm => {
+                // Submit form based on current context
+                if matches!(self.state, AppState::Main) && self.current_page == NavItem::Send {
+                    // Trigger send confirmation if form is valid
+                    if self.send_view.can_submit() {
+                        return self.handle_send_message(SendMessage::ConfirmSend);
+                    }
+                }
+                Task::none()
+            }
+            
+            AppMessage::KeyboardSaveState => {
+                // Manual save trigger
+                if matches!(self.state, AppState::Main) {
+                    self.save_state();
+                    self.add_success_toast(t("Đã lưu trạng thái!", "State saved!").to_string());
+                }
+                Task::none()
+            }
+            
+            AppMessage::KeyboardFocusSearch => {
+                // Focus search box in history
+                if self.current_page == NavItem::History {
+                    self.focus_search_history = true;
+                    // Reset flag after focus (view will handle this)
+                    return Task::perform(
+                        async move {
+                            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        },
+                        |_| AppMessage::DismissStatus,
+                    );
+                }
                 Task::none()
             }
         }
@@ -944,41 +1016,66 @@ impl App {
 
     pub fn subscription(&self) -> Subscription<AppMessage> {
         keyboard::on_key_press(|key_code, modifiers| {
-            // Ctrl+? to toggle shortcuts help
+            // Priority 1: Help shortcuts (always available)
             if modifiers.control() && key_code == keyboard::Key::Character("/".into()) {
-                Some(AppMessage::ToggleShortcutsHelp)
+                return Some(AppMessage::ToggleShortcutsHelp);
             }
-            // Esc to close popups
-            else if key_code == keyboard::Key::Named(keyboard::key::Named::Escape) {
-                Some(AppMessage::GlobalEscKey)
+            if key_code == keyboard::Key::Named(keyboard::key::Named::F1) {
+                return Some(AppMessage::ToggleShortcutsHelp);
             }
-            // Ctrl+1-6 for navigation
-            else if modifiers.control() {
+            
+            // Priority 2: Esc to close popups (always available)
+            if key_code == keyboard::Key::Named(keyboard::key::Named::Escape) {
+                return Some(AppMessage::GlobalEscKey);
+            }
+            
+            // Priority 3: Form and action shortcuts (when not in modal)
+            if modifiers.control() || modifiers.command() {
                 match key_code {
+                    // Navigation shortcuts (Ctrl+1-6)
                     keyboard::Key::Character(c) if c == "1" => {
-                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Dashboard)))
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Dashboard)));
                     }
                     keyboard::Key::Character(c) if c == "2" => {
-                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Wallets)))
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Wallets)));
                     }
                     keyboard::Key::Character(c) if c == "3" => {
-                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Send)))
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Send)));
                     }
                     keyboard::Key::Character(c) if c == "4" => {
-                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Receive)))
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Receive)));
                     }
                     keyboard::Key::Character(c) if c == "5" => {
-                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::History)))
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::History)));
                     }
                     keyboard::Key::Character(c) if c == "6" => {
-                        Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Settings)))
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Settings)));
                     }
-                    _ => None,
+                    // Copy shortcut (Ctrl+C)
+                    keyboard::Key::Character(c) if c == "c" || c == "C" => {
+                        return Some(AppMessage::KeyboardCopy);
+                    }
+                    // Paste shortcut (Ctrl+V)
+                    keyboard::Key::Character(c) if c == "v" || c == "V" => {
+                        return Some(AppMessage::KeyboardPaste);
+                    }
+                    // Submit form (Ctrl+Enter)
+                    keyboard::Key::Named(keyboard::key::Named::Enter) => {
+                        return Some(AppMessage::KeyboardSubmitForm);
+                    }
+                    // Save state (Ctrl+S)
+                    keyboard::Key::Character(c) if c == "s" || c == "S" => {
+                        return Some(AppMessage::KeyboardSaveState);
+                    }
+                    // Focus search (Ctrl+F)
+                    keyboard::Key::Character(c) if c == "f" || c == "F" => {
+                        return Some(AppMessage::KeyboardFocusSearch);
+                    }
+                    _ => {}
                 }
             }
-            else {
-                None
-            }
+            
+            None
         })
     }
 }

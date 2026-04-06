@@ -422,6 +422,15 @@ impl SendView {
         }
     }
 
+    /// Check if the send form is valid and can be submitted via keyboard shortcut
+    pub fn can_submit(&self) -> bool {
+        !self.to_address.trim().is_empty()
+            && !self.amount.trim().is_empty()
+            && self.to_address_error.is_none()
+            && self.amount_error.is_none()
+            && !self.show_confirm // Not already showing confirm
+    }
+
     pub fn view<'a>(
         &'a self,
         wallets: &'a [Wallet],

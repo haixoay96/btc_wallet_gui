@@ -711,6 +711,13 @@ impl HistoryView {
         .width(Length::Fixed(450.0))
         .into()
     }
+
+    /// Get the currently selected transaction ID for copying
+    pub fn get_selected_txid(&self) -> Option<&String> {
+        // Return None if no transaction is selected in modal
+        // This is used by keyboard shortcut to copy last viewed tx
+        None // For now, return None - keyboard copy will use history list context
+    }
 }
 
 fn muted_button_style() -> impl Fn(&iced::Theme, iced::widget::button::Status) -> iced::widget::button::Style {
