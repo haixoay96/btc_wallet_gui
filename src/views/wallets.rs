@@ -7,7 +7,7 @@ use crate::components::modal;
 use crate::i18n::t;
 use crate::components::info_box;
 use crate::theme::{
-    card_style, danger_button_style, notice_style, popup_dialog_style, popup_overlay_style,
+    card_style, danger_button_style, notice_style,
     primary_button_style, secondary_button_style, selected_button_style, text_color, Colors,
     NoticeTone,
 };

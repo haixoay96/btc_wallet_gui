@@ -61,7 +61,6 @@ pub struct App {
     pub language_selector: LanguageSelector,
 
     pub current_page: NavItem,
-    pub status: Option<String>,
     pub error: Option<String>,
     pub is_refreshing: bool,
     pub is_estimating_fee: bool,
@@ -158,7 +157,6 @@ impl App {
                 settings_view: SettingsView::new(),
                 language_selector: LanguageSelector::new(),
                 current_page: NavItem::Dashboard,
-                status: None,
                 error: None,
                 is_refreshing: false,
                 is_estimating_fee: false,

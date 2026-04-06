@@ -4,9 +4,9 @@ use crate::theme::{
 };
 use iced::{
     widget::{button, column, container, row, text, Space},
-    Alignment, Element, Length, Padding, Font,
+    Alignment, Element, Length, Padding,
 };
-use iced_fonts::{BOOTSTRAP_FONT, BOOTSTRAP_FONT_BYTES};
+use iced_fonts::BOOTSTRAP_FONT;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NavItem {

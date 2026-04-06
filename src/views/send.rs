@@ -1,16 +1,15 @@
 use iced::{
     widget::{
-        button, column, container, pick_list, row, scrollable, stack, text, text_input, Space,
+        button, column, container, pick_list, row, scrollable, text, text_input, Space,
     },
     Alignment, Element, Length,
 };
 
 use crate::i18n::t;
-use crate::components::{BtcUnit, format_amount_with_unit, info_box, modal};
+use crate::components::{BtcUnit, info_box, modal};
 use crate::theme::{
-    card_style, notice_style, pick_list_menu_style, pick_list_style, popup_dialog_style,
-    popup_overlay_style, primary_button_style, secondary_button_style, selected_button_style,
-    text_color, Colors, NoticeTone,
+    card_style, notice_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    secondary_button_style, selected_button_style, text_color, Colors, NoticeTone,
 };
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{validate_bitcoin_address, ChangeStrategy, InputSource, Wallet};
@@ -126,7 +125,6 @@ pub struct SendView {
     show_amount_help: bool,
     show_fee_help: bool,
     show_address_help: bool,
-    show_passphrase_confirm: bool,
     passphrase_confirm: String,
 }
 
@@ -151,7 +149,6 @@ impl SendView {
             show_amount_help: false,
             show_fee_help: false,
             show_address_help: false,
-            show_passphrase_confirm: false,
             passphrase_confirm: String::new(),
         }
     }
@@ -607,23 +604,6 @@ impl SendView {
         };
 
         // Amount help box - i18n support
-        let amount_help: Element<'_, SendMessage> = if self.show_amount_help {
-            info_box(
-                t("Hướng dẫn nhập số lượng", "How to enter amount"),
-                t("Nhập số BTC bạn muốn gửi. Ví dụ: 0.001 BTC = 100,000 satoshi. Phí giao dịch sẽ được trừ riêng.",
-                  "Enter the BTC amount you want to send. Example: 0.001 BTC = 100,000 satoshis. Transaction fee will be deducted separately.")
-            ).map(|_| SendMessage::AmountChanged(self.amount.clone()))
-        } else {
-            Space::with_height(0).into()
-        };
-
-        let estimate_label = if is_estimating_fee {
-            t("Đang ước tính...", "Estimating...")
-        } else {
-            t("Ước tính tự động", "Auto estimate")
-        };
-
-        // Amount help box
         let amount_help: Element<'_, SendMessage> = if self.show_amount_help {
             info_box(
                 t("Hướng dẫn nhập số lượng", "How to enter amount"),

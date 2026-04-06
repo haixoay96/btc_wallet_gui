@@ -10,7 +10,7 @@ mod views;
 mod wallet;
 
 use app::App;
-use iced::{font, window, Size, Task, Theme};
+use iced::{window, Size, Theme};
 use iced_fonts::BOOTSTRAP_FONT_BYTES;
 
 pub fn main() -> iced::Result {

@@ -1,7 +1,6 @@
 use iced::{
     widget::{
-        button, column, container, image, mouse_area, opaque, pick_list, row, scrollable, stack,
-        text, Space,
+        button, column, container, image, pick_list, row, scrollable, text, Space,
     },
     Alignment, Element, Length,
 };
@@ -11,7 +10,7 @@ use crate::components::modal;
 use crate::i18n::t;
 use crate::components::warning_box;
 use crate::theme::{
-    card_style, pick_list_menu_style, pick_list_style, popup_dialog_style, popup_overlay_style,
+    card_style, pick_list_menu_style, pick_list_style,
     primary_button_style, secondary_button_style, selected_button_style, text_color, Colors,
 };
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};

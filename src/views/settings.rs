@@ -1,14 +1,13 @@
 use iced::{
     widget::{button, column, container, row, scrollable, text, text_input, Space},
-    Alignment, Element, Length, Padding,
+    Alignment, Element, Length,
 };
 
 use crate::components::modal;
 use crate::i18n::t;
 use crate::theme::{
-    card_style, danger_button_style, info_style, notice_style, popup_dialog_style,
-    popup_overlay_style, primary_button_style, secondary_button_style, text_color, warning_style,
-    Colors, NoticeTone,
+    card_style, danger_button_style, info_style, notice_style, primary_button_style,
+    secondary_button_style, text_color, warning_style, Colors, NoticeTone,
 };
 
 #[derive(Debug, Clone)]
