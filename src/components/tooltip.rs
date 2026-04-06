@@ -6,29 +6,6 @@ use iced::{
 use crate::theme::{text_color, Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
-/// Simple help icon
-pub fn help_icon() -> Element<'static, ()> {
-    container(
-        text(Bootstrap::QuestionCircle.to_string())
-            .size(14)
-            .font(BOOTSTRAP_FONT)
-            .style(text_color(Colors::TEXT_MUTED)),
-    )
-    .padding(6)
-    .into()
-}
-
-/// Help icon with label
-pub fn help_tooltip(content: Element<'static, ()>) -> Element<'static, ()> {
-    row![
-        content,
-        Space::with_width(6),
-        help_icon(),
-    ]
-    .align_y(iced::Alignment::Center)
-    .into()
-}
-
 /// Info box with icon and text - supports i18n via String
 pub fn info_box(title: impl Into<String>, description: impl Into<String>) -> Element<'static, ()> {
     let title = title.into();

@@ -11,7 +11,7 @@ pub use toast::{Toast, ToastManager, ToastType};
 pub use strength::{PassphraseStrength, calculate_strength, strength_bar, requirements_checklist};
 pub use unit::{BtcUnit, format_amount_with_unit};
 pub use skeleton::{skeleton, skeleton_list, skeleton_wallet_cards, skeleton_transactions, SkeletonType};
-pub use tooltip::{help_tooltip, help_icon, info_box, warning_box};
+pub use tooltip::{info_box, warning_box};
 pub use keyboard::{KeyboardShortcut, shortcuts_help_popup};
 pub use modal::modal;
 

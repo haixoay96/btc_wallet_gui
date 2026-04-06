@@ -6,7 +6,7 @@ use iced::{
 };
 
 use crate::i18n::t;
-use crate::components::{BtcUnit, format_amount_with_unit, help_icon, info_box, modal};
+use crate::components::{BtcUnit, format_amount_with_unit, info_box, modal};
 use crate::theme::{
     card_style, notice_style, pick_list_menu_style, pick_list_style, popup_dialog_style,
     popup_overlay_style, primary_button_style, secondary_button_style, selected_button_style,
