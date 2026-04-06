@@ -6,8 +6,9 @@ use iced::{
 };
 
 use crate::i18n::t;
-use crate::components::{BtcUnit, info_box, modal, help_topic_panel};
+use crate::components::{BtcUnit, info_box, modal, help_topic_panel, contact_picker_view, contact_form_view};
 use crate::components::help_content::send_screen_topics;
+use crate::storage::address_book::{AddressBook, ContactEntry};
 use crate::theme::{
     card_style, notice_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, selected_button_style, text_color, Colors, NoticeTone,
@@ -15,7 +16,7 @@ use crate::theme::{
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{validate_bitcoin_address, ChangeStrategy, InputSource, Wallet};
 use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
-use iced_fonts::Bootstrap;
+use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 fn format_btc_and_sat(amount_sat: u64) -> String {
     let formatted_btc = format_btc_with_spaces(amount_sat);
@@ -84,6 +85,19 @@ pub enum SendMessage {
     ToggleAddressHelp,
     PassphraseConfirmChanged(String),
     ToggleHelpTopic(String),
+    // Contact Book messages
+    ToggleContactPicker,
+    ContactSearchChanged(String),
+    SelectContact(String),
+    ShowContactForm,
+    ContactFormNameChanged(String),
+    ContactFormAddressChanged(String),
+    ContactFormNoteChanged(String),
+    SaveContact,
+    CancelContactForm,
+    HideContactPicker,
+    DeleteContact(String),
+    EditContact(String),
 }
 
 #[derive(Debug, Clone)]
@@ -109,14 +123,14 @@ pub enum SendEvent {
 }
 
 pub struct SendView {
-    to_address: String,
+    pub to_address: String,
     amount: String,
     fee_amount: String,
     from_address: String,
     change_address: String,
     broadcast: bool,
     estimated_fee: Option<u64>,
-    to_address_error: Option<String>,
+    pub to_address_error: Option<String>,
     amount_error: Option<String>,
     fee_error: Option<String>,
     error: Option<String>,
@@ -131,6 +145,20 @@ pub struct SendView {
     
     // Help topics expansion state
     expanded_help_topics: std::collections::HashSet<String>,
+    
+    // Contact Book state
+    pub show_contact_picker: bool,
+    pub contact_search_query: String,
+    pub show_contact_form: bool,
+    pub contact_form_name: String,
+    pub contact_form_address: String,
+    pub contact_form_note: String,
+    pub contact_form_address_error: Option<String>,
+    pub editing_contact_id: Option<String>,
+    pub contact_wallet_network: crate::wallet::WalletNetwork,
+    
+    // Matched contact label display
+    pub matched_contact_name: Option<String>,
 }
 
 impl SendView {
@@ -156,6 +184,16 @@ impl SendView {
             show_address_help: false,
             passphrase_confirm: String::new(),
             expanded_help_topics: std::collections::HashSet::new(),
+            show_contact_picker: false,
+            contact_search_query: String::new(),
+            show_contact_form: false,
+            contact_form_name: String::new(),
+            contact_form_address: String::new(),
+            contact_form_note: String::new(),
+            contact_form_address_error: None,
+            editing_contact_id: None,
+            contact_wallet_network: crate::wallet::WalletNetwork::Mainnet,
+            matched_contact_name: None,
         }
     }
 
@@ -433,6 +471,81 @@ impl SendView {
                 }
                 None
             }
+            // Contact Book message handlers
+            SendMessage::ToggleContactPicker => {
+                self.show_contact_picker = !self.show_contact_picker;
+                self.show_contact_form = false;
+                self.contact_search_query.clear();
+                None
+            }
+            SendMessage::ContactSearchChanged(query) => {
+                self.contact_search_query = query;
+                None
+            }
+            SendMessage::SelectContact(address) => {
+                self.to_address = address.clone();
+                self.to_address_error = None;
+                self.show_contact_picker = false;
+                // Trigger validation
+                let _ = crate::wallet::validate_address_for_network(&address, crate::wallet::WalletNetwork::Mainnet);
+                Some(SendEvent::SelectWallet(0)) // Dummy event, actual wallet selection handled elsewhere
+            }
+            SendMessage::ShowContactForm => {
+                self.show_contact_form = true;
+                self.contact_form_name.clear();
+                self.contact_form_address = self.to_address.clone();
+                self.contact_form_note.clear();
+                self.editing_contact_id = None;
+                // Validate pre-filled address from To Address
+                if self.contact_form_address.trim().is_empty() {
+                    self.contact_form_address_error = None;
+                } else {
+                    self.contact_form_address_error = validate_bitcoin_address(&self.contact_form_address).err();
+                }
+                None
+            }
+            SendMessage::ContactFormNameChanged(name) => {
+                self.contact_form_name = name;
+                None
+            }
+            SendMessage::ContactFormAddressChanged(address) => {
+                self.contact_form_address = address;
+                // Validate address on change
+                if self.contact_form_address.trim().is_empty() {
+                    self.contact_form_address_error = None;
+                } else {
+                    self.contact_form_address_error = validate_bitcoin_address(&self.contact_form_address).err();
+                }
+                None
+            }
+            SendMessage::ContactFormNoteChanged(note) => {
+                self.contact_form_note = note;
+                None
+            }
+            SendMessage::SaveContact => {
+                // Will be handled by App
+                None
+            }
+            SendMessage::CancelContactForm => {
+                self.show_contact_form = false;
+                self.editing_contact_id = None;
+                None
+            }
+            SendMessage::HideContactPicker => {
+                self.show_contact_picker = false;
+                None
+            }
+            SendMessage::DeleteContact(id) => {
+                // Will be handled by App
+                None
+            }
+            SendMessage::EditContact(id) => {
+                self.editing_contact_id = Some(id.clone());
+                // Contact data will be loaded in App handler
+                self.show_contact_form = true;
+                self.show_contact_picker = false;
+                None
+            }
         }
     }
 
@@ -452,6 +565,7 @@ impl SendView {
         is_estimating_fee: bool,
         is_calculating_max: bool,
         is_sending: bool,
+        address_book: &'a AddressBook,
     ) -> Element<'a, SendMessage> {
         let wallet_options = wallet_choices(wallets);
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
@@ -526,7 +640,27 @@ impl SendView {
         .align_y(Alignment::Center);
 
         let to_input = column![
-            to_label,
+            row![
+                to_label,
+                Space::with_width(Length::Fill),
+                button(
+                    row![
+                        text(Bootstrap::Person.to_string())
+                            .size(12)
+                            .font(BOOTSTRAP_FONT)
+                            .style(text_color(Colors::ACCENT_TEAL)),
+                        Space::with_width(4),
+                        text(t("Contact", "Contact"))
+                            .size(11)
+                            .style(text_color(Colors::TEXT_PRIMARY)),
+                    ]
+                    .align_y(Alignment::Center),
+                )
+                .on_press(SendMessage::ToggleContactPicker)
+                .padding([6, 10])
+                .style(if self.show_contact_picker { selected_button_style() } else { secondary_button_style() }),
+            ]
+            .align_y(Alignment::Center),
             Space::with_height(4),
             text_input(
                 t("Nhập địa chỉ nhận...", "Enter recipient address..."),
@@ -535,6 +669,22 @@ impl SendView {
             .on_input(SendMessage::ToAddressChanged)
             .padding(12)
             .size(14),
+            // Show matched contact label if exists
+            if let Some(contact_name) = &self.matched_contact_name {
+                row![
+                    text(Bootstrap::PersonFill.to_string())
+                        .size(10)
+                        .font(BOOTSTRAP_FONT)
+                        .style(text_color(Colors::ACCENT_PURPLE)),
+                    Space::with_width(4),
+                    text(format!("{}: {}", t("Contact", "Contact"), contact_name))
+                        .size(11)
+                        .style(text_color(Colors::ACCENT_TEAL)),
+                ]
+                .align_y(Alignment::Center)
+            } else {
+                row![]
+            },
             if let Some(error) = &self.to_address_error {
                 text(error.as_str())
                     .size(12)
@@ -901,7 +1051,55 @@ impl SendView {
             content
         ];
 
-        let base_content: Element<'_, SendMessage> = scrollable(content).width(Length::Fill).height(Length::Fill).into();
+        let mut base_content: Element<'_, SendMessage> = scrollable(content).width(Length::Fill).height(Length::Fill).into();
+
+        // Contact Picker Modal
+        if self.show_contact_picker || self.show_contact_form {
+            let contact_ui = if self.show_contact_form {
+                contact_form_view(
+                    &self.contact_form_name,
+                    &self.contact_form_address,
+                    &self.contact_form_note,
+                    self.editing_contact_id.is_some(),
+                    self.contact_form_address_error.as_deref(),
+                    SendMessage::ContactFormNameChanged,
+                    SendMessage::ContactFormAddressChanged,
+                    SendMessage::ContactFormNoteChanged,
+                    SendMessage::SaveContact,
+                    SendMessage::CancelContactForm,
+                    if self.editing_contact_id.is_some() {
+                        Some(SendMessage::DeleteContact(self.editing_contact_id.clone().unwrap()))
+                    } else {
+                        None
+                    },
+                )
+            } else {
+                contact_picker_view(
+                    address_book,
+                    &self.contact_search_query,
+                    SendMessage::ContactSearchChanged,
+                    |contact| SendMessage::SelectContact(contact.address.clone()),
+                    SendMessage::DeleteContact,
+                    SendMessage::EditContact,
+                    SendMessage::ShowContactForm,
+                )
+            };
+            
+            base_content = modal(
+                base_content,
+                if self.show_contact_form {
+                    if self.editing_contact_id.is_some() {
+                        t("Sửa Contact", "Edit Contact")
+                    } else {
+                        t("Thêm Contact", "Add Contact")
+                    }
+                } else {
+                    t("Contact của tôi", "My Contacts")
+                },
+                contact_ui,
+                SendMessage::HideContactPicker,
+            );
+        }
 
         if self.show_confirm {
             let amount_sat = parse_btc_to_sat(&self.amount, "số lượng", "amount").ok();

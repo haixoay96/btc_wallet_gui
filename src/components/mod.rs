@@ -8,6 +8,7 @@ mod modal;
 mod error;
 pub mod help_content;
 mod help_dismissals;
+pub mod contact_book;
 
 // Re-export all component types
 pub use toast::{Toast, ToastManager, ToastType};
@@ -30,6 +31,9 @@ pub use help_content::{
 pub use help_dismissals::{
     HelpDismissals, help_hint_banner, show_help_reset_button,
 };
+
+// Contact Book components
+pub use contact_book::{contact_picker_view, contact_form_view};
 
 /// Format BTC amount with space separators
 pub fn format_btc_with_spaces(amount_sat: u64) -> String {

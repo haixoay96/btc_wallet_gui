@@ -10,9 +10,131 @@ use crate::views::send::SendRequest;
 
 impl App {
     pub fn handle_send_message(&mut self, msg: SendMessage) -> Task<AppMessage> {
+        // Track address changes to update matched contact label
+        if let SendMessage::ToAddressChanged(addr) = &msg {
+            if let Some(contact) = self.address_book.find_by_address(addr) {
+                self.send_view.matched_contact_name = Some(contact.name.clone());
+            } else {
+                self.send_view.matched_contact_name = None;
+            }
+        }
+        
+        // Handle Contact Book messages first
+        match &msg {
+            SendMessage::SaveContact => {
+                let name = self.send_view.contact_form_name.clone();
+                let address = self.send_view.contact_form_address.clone();
+                let note = self.send_view.contact_form_note.clone();
+                let editing_id = self.send_view.editing_contact_id.clone();
+                
+                if name.trim().is_empty() || address.trim().is_empty() {
+                    self.error = Some(t("Tên và địa chỉ không được để trống", "Name and address are required").to_string());
+                    return Task::none();
+                }
+                
+                // Validate BTC address before saving
+                if let Some(wallet) = self.wallets.get(self.selected_wallet) {
+                    if let Err(e) = validate_address_for_network(&address, wallet.network) {
+                        self.error = Some(format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e));
+                        return Task::none();
+                    }
+                } else {
+                    // If no wallet selected, validate as mainnet
+                    if let Err(e) = validate_address_for_network(&address, crate::wallet::WalletNetwork::Mainnet) {
+                        self.error = Some(format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e));
+                        return Task::none();
+                    }
+                }
+                
+                if let Some(id) = editing_id {
+                    self.address_book.update_contact(&id, &name, &address, &note);
+                    self.add_success_toast(t("Đã cập nhật contact", "Contact updated").to_string());
+                } else {
+                    let new_id = self.address_book.add_contact(&name, &address, &note);
+                    self.send_view.editing_contact_id = Some(new_id);
+                    self.add_success_toast(t("Đã thêm contact", "Contact added").to_string());
+                }
+                
+                // Auto-save address book
+                let _ = self.address_book.save();
+                self.send_view.show_contact_form = false;
+                self.send_view.contact_form_name.clear();
+                self.send_view.contact_form_address.clear();
+                self.send_view.contact_form_note.clear();
+                self.send_view.editing_contact_id = None;
+                return Task::none();
+            }
+            SendMessage::SelectContact(address) => {
+                // Set address from contact
+                self.send_view.to_address = address.clone();
+                self.send_view.show_contact_picker = false;
+                
+                // Update matched contact label
+                if let Some(contact) = self.address_book.find_by_address(&address) {
+                    self.send_view.matched_contact_name = Some(contact.name.clone());
+                } else {
+                    self.send_view.matched_contact_name = None;
+                }
+                
+                // Validate address and show error if invalid
+                if let Some(wallet) = self.wallets.get(self.selected_wallet) {
+                    match validate_address_for_network(&address, wallet.network) {
+                        Ok(_) => {
+                            self.send_view.to_address_error = None;
+                        }
+                        Err(e) => {
+                            self.send_view.to_address_error = Some(e);
+                        }
+                    }
+                } else {
+                    // No wallet selected, validate as mainnet
+                    match validate_address_for_network(&address, crate::wallet::WalletNetwork::Mainnet) {
+                        Ok(_) => {
+                            self.send_view.to_address_error = None;
+                        }
+                        Err(e) => {
+                            self.send_view.to_address_error = Some(e);
+                        }
+                    }
+                }
+                return Task::none();
+            }
+            SendMessage::DeleteContact(id) => {
+                self.address_book.delete_contact(&id);
+                let _ = self.address_book.save();
+                
+                // If we were editing this contact, close the form
+                if self.send_view.editing_contact_id.as_deref() == Some(&id) {
+                    self.send_view.show_contact_form = false;
+                    self.send_view.editing_contact_id = None;
+                }
+                
+                self.add_success_toast(t("Đã xóa contact", "Contact deleted").to_string());
+                return Task::none();
+            }
+            SendMessage::EditContact(id) => {
+                // Load contact data into form
+                if let Some(contact) = self.address_book.get_contact(&id) {
+                    self.send_view.editing_contact_id = Some(id.clone());
+                    self.send_view.contact_form_name = contact.name.clone();
+                    self.send_view.contact_form_address = contact.address.clone();
+                    self.send_view.contact_form_note = contact.note.clone();
+                    self.send_view.contact_form_address_error = None;
+                    self.send_view.show_contact_form = true;
+                    self.send_view.show_contact_picker = false;
+                }
+                return Task::none();
+            }
+            _ => {}
+        }
+        
         if let Some(event) = self.send_view.update(msg) {
             match event {
-                SendEvent::SelectWallet(index) => return self.handle_select_wallet(index),
+                SendEvent::SelectWallet(index) => {
+                    // Re-validate address when wallet changes
+                    self.update_matched_contact_label();
+                    return self.handle_select_wallet(index);
+                }
                 SendEvent::EstimateSendFee {
                     amount_sat,
                     input_source,
@@ -24,6 +146,16 @@ impl App {
             }
         }
         Task::none()
+    }
+
+    /// Update matched contact label based on current to_address
+    pub fn update_matched_contact_label(&mut self) {
+        let address = self.send_view.to_address.clone();
+        if let Some(contact) = self.address_book.find_by_address(&address) {
+            self.send_view.matched_contact_name = Some(contact.name.clone());
+        } else {
+            self.send_view.matched_contact_name = None;
+        }
     }
 
     pub fn handle_estimate_send_fee(

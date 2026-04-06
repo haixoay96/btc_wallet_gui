@@ -6,9 +6,8 @@ use iced::{
 };
 use qrcode::{types::Color as QrColor, QrCode};
 
-use crate::components::modal;
+use crate::components::{modal, warning_box};
 use crate::i18n::t;
-use crate::components::warning_box;
 use crate::theme::{
     card_style, pick_list_menu_style, pick_list_style,
     primary_button_style, secondary_button_style, selected_button_style, text_color, Colors,

@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 
 mod encryption;
 mod paths;
+pub mod address_book;
 
 pub use self::encryption::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
+pub use self::address_book::AddressBook;
 use self::paths::StoragePaths;
 use crate::i18n::AppLanguage;
 use crate::wallet::{

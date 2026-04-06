@@ -15,7 +15,7 @@ use secrecy::{ExposeSecret, SecretString};
 
 use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal, error_card, HelpDismissals};
 use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile};
+use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile, AddressBook};
 use crate::theme::{
     notice_style, screen_background_style, secondary_button_style, text_color, Colors, NoticeTone,
 };
@@ -85,6 +85,9 @@ pub struct App {
     
     // Help system
     pub help_dismissals: HelpDismissals,
+    
+    // Address Book / Contact Book
+    pub address_book: AddressBook,
 }
 
 #[derive(Debug, Clone)]
@@ -187,6 +190,7 @@ impl App {
                 focus_search_history: false,
                 focus_paste_send: false,
                 help_dismissals: HelpDismissals::new(),
+                address_book: AddressBook::load().unwrap_or_default(),
             },
             // Start toast cleanup task
             Task::perform(
@@ -542,6 +546,7 @@ impl App {
                             self.is_estimating_fee,
                             self.is_calculating_max,
                             self.is_sending,
+                            &self.address_book,
                         )
                         .map(AppMessage::SendMessage),
                     NavItem::Receive => self
