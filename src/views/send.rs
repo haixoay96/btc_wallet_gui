@@ -81,6 +81,7 @@ pub enum SendMessage {
     ChangeUnit(BtcUnit),
     ShowAmountHelp,
     ShowFeeHelp,
+    ToggleAddressHelp,
 }
 
 #[derive(Debug, Clone)]
@@ -123,6 +124,7 @@ pub struct SendView {
     unit: BtcUnit,
     show_amount_help: bool,
     show_fee_help: bool,
+    show_address_help: bool,
 }
 
 impl SendView {
@@ -145,6 +147,7 @@ impl SendView {
             unit: BtcUnit::default(),
             show_amount_help: false,
             show_fee_help: false,
+            show_address_help: false,
         }
     }
 
@@ -406,6 +409,10 @@ impl SendView {
                 self.show_amount_help = false;
                 None
             }
+            SendMessage::ToggleAddressHelp => {
+                self.show_address_help = !self.show_address_help;
+                None
+            }
         }
     }
 
@@ -477,10 +484,20 @@ impl SendView {
             .padding(12)
         };
 
-        let to_input = column![
+        let to_label = row![
             text(t("Địa chỉ nhận", "To Address"))
                 .size(14)
                 .style(text_color(Colors::TEXT_SECONDARY)),
+            Space::with_width(8),
+            button(text(Bootstrap::QuestionCircle.to_string()).size(12).font(iced_fonts::BOOTSTRAP_FONT).style(text_color(Colors::TEXT_MUTED)))
+                .on_press(SendMessage::ToggleAddressHelp)
+                .padding(4)
+                .style(secondary_button_style()),
+        ]
+        .align_y(Alignment::Center);
+
+        let to_input = column![
+            to_label,
             Space::with_height(4),
             text_input(
                 t("Nhập địa chỉ nhận...", "Enter recipient address..."),
@@ -498,6 +515,15 @@ impl SendView {
             }
         ]
         .spacing(4);
+
+        let address_help: Element<'_, SendMessage> = if self.show_address_help {
+            info_box(
+                "Địa chỉ nhận hợp lệ",
+                "Hỗ trợ BTC mainnet (bc1..., 1..., 3...) và testnet (tb1..., m/n/2...). Đảm bảo địa chỉ đúng network với ví nguồn."
+            ).map(|_| SendMessage::ToggleAddressHelp)
+        } else {
+            Space::with_height(0).into()
+        };
 
         let max_label = if is_calculating_max {
             t("Đang tính...", "Calculating...")
@@ -774,6 +800,8 @@ impl SendView {
             balance_text,
             Space::with_height(24),
             to_input,
+            Space::with_height(4),
+            address_help,
             Space::with_height(16),
             amount_label,
             Space::with_height(4),
