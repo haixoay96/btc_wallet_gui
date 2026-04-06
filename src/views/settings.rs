@@ -1,6 +1,6 @@
 use iced::{
     widget::{button, column, container, row, scrollable, text, text_input, Space},
-    Element, Length, Padding,
+    Alignment, Element, Length, Padding,
 };
 
 use crate::components::modal;
@@ -463,18 +463,22 @@ impl SettingsView {
                 .padding(12)
                 .size(14),
                 Space::with_height(12),
-                row![
-                    button(text(t("Hủy", "Cancel")).size(14))
-                        .on_press(SettingsMessage::CancelClearData)
-                        .padding(10)
-                        .style(secondary_button_style()),
-                    Space::with_width(10),
-                    button(text(t("Xóa toàn bộ ngay", "Delete Everything")).size(14))
-                        .on_press(SettingsMessage::ConfirmClearData)
-                        .padding(10)
-                        .style(danger_button_style()),
-                ]
-                .spacing(8),
+                container(
+                    row![
+                        button(text(t("Hủy", "Cancel")).size(14))
+                            .on_press(SettingsMessage::CancelClearData)
+                            .padding(10)
+                            .style(secondary_button_style()),
+                        Space::with_width(10),
+                        button(text(t("Xóa toàn bộ ngay", "Delete Everything")).size(14))
+                            .on_press(SettingsMessage::ConfirmClearData)
+                            .padding(10)
+                            .style(danger_button_style()),
+                    ]
+                    .spacing(8),
+                )
+                .width(Length::Fill)
+                .align_x(Alignment::Center),
             ]
             .padding(0)
             .spacing(0);
