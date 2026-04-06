@@ -232,6 +232,14 @@ impl App {
                     if let Some(event) = self.history_view.update(msg) {
                         match event {
                             HistoryEvent::Refresh => return self.refresh_all_wallets(),
+                            HistoryEvent::ExportCsv => {
+                                self.add_info_toast(t("Tính năng export CSV đang phát triển", "CSV export feature in development").to_string());
+                                return Task::none();
+                            }
+                            HistoryEvent::ExportPdf => {
+                                self.add_info_toast(t("Tính năng export PDF đang phát triển", "PDF export feature in development").to_string());
+                                return Task::none();
+                            }
                         }
                     }
                     Task::none()

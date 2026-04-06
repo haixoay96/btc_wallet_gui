@@ -10,7 +10,7 @@ use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 use chrono::DateTime;
 use iced::{
-    widget::{button, column, container, pick_list, row, scrollable, text, Space},
+    widget::{button, column, container, pick_list, row, scrollable, text, text_input, Space},
     Alignment, Element, Length,
 };
 
@@ -37,15 +37,21 @@ pub enum HistoryMessage {
     FilterSelfTransfer,
     CopyTxid(String),
     OpenExplorer(String),
+    SearchChanged(String),
+    ExportCsv,
+    ExportPdf,
 }
 
 #[derive(Debug, Clone)]
 pub enum HistoryEvent {
     Refresh,
+    ExportCsv,
+    ExportPdf,
 }
 
 pub struct HistoryView {
     filter: Filter,
+    search_query: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -61,12 +67,16 @@ impl HistoryView {
     pub fn new() -> Self {
         Self {
             filter: Filter::All,
+            search_query: String::new(),
         }
     }
 
     pub fn update(&mut self, message: HistoryMessage) -> Option<HistoryEvent> {
         match message {
-            HistoryMessage::SelectWallet(_) => None, // Handled by app
+            HistoryMessage::SelectWallet(_) => {
+                self.search_query.clear();
+                None
+            }
             HistoryMessage::Refresh => Some(HistoryEvent::Refresh),
             HistoryMessage::FilterAll => {
                 self.filter = Filter::All;
@@ -88,8 +98,14 @@ impl HistoryView {
                 self.filter = Filter::SelfTransfer;
                 None
             }
-            HistoryMessage::CopyTxid(_) => None, // Handled by clipboard action
-            HistoryMessage::OpenExplorer(_) => None, // Handled by open URL action
+            HistoryMessage::CopyTxid(_) => None,
+            HistoryMessage::OpenExplorer(_) => None,
+            HistoryMessage::SearchChanged(query) => {
+                self.search_query = query;
+                None
+            }
+            HistoryMessage::ExportCsv => Some(HistoryEvent::ExportCsv),
+            HistoryMessage::ExportPdf => Some(HistoryEvent::ExportPdf),
         }
     }
 
@@ -187,7 +203,38 @@ impl HistoryView {
             refresh_button,
         ];
 
+        // Search & Export row
+        let search_input = text_input(
+            t("Tìm kiếm txid...", "Search txid..."),
+            &self.search_query,
+        )
+        .on_input(HistoryMessage::SearchChanged)
+        .padding(8)
+        .size(12)
+        .width(Length::Fixed(200.0));
+
+        let export_row = row![
+            button(text(t("Xuất CSV", "Export CSV")).size(11))
+                .on_press(HistoryMessage::ExportCsv)
+                .padding(6)
+                .style(secondary_button_style()),
+            Space::with_width(6),
+            button(text(t("Xuất PDF", "Export PDF")).size(11))
+                .on_press(HistoryMessage::ExportPdf)
+                .padding(6)
+                .style(secondary_button_style()),
+        ];
+
+        let search_export_row = row![
+            search_input,
+            Space::with_width(8),
+            export_row,
+        ]
+        .align_y(Alignment::Center);
+
         content = content.push(filter_row);
+        content = content.push(Space::with_height(8));
+        content = content.push(search_export_row);
 
         if let Some(wallet) = wallet {
             // Show skeleton when refreshing
@@ -195,15 +242,23 @@ impl HistoryView {
                 content = content.push(Space::with_height(16));
                 content = content.push(skeleton_transactions(5).map(|_| HistoryMessage::Refresh));
             } else {
+                let search_lower = self.search_query.to_lowercase();
                 let filtered_txs: Vec<&TxRecord> = wallet
                     .history
                     .iter()
-                    .filter(|tx| match self.filter {
-                        Filter::All => true,
-                        Filter::Incoming => matches!(tx.direction, TxDirection::Incoming),
-                        Filter::Outgoing => matches!(tx.direction, TxDirection::Outgoing),
-                        Filter::Pending => !tx.confirmed,
-                        Filter::SelfTransfer => matches!(tx.direction, TxDirection::SelfTransfer),
+                    .filter(|tx| {
+                        // Filter by type
+                        let type_match = match self.filter {
+                            Filter::All => true,
+                            Filter::Incoming => matches!(tx.direction, TxDirection::Incoming),
+                            Filter::Outgoing => matches!(tx.direction, TxDirection::Outgoing),
+                            Filter::Pending => !tx.confirmed,
+                            Filter::SelfTransfer => matches!(tx.direction, TxDirection::SelfTransfer),
+                        };
+                        // Filter by search query (txid)
+                        let search_match = search_lower.is_empty()
+                            || tx.txid.to_lowercase().contains(&search_lower);
+                        type_match && search_match
                     })
                     .collect();
 
