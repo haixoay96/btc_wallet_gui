@@ -13,7 +13,7 @@ use iced::{
 };
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::components::{Toast, ToastManager, shortcuts_help_popup};
+use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal};
 use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile};
 use crate::theme::{
@@ -391,37 +391,14 @@ impl App {
                 .height(Length::Fill)
                 .style(screen_background_style());
 
-                // Shortcuts help popup overlay
+                // Shortcuts help popup overlay - Dùng component Modal mới
                 if self.show_shortcuts_help {
-                    use iced::widget::stack;
-                    let help_popup = shortcuts_help_popup().map(|_| AppMessage::ToggleShortcutsHelp);
-                    let backdrop = container(
-                        iced::widget::mouse_area(
-                            container(iced::widget::Space::with_width(Length::Fill))
-                                .width(Length::Fill)
-                                .height(Length::Fill),
-                        )
-                        .on_press(AppMessage::ToggleShortcutsHelp),
-                    )
-                    .width(Length::Fill)
-                    .height(Length::Fill);
-
-                    let popup_layer = container(
-                        container(help_popup)
-                            .align_x(iced::alignment::Horizontal::Center)
-                            .align_y(iced::alignment::Vertical::Center),
-                    )
-                    .width(Length::Fill)
-                    .height(Length::Fill);
-
-                    return stack![
-                        base_content,
-                        backdrop,
-                        popup_layer
-                    ]
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .into();
+                    return modal(
+                        base_content.into(),
+                        t("Phím tắt", "Keyboard Shortcuts"),
+                        shortcuts_help_popup().map(|_| AppMessage::ToggleShortcutsHelp),
+                        AppMessage::ToggleShortcutsHelp,
+                    );
                 }
 
                 // Toast notification layer on top - centered horizontally

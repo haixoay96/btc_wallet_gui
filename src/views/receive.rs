@@ -7,6 +7,7 @@ use iced::{
 };
 use qrcode::{types::Color as QrColor, QrCode};
 
+use crate::components::modal;
 use crate::i18n::t;
 use crate::components::warning_box;
 use crate::theme::{
@@ -357,61 +358,33 @@ impl ReceiveView {
             self.qr_handle.as_ref(),
             self.qr_address.as_ref(),
         ) {
-            let popup = container(
-                column![
-                    text(t("QR Code nhận BTC", "BTC Receive QR Code"))
-                        .size(18)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
-                    text(address.as_str())
-                        .size(12)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
-                    Space::with_height(10),
-                    container(
-                        image::Image::new(handle.clone())
-                            .width(Length::Fixed(240.0))
-                            .height(Length::Fixed(240.0)),
-                    )
-                    .width(Length::Fill)
-                    .center_x(Length::Fill),
-                    Space::with_height(10),
-                    button(text(t("Đóng", "Close")).size(14))
-                        .on_press(ReceiveMessage::CloseQrPopup)
-                        .padding(10)
-                        .style(primary_button_style()),
-                ]
-                .align_x(Alignment::Center)
-                .spacing(6),
-            )
-            .style(popup_dialog_style())
-            .padding(18)
-            .width(Length::Fixed(380.0));
-
-            let backdrop = container(
-                mouse_area(
-                    container(Space::with_width(Length::Fill))
-                        .width(Length::Fill)
-                        .height(Length::Fill),
+            let qr_content = column![
+                text(address.as_str())
+                    .size(12)
+                    .style(text_color(Colors::TEXT_SECONDARY)),
+                Space::with_height(10),
+                container(
+                    image::Image::new(handle.clone())
+                        .width(Length::Fixed(240.0))
+                        .height(Length::Fixed(240.0)),
                 )
-                .on_press(ReceiveMessage::CloseQrPopup),
-            )
-            .style(popup_overlay_style())
-            .width(Length::Fill)
-            .height(Length::Fill);
-
-            let popup_layer = container(popup)
                 .width(Length::Fill)
-                .height(Length::Fill)
-                .center_x(Length::Fill)
-                .center_y(Length::Fill);
+                .center_x(Length::Fill),
+                Space::with_height(10),
+                button(text(t("Đóng", "Close")).size(14))
+                    .on_press(ReceiveMessage::CloseQrPopup)
+                    .padding(10)
+                    .style(primary_button_style()),
+            ]
+            .align_x(Alignment::Center)
+            .spacing(6);
 
-            let overlay = stack(vec![opaque(backdrop), popup_layer.into()])
-                .width(Length::Fill)
-                .height(Length::Fill);
-
-            return stack(vec![base, overlay.into()])
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into();
+            return modal(
+                base.into(),
+                t("QR Code nhận BTC", "BTC Receive QR Code"),
+                qr_content.into(),
+                ReceiveMessage::CloseQrPopup,
+            );
         }
 
         base

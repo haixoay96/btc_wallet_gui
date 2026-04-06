@@ -6,7 +6,7 @@ use iced::{
 };
 
 use crate::i18n::t;
-use crate::components::{BtcUnit, format_amount_with_unit, help_icon, info_box};
+use crate::components::{BtcUnit, format_amount_with_unit, help_icon, info_box, modal};
 use crate::theme::{
     card_style, notice_style, pick_list_menu_style, pick_list_style, popup_dialog_style,
     popup_overlay_style, primary_button_style, secondary_button_style, selected_button_style,
@@ -849,6 +849,8 @@ impl SendView {
         .spacing(8)
         .padding(32);
 
+        let base_content: Element<'_, SendMessage> = scrollable(content).width(Length::Fill).height(Length::Fill).into();
+
         if self.show_confirm {
             let amount_sat = parse_btc_to_sat(&self.amount, "số lượng", "amount").ok();
             let fee_sat = if self.fee_amount.trim().is_empty() {
@@ -865,97 +867,75 @@ impl SendView {
                 .map(|value| format!("{} ({})", value.name, value.network.as_str()))
                 .unwrap_or_else(|| t("Chưa chọn ví", "No wallet selected").to_string());
 
-            let overlay = container(
-                container(
-                    column![
-                        text(t("Xác nhận giao dịch", "Confirm Transaction"))
-                            .size(20)
-                            .style(text_color(Colors::TEXT_PRIMARY)),
-                        Space::with_height(10),
-                        text(t(
-                            "Kiểm tra kỹ thông tin trước khi broadcast lên mạng.",
-                            "Review the details carefully before broadcasting to the network.",
-                        ))
-                        .size(13)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
-                        Space::with_height(16),
-                        summary_row(t("Từ ví", "From Wallet"), source_label),
-                        summary_row(t("Đến", "To"), self.to_address.clone()),
-                        summary_row(
-                            t("Số lượng", "Amount"),
-                            amount_sat
-                                .map(format_btc_and_sat)
-                                .unwrap_or_else(|| self.amount.clone()),
-                        ),
-                        summary_row(
-                            t("Phí", "Fee"),
-                            fee_sat.map(format_btc_and_sat).unwrap_or_else(|| {
-                                if self.fee_amount.trim().is_empty() {
-                                    t("Tự động hoặc chưa nhập", "Auto or not entered").to_string()
-                                } else {
-                                    self.fee_amount.clone()
-                                }
-                            }),
-                        ),
-                        summary_row(
-                            t("Địa chỉ trả lại", "Change destination"),
-                            if self.change_address.trim().is_empty() {
-                                t("Tạo địa chỉ mới", "Derive a new address").to_string()
-                            } else {
-                                format!("#{}", self.change_address.trim())
-                            },
-                        ),
-                        if let Some(remaining) = remaining_sat {
-                            container(summary_row(
-                                t("Số dư còn lại", "Remaining balance"),
-                                format_btc_and_sat(remaining),
-                            ))
-                            .style(notice_style(NoticeTone::Info))
-                            .padding(10)
-                            .width(Length::Fill)
+            let confirm_content = column![
+                text(t(
+                    "Kiểm tra kỹ thông tin trước khi broadcast lên mạng.",
+                    "Review the details carefully before broadcasting to the network.",
+                ))
+                .size(13)
+                .style(text_color(Colors::TEXT_SECONDARY)),
+                Space::with_height(16),
+                summary_row(t("Từ ví", "From Wallet"), source_label),
+                summary_row(t("Đến", "To"), self.to_address.clone()),
+                summary_row(
+                    t("Số lượng", "Amount"),
+                    amount_sat
+                        .map(format_btc_and_sat)
+                        .unwrap_or_else(|| self.amount.clone()),
+                ),
+                summary_row(
+                    t("Phí", "Fee"),
+                    fee_sat.map(format_btc_and_sat).unwrap_or_else(|| {
+                        if self.fee_amount.trim().is_empty() {
+                            t("Tự động hoặc chưa nhập", "Auto or not entered").to_string()
                         } else {
-                            container(Space::with_height(0))
-                        },
-                        Space::with_height(16),
-                        row![
-                            button(text(t("Hủy", "Cancel")).size(14))
-                                .on_press(SendMessage::CancelSend)
-                                .padding(10)
-                                .style(secondary_button_style()),
-                            Space::with_width(10),
-                            button(
-                                text(t("Broadcast giao dịch", "Broadcast transaction")).size(14)
-                            )
-                            .on_press(SendMessage::ConfirmSend)
-                            .padding(10)
-                            .style(primary_button_style()),
-                        ]
-                        .spacing(8),
-                    ]
-                    .spacing(8),
-                )
-                .style(popup_dialog_style())
-                .padding(24)
-                .width(Length::Fixed(460.0)),
-            )
-            .style(popup_overlay_style())
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .center_x(Length::Fill)
-            .center_y(Length::Fill);
-
-            stack![
-                scrollable(content).width(Length::Fill).height(Length::Fill),
-                overlay
+                            self.fee_amount.clone()
+                        }
+                    }),
+                ),
+                summary_row(
+                    t("Địa chỉ trả lại", "Change destination"),
+                    if self.change_address.trim().is_empty() {
+                        t("Tạo địa chỉ mới", "Derive a new address").to_string()
+                    } else {
+                        format!("#{}", self.change_address.trim())
+                    },
+                ),
+                if let Some(remaining) = remaining_sat {
+                    container(summary_row(
+                        t("Số dư còn lại", "Remaining balance"),
+                        format_btc_and_sat(remaining),
+                    ))
+                    .style(notice_style(NoticeTone::Info))
+                    .padding(10)
+                    .width(Length::Fill)
+                } else {
+                    container(Space::with_height(0))
+                },
+                Space::with_height(16),
+                row![
+                    button(text(t("Hủy", "Cancel")).size(14))
+                        .on_press(SendMessage::CancelSend)
+                        .padding(10)
+                        .style(secondary_button_style()),
+                    Space::with_width(10),
+                    button(text(t("Broadcast giao dịch", "Broadcast transaction")).size(14))
+                        .on_press(SendMessage::ConfirmSend)
+                        .padding(10)
+                        .style(primary_button_style()),
+                ]
+                .spacing(8),
             ]
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into()
+            .spacing(8);
+
+            modal(
+                base_content.into(),
+                t("Xác nhận giao dịch", "Confirm Transaction"),
+                confirm_content.into(),
+                SendMessage::CancelSend,
+            )
         } else {
-            scrollable(content)
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into()
+            base_content.into()
         }
     }
 }

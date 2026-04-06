@@ -3,6 +3,7 @@ use iced::{
     Element, Length, Padding,
 };
 
+use crate::components::modal;
 use crate::i18n::t;
 use crate::theme::{
     card_style, danger_button_style, info_style, notice_style, popup_dialog_style,
@@ -445,60 +446,45 @@ impl SettingsView {
             .into();
 
         if self.show_clear_data_confirm {
-            return container(
-                column![
-                    container(Space::with_height(Length::Fill)).height(Length::FillPortion(1)),
-                    container(
-                        column![
-                            text(t("Xác nhận xóa toàn bộ", "Confirm Full Data Deletion"))
-                                .size(20)
-                                .style(text_color(Colors::ERROR)),
-                            Space::with_height(10),
-                            text(t(
-                                "Dữ liệu ví trên máy này sẽ bị xóa vĩnh viễn.",
-                                "Wallet data on this device will be permanently deleted.",
-                            ))
-                            .size(14)
-                            .style(text_color(Colors::TEXT_PRIMARY)),
-                            Space::with_height(8),
-                            text_input(
-                                t("Nhập passphrase hiện tại...", "Enter current passphrase..."),
-                                &self.clear_data_passphrase
-                            )
-                            .on_input(SettingsMessage::ClearDataPassphraseChanged)
-                            .secure(true)
-                            .padding(12)
-                            .size(14),
-                            Space::with_height(12),
-                            row![
-                                button(text(t("Hủy", "Cancel")).size(14))
-                                    .on_press(SettingsMessage::CancelClearData)
-                                    .padding(10)
-                                    .style(secondary_button_style()),
-                                Space::with_width(10),
-                                button(text(t("Xóa toàn bộ ngay", "Delete Everything")).size(14))
-                                    .on_press(SettingsMessage::ConfirmClearData)
-                                    .padding(10)
-                                    .style(danger_button_style()),
-                            ]
-                            .spacing(8),
-                        ]
-                        .padding(24)
-                        .spacing(0),
-                    )
-                    .style(popup_dialog_style())
-                    .width(Length::Fixed(460.0))
-                    .center_x(Length::Fill),
-                    container(Space::with_height(Length::Fill)).height(Length::FillPortion(2)),
+            let clear_content = column![
+                text(t(
+                    "Dữ liệu ví trên máy này sẽ bị xóa vĩnh viễn.",
+                    "Wallet data on this device will be permanently deleted.",
+                ))
+                .size(14)
+                .style(text_color(Colors::TEXT_PRIMARY)),
+                Space::with_height(8),
+                text_input(
+                    t("Nhập passphrase hiện tại...", "Enter current passphrase..."),
+                    &self.clear_data_passphrase
+                )
+                .on_input(SettingsMessage::ClearDataPassphraseChanged)
+                .secure(true)
+                .padding(12)
+                .size(14),
+                Space::with_height(12),
+                row![
+                    button(text(t("Hủy", "Cancel")).size(14))
+                        .on_press(SettingsMessage::CancelClearData)
+                        .padding(10)
+                        .style(secondary_button_style()),
+                    Space::with_width(10),
+                    button(text(t("Xóa toàn bộ ngay", "Delete Everything")).size(14))
+                        .on_press(SettingsMessage::ConfirmClearData)
+                        .padding(10)
+                        .style(danger_button_style()),
                 ]
-                .width(Length::Fill)
-                .height(Length::Fill),
-            )
-            .style(popup_overlay_style())
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .padding(Padding::from([0, 60]))
-            .into();
+                .spacing(8),
+            ]
+            .padding(0)
+            .spacing(0);
+
+            return modal(
+                base.into(),
+                t("Xác nhận xóa toàn bộ", "Confirm Full Data Deletion"),
+                clear_content.into(),
+                SettingsMessage::CancelClearData,
+            );
         }
 
         base
