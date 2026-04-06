@@ -5,6 +5,7 @@ mod skeleton;
 mod tooltip;
 mod keyboard;
 mod modal;
+mod error;
 
 // Re-export all component types
 pub use toast::{Toast, ToastManager, ToastType};
@@ -14,6 +15,7 @@ pub use skeleton::{skeleton, skeleton_list, skeleton_wallet_cards, skeleton_tran
 pub use tooltip::{info_box, warning_box};
 pub use keyboard::{KeyboardShortcut, shortcuts_help_popup};
 pub use modal::modal;
+pub use error::error_card;
 
 /// Format BTC amount with space separators
 pub fn format_btc_with_spaces(amount_sat: u64) -> String {

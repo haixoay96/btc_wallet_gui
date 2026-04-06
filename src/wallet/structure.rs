@@ -100,6 +100,8 @@ pub struct TxRecord {
     pub fee_sat: Option<u64>,
     pub confirmed: bool,
     pub block_time: Option<u64>,
+    #[serde(default)]
+    pub confirmations: u32,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -566,6 +568,7 @@ impl Wallet {
                     fee_sat: tx.fee,
                     confirmed: tx.status.confirmed,
                     block_time: tx.status.block_time,
+                    confirmations: 0,
                 },
             );
         }
@@ -681,6 +684,7 @@ impl Wallet {
                 fee_sat: Some(fee_sat),
                 confirmed: false,
                 block_time: None,
+                confirmations: 0,
             },
         );
 

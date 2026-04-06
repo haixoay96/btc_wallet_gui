@@ -1,4 +1,5 @@
 use crate::i18n::t;
+use crate::components::{skeleton_transactions, error_card};
 use crate::theme::{
     card_style, pick_list_menu_style, pick_list_style, secondary_button_style,
     selected_button_style, text_color, Colors,
@@ -189,45 +190,50 @@ impl HistoryView {
         content = content.push(filter_row);
 
         if let Some(wallet) = wallet {
-            let filtered_txs: Vec<&TxRecord> = wallet
-                .history
-                .iter()
-                .filter(|tx| match self.filter {
-                    Filter::All => true,
-                    Filter::Incoming => matches!(tx.direction, TxDirection::Incoming),
-                    Filter::Outgoing => matches!(tx.direction, TxDirection::Outgoing),
-                    Filter::Pending => !tx.confirmed,
-                    Filter::SelfTransfer => matches!(tx.direction, TxDirection::SelfTransfer),
-                })
-                .collect();
-
-            if filtered_txs.is_empty() {
-                content = content.push(Space::with_height(40));
-                content = content.push(
-                    container(
-                        text(t("Không có giao dịch", "No transactions found"))
-                            .size(16)
-                            .style(text_color(Colors::TEXT_MUTED)),
-                    )
-                    .padding(40)
-                    .center_x(Length::Fill),
-                );
-            } else {
+            // Show skeleton when refreshing
+            if is_refreshing {
                 content = content.push(Space::with_height(16));
-                content = content.push(
-                    text(format!(
-                        "{} {}",
-                        filtered_txs.len(),
-                        t("giao dịch", "transactions")
-                    ))
-                    .size(14)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
-                );
-                content = content.push(Space::with_height(8));
+                content = content.push(skeleton_transactions(5).map(|_| HistoryMessage::Refresh));
+            } else {
+                let filtered_txs: Vec<&TxRecord> = wallet
+                    .history
+                    .iter()
+                    .filter(|tx| match self.filter {
+                        Filter::All => true,
+                        Filter::Incoming => matches!(tx.direction, TxDirection::Incoming),
+                        Filter::Outgoing => matches!(tx.direction, TxDirection::Outgoing),
+                        Filter::Pending => !tx.confirmed,
+                        Filter::SelfTransfer => matches!(tx.direction, TxDirection::SelfTransfer),
+                    })
+                    .collect();
 
-                let mut tx_list = column![];
+                if filtered_txs.is_empty() {
+                    content = content.push(Space::with_height(40));
+                    content = content.push(
+                        container(
+                            text(t("Không có giao dịch", "No transactions found"))
+                                .size(16)
+                                .style(text_color(Colors::TEXT_MUTED)),
+                        )
+                        .padding(40)
+                        .center_x(Length::Fill),
+                    );
+                } else {
+                    content = content.push(Space::with_height(16));
+                    content = content.push(
+                        text(format!(
+                            "{} {}",
+                            filtered_txs.len(),
+                            t("giao dịch", "transactions")
+                        ))
+                        .size(14)
+                        .style(text_color(Colors::TEXT_SECONDARY)),
+                    );
+                    content = content.push(Space::with_height(8));
 
-                for tx in filtered_txs.iter() {
+                    let mut tx_list = column![];
+
+                    for tx in filtered_txs.iter() {
                     let direction_text = match tx.direction {
                         TxDirection::Incoming => t("NHẬN", "IN"),
                         TxDirection::Outgoing => t("GỬI", "OUT"),
@@ -299,6 +305,13 @@ impl HistoryView {
                                         Colors::WARNING
                                     }
                                 )),
+                                if tx.confirmed && tx.confirmations > 0 {
+                                    text(format!(" ({})", tx.confirmations))
+                                        .size(11)
+                                        .style(text_color(Colors::SUCCESS))
+                                } else {
+                                    text("")
+                                },
                                 Space::with_width(16),
                                 if let Some(fee) = tx.fee_sat {
                                     text(format!(
@@ -347,6 +360,7 @@ impl HistoryView {
                 }
 
                 content = content.push(scrollable(tx_list).height(Length::Fill));
+                }
             }
         } else {
             content = content.push(Space::with_height(40));

@@ -13,7 +13,7 @@ use iced::{
 };
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal};
+use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal, error_card};
 use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile};
 use crate::theme::{
@@ -341,20 +341,13 @@ impl App {
 
                 let error_bar = if let Some(error) = &self.error {
                     container(
-                        row![
-                            text(error.as_str())
-                                .size(12)
-                                .style(text_color(Colors::TEXT_PRIMARY)),
-                            Space::with_width(Length::Fill),
-                            iced::widget::button(text(t("Đóng", "Close")).size(12))
-                                .on_press(AppMessage::DismissError)
-                                .padding(6)
-                                .style(secondary_button_style()),
-                        ]
-                        .align_y(iced::Alignment::Center),
+                        error_card(
+                            t("Đã xảy ra lỗi", "An error occurred").to_string(),
+                            error.clone(),
+                            Some(AppMessage::DismissError),
+                        ),
                     )
                     .padding(10)
-                    .style(notice_style(NoticeTone::Error))
                 } else {
                     container(Space::with_height(0))
                 };
