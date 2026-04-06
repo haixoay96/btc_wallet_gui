@@ -66,12 +66,18 @@ pub struct Storage {
 struct AppPreferences {
     #[serde(default)]
     language: AppLanguage,
+    #[serde(default)]
+    last_selected_wallet: Option<usize>,
+    #[serde(default)]
+    last_viewed_page: Option<String>,
 }
 
 impl Default for AppPreferences {
     fn default() -> Self {
         Self {
             language: AppLanguage::English,
+            last_selected_wallet: None,
+            last_viewed_page: None,
         }
     }
 }
@@ -120,9 +126,32 @@ impl Storage {
     }
 
     pub fn save_language_preference(&self, language: AppLanguage) -> Result<()> {
-        let prefs = AppPreferences { language };
+        let current_prefs = self.load_preferences()?;
+        let prefs = AppPreferences {
+            language,
+            last_selected_wallet: current_prefs.last_selected_wallet,
+            last_viewed_page: current_prefs.last_viewed_page,
+        };
+        self.save_preferences(&prefs)
+    }
+
+    pub fn save_wallet_selection(&self, wallet_index: usize, page: &str) -> Result<()> {
+        let prefs = AppPreferences {
+            language: self.load_language_preference()?,
+            last_selected_wallet: Some(wallet_index),
+            last_viewed_page: Some(page.to_string()),
+        };
+        self.save_preferences(&prefs)
+    }
+
+    pub fn load_wallet_selection(&self) -> Result<(Option<usize>, Option<String>)> {
+        let prefs = self.load_preferences()?;
+        Ok((prefs.last_selected_wallet, prefs.last_viewed_page))
+    }
+
+    fn save_preferences(&self, prefs: &AppPreferences) -> Result<()> {
         let encoded =
-            serde_json::to_vec_pretty(&prefs).context("Không serialize được app preferences")?;
+            serde_json::to_vec_pretty(prefs).context("Không serialize được app preferences")?;
 
         let parent = self
             .paths
@@ -144,6 +173,24 @@ impl Storage {
         })?;
 
         Ok(())
+    }
+
+    fn load_preferences(&self) -> Result<AppPreferences> {
+        if !self.paths.preferences_file.exists() {
+            return Ok(AppPreferences::default());
+        }
+
+        let encoded = fs::read_to_string(&self.paths.preferences_file)
+            .with_context(|| {
+                format!(
+                    "Không đọc được file preferences: {}",
+                    self.paths.preferences_file.display()
+                )
+            })?;
+
+        let prefs: AppPreferences = serde_json::from_str(&encoded).context("Không parse được app preferences")?;
+
+        Ok(prefs)
     }
 
     pub fn rotate_passphrase(&self, old_pass: &str, new_pass: &str) -> Result<()> {

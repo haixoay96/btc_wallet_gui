@@ -693,6 +693,11 @@ impl App {
                     ));
                     false
                 } else {
+                    // Also save wallet selection
+                    let _ = storage.save_wallet_selection(
+                        self.selected_wallet,
+                        &self.current_page.title(),
+                    );
                     true
                 }
             }
@@ -780,6 +785,27 @@ impl App {
         self.wallets = state.wallets;
         self.wallet_vault = state.wallet_vault;
         self.state = AppState::Main;
+        
+        // Restore persistent wallet selection if available
+        if let Ok(storage) = Storage::new() {
+            if let Ok((Some(wallet_idx), Some(page_title))) = storage.load_wallet_selection() {
+                if wallet_idx < self.wallets.len() {
+                    self.selected_wallet = wallet_idx;
+                    // Restore page
+                    self.current_page = match page_title.as_str() {
+                        "Tổng quan" | "Dashboard" => NavItem::Dashboard,
+                        "Ví" | "Wallets" => NavItem::Wallets,
+                        "Gửi" | "Send" => NavItem::Send,
+                        "Nhận" | "Receive" => NavItem::Receive,
+                        "Lịch sử" | "History" => NavItem::History,
+                        "Cài đặt" | "Settings" => NavItem::Settings,
+                        _ => NavItem::Dashboard,
+                    };
+                    self.sidebar.set_active(self.current_page);
+                }
+            }
+        }
+        
         self.selected_wallet = self
             .selected_wallet
             .min(self.wallets.len().saturating_sub(1));
