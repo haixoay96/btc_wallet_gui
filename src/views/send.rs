@@ -82,6 +82,7 @@ pub enum SendMessage {
     ShowAmountHelp,
     ShowFeeHelp,
     ToggleAddressHelp,
+    PassphraseConfirmChanged(String),
 }
 
 #[derive(Debug, Clone)]
@@ -125,6 +126,8 @@ pub struct SendView {
     show_amount_help: bool,
     show_fee_help: bool,
     show_address_help: bool,
+    show_passphrase_confirm: bool,
+    passphrase_confirm: String,
 }
 
 impl SendView {
@@ -148,6 +151,8 @@ impl SendView {
             show_amount_help: false,
             show_fee_help: false,
             show_address_help: false,
+            show_passphrase_confirm: false,
+            passphrase_confirm: String::new(),
         }
     }
 
@@ -411,6 +416,10 @@ impl SendView {
             }
             SendMessage::ToggleAddressHelp => {
                 self.show_address_help = !self.show_address_help;
+                None
+            }
+            SendMessage::PassphraseConfirmChanged(p) => {
+                self.passphrase_confirm = p;
                 None
             }
         }
@@ -913,18 +922,32 @@ impl SendView {
                     container(Space::with_height(0))
                 },
                 Space::with_height(16),
-                row![
-                    button(text(t("Hủy", "Cancel")).size(14))
-                        .on_press(SendMessage::CancelSend)
-                        .padding(10)
-                        .style(secondary_button_style()),
-                    Space::with_width(10),
-                    button(text(t("Broadcast giao dịch", "Broadcast transaction")).size(14))
-                        .on_press(SendMessage::ConfirmSend)
-                        .padding(10)
-                        .style(primary_button_style()),
-                ]
-                .spacing(8),
+                text_input(
+                    t("Nhập passphrase để xác nhận...", "Enter passphrase to confirm..."),
+                    &self.passphrase_confirm,
+                )
+                .on_input(SendMessage::PassphraseConfirmChanged)
+                .on_submit(SendMessage::ConfirmSend)
+                .secure(true)
+                .padding(12)
+                .size(14),
+                Space::with_height(16),
+                container(
+                    row![
+                        button(text(t("Hủy", "Cancel")).size(14))
+                            .on_press(SendMessage::CancelSend)
+                            .padding(10)
+                            .style(secondary_button_style()),
+                        Space::with_width(10),
+                        button(text(t("Broadcast giao dịch", "Broadcast transaction")).size(14))
+                            .on_press(SendMessage::ConfirmSend)
+                            .padding(10)
+                            .style(primary_button_style()),
+                    ]
+                    .spacing(8),
+                )
+                .width(Length::Fill)
+                .align_x(Alignment::Center),
             ]
             .spacing(8);
 

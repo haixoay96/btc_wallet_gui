@@ -64,6 +64,7 @@ pub enum WalletsMessage {
     ToggleExternalAddresses,
     ToggleInternalAddresses,
     CopyAddress(String),
+    DeletePassphraseChanged(String),
 }
 
 #[derive(Debug, Clone)]
@@ -121,6 +122,7 @@ pub struct WalletsView {
     import_slip39_shares: Vec<String>,
     show_import_mnemonic_form: bool,
     pub confirm_delete_index: Option<usize>,
+    delete_passphrase: String,
 
     pub notice_wallet_index: Option<usize>,
     mnemonic_passphrase: String,
@@ -154,6 +156,7 @@ impl WalletsView {
             import_slip39_shares: vec![String::new(), String::new()],
             show_import_mnemonic_form: false,
             confirm_delete_index: None,
+            delete_passphrase: String::new(),
             notice_wallet_index: None,
             mnemonic_passphrase: String::new(),
             revealed_wallet_index: None,
@@ -494,6 +497,11 @@ impl WalletsView {
             }
             WalletsMessage::CancelDelete => {
                 self.confirm_delete_index = None;
+                self.delete_passphrase.clear();
+                None
+            }
+            WalletsMessage::DeletePassphraseChanged(passphrase) => {
+                self.delete_passphrase = passphrase;
                 None
             }
             WalletsMessage::ShowBackupWarning(index) => {
@@ -1316,19 +1324,33 @@ impl WalletsView {
                 text(format!("{} '{wallet_name}'?", t("Xóa ví", "Delete wallet")))
                     .size(16)
                     .style(text_color(Colors::TEXT_PRIMARY)),
+                Space::with_height(12),
+                text_input(
+                    t("Nhập passphrase để xác nhận...", "Enter passphrase to confirm..."),
+                    &self.delete_passphrase,
+                )
+                .on_input(WalletsMessage::DeletePassphraseChanged)
+                .on_submit(WalletsMessage::ConfirmDelete(index))
+                .secure(true)
+                .padding(12)
+                .size(14),
                 Space::with_height(16),
-                row![
-                    button(text(t("Hủy", "Cancel")).size(14))
-                        .on_press(WalletsMessage::CancelDelete)
-                        .padding(10)
-                        .style(secondary_button_style()),
-                    Space::with_width(12),
-                    button(text(t("Xóa", "Delete")).size(14))
-                        .on_press(WalletsMessage::ConfirmDelete(index))
-                        .padding(10)
-                        .style(danger_button_style()),
-                ]
-                .spacing(8),
+                container(
+                    row![
+                        button(text(t("Hủy", "Cancel")).size(14))
+                            .on_press(WalletsMessage::CancelDelete)
+                            .padding(10)
+                            .style(secondary_button_style()),
+                        Space::with_width(12),
+                        button(text(t("Xóa", "Delete")).size(14))
+                            .on_press(WalletsMessage::ConfirmDelete(index))
+                            .padding(10)
+                            .style(danger_button_style()),
+                    ]
+                    .spacing(8),
+                )
+                .width(Length::Fill)
+                .align_x(Alignment::Center),
             ]
             .spacing(0);
 

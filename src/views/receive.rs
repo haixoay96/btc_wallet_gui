@@ -370,11 +370,6 @@ impl ReceiveView {
                 )
                 .width(Length::Fill)
                 .center_x(Length::Fill),
-                Space::with_height(10),
-                button(text(t("Đóng", "Close")).size(14))
-                    .on_press(ReceiveMessage::CloseQrPopup)
-                    .padding(10)
-                    .style(primary_button_style()),
             ]
             .align_x(Alignment::Center)
             .spacing(6);
