@@ -420,6 +420,10 @@ impl Wallet {
 
     pub fn refresh_history(&mut self, secrets: &WalletSecrets) -> Result<usize> {
         let esplora = EsploraClient::new(self.network)?;
+        
+        // Lấy chiều cao blockchain hiện tại để tính confirmations
+        let current_height = esplora.get_blockchain_height().ok();
+        
         let ChainSyncResult {
             entries: mut external_entries,
             txs: mut external_txs,
@@ -452,7 +456,7 @@ impl Wallet {
         self.addresses = addresses;
         self.next_external_index = next_external_index;
         self.next_internal_index = next_internal_index;
-        self.history = Self::tx_records_from_api(txs, &own_addresses);
+        self.history = Self::tx_records_from_api(txs, &own_addresses, current_height);
 
         Ok(self.history.len())
     }
@@ -514,7 +518,11 @@ impl Wallet {
         })
     }
 
-    fn tx_records_from_api(txs: Vec<ApiTx>, own_addresses: &HashSet<String>) -> Vec<TxRecord> {
+    fn tx_records_from_api(
+        txs: Vec<ApiTx>,
+        own_addresses: &HashSet<String>,
+        current_height: Option<u32>,
+    ) -> Vec<TxRecord> {
         let mut tx_map: HashMap<String, TxRecord> = HashMap::new();
 
         for tx in txs {
@@ -559,6 +567,19 @@ impl Wallet {
                 TxDirection::SelfTransfer
             };
 
+            // Tính số confirmations
+            let confirmations = if tx.status.confirmed {
+                if let (Some(height), Some(block_height)) =
+                    (current_height, tx.status.block_height)
+                {
+                    height.saturating_sub(block_height) + 1
+                } else {
+                    0
+                }
+            } else {
+                0
+            };
+
             tx_map.insert(
                 tx.txid.clone(),
                 TxRecord {
@@ -568,7 +589,7 @@ impl Wallet {
                     fee_sat: tx.fee,
                     confirmed: tx.status.confirmed,
                     block_time: tx.status.block_time,
-                    confirmations: 0,
+                    confirmations,
                 },
             );
         }

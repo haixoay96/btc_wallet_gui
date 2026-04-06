@@ -130,6 +130,19 @@ impl EsploraClient {
             .json()
             .with_context(|| format!("Không parse được dữ liệu lịch sử của {address}"))
     }
+
+    /// Lấy chiều cao blockchain hiện tại
+    pub fn get_blockchain_height(&self) -> Result<u32> {
+        let url = format!("{}/blocks/tip/height", self.network.blockstream_base_url());
+        self.client
+            .get(&url)
+            .send()
+            .with_context(|| format!("Không gọi được API chiều cao blockchain: {url}"))?
+            .error_for_status()
+            .with_context(|| format!("Lỗi response API chiều cao blockchain: {url}"))?
+            .json()
+            .with_context(|| "Không parse được chiều cao blockchain")
+    }
 }
 
 #[cfg(test)]

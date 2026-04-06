@@ -11,6 +11,8 @@ pub struct ApiAddressUtxo {
 pub struct ApiTxStatus {
     pub confirmed: bool,
     pub block_time: Option<u64>,
+    #[serde(default)]
+    pub block_height: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
