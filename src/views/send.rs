@@ -516,10 +516,12 @@ impl SendView {
         ]
         .spacing(4);
 
+        // Address help box - i18n support
         let address_help: Element<'_, SendMessage> = if self.show_address_help {
             info_box(
-                "Địa chỉ nhận hợp lệ",
-                "Hỗ trợ BTC mainnet (bc1..., 1..., 3...) và testnet (tb1..., m/n/2...). Đảm bảo địa chỉ đúng network với ví nguồn."
+                t("Địa chỉ nhận hợp lệ", "Valid recipient address"),
+                t("Hỗ trợ BTC mainnet (bc1..., 1..., 3...) và testnet (tb1..., m/n/2...). Đảm bảo địa chỉ đúng network với ví nguồn.",
+                  "Supports BTC mainnet (bc1..., 1..., 3...) and testnet (tb1..., m/n/2...). Make sure the address matches the wallet network.")
             ).map(|_| SendMessage::ToggleAddressHelp)
         } else {
             Space::with_height(0).into()
@@ -595,11 +597,29 @@ impl SendView {
             Space::with_height(0).into()
         };
 
+        // Amount help box - i18n support
+        let amount_help: Element<'_, SendMessage> = if self.show_amount_help {
+            info_box(
+                t("Hướng dẫn nhập số lượng", "How to enter amount"),
+                t("Nhập số BTC bạn muốn gửi. Ví dụ: 0.001 BTC = 100,000 satoshi. Phí giao dịch sẽ được trừ riêng.",
+                  "Enter the BTC amount you want to send. Example: 0.001 BTC = 100,000 satoshis. Transaction fee will be deducted separately.")
+            ).map(|_| SendMessage::AmountChanged(self.amount.clone()))
+        } else {
+            Space::with_height(0).into()
+        };
+
+        let estimate_label = if is_estimating_fee {
+            t("Đang ước tính...", "Estimating...")
+        } else {
+            t("Ước tính tự động", "Auto estimate")
+        };
+
         // Amount help box
         let amount_help: Element<'_, SendMessage> = if self.show_amount_help {
             info_box(
-                "Hướng dẫn nhập số lượng",
-                "Nhập số BTC bạn muốn gửi. Ví dụ: 0.001 BTC = 100,000 satoshi. Phí giao dịch sẽ được trừ riêng."
+                t("Hướng dẫn nhập số lượng", "How to enter amount"),
+                t("Nhập số BTC bạn muốn gửi. Ví dụ: 0.001 BTC = 100,000 satoshi. Phí giao dịch sẽ được trừ riêng.",
+                  "Enter the BTC amount you want to send. Example: 0.001 BTC = 100,000 satoshis. Transaction fee will be deducted separately.")
             ).map(|_| SendMessage::AmountChanged(self.amount.clone()))
         } else {
             Space::with_height(0).into()
@@ -675,11 +695,12 @@ impl SendView {
             Space::with_height(0).into()
         };
 
-        // Fee help box
+        // Fee help box - i18n support
         let fee_help: Element<'_, SendMessage> = if self.show_fee_help {
             info_box(
-                "Hướng dẫn nhập phí",
-                "Phí giao dịch tính bằng BTC. Phí cao hơn = giao dịch được xác nhận nhanh hơn. Bấm 'Ước tính tự động' để lấy phí hiện tại."
+                t("Hướng dẫn nhập phí", "How to enter fee"),
+                t("Phí giao dịch tính bằng BTC. Phí cao hơn = giao dịch được xác nhận nhanh hơn. Bấm 'Ước tính tự động' để lấy phí hiện tại.",
+                  "Transaction fee in BTC. Higher fee = faster confirmation. Click 'Auto estimate' to get current fee rates.")
             ).map(|_| SendMessage::FeeAmountChanged(self.fee_amount.clone()))
         } else {
             Space::with_height(0).into()

@@ -1033,8 +1033,9 @@ impl WalletsView {
 
                     let mut shares_form = column![
                         info_box(
-                            "SLIP-0039 là gì?",
-                            "SLIP-0039 (Shamir Secret Sharing) chia mnemonic thành nhiều mảnh. Cần tối thiểu K mảnh để khôi phục ví."
+                            t("SLIP-0039 là gì?", "What is SLIP-0039?"),
+                            t("SLIP-0039 (Shamir Secret Sharing) chia mnemonic thành nhiều mảnh. Cần tối thiểu K mảnh để khôi phục ví.",
+                              "SLIP-0039 (Shamir Secret Sharing) splits mnemonic into multiple shares. At least K shares are needed to restore the wallet.")
                         ).map(|_| WalletsMessage::ImportModeChanged(ImportMode::Slip39)),
                         text(t(
                             "Nhập tối thiểu K share, mỗi ô là 1 cụm từ SLIP-0039",

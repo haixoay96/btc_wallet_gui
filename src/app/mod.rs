@@ -373,6 +373,39 @@ impl App {
                 .height(Length::Fill)
                 .style(screen_background_style());
 
+                // Shortcuts help popup overlay
+                if self.show_shortcuts_help {
+                    use iced::widget::stack;
+                    let help_popup = shortcuts_help_popup().map(|_| AppMessage::ToggleShortcutsHelp);
+                    let backdrop = container(
+                        iced::widget::mouse_area(
+                            container(iced::widget::Space::with_width(Length::Fill))
+                                .width(Length::Fill)
+                                .height(Length::Fill),
+                        )
+                        .on_press(AppMessage::ToggleShortcutsHelp),
+                    )
+                    .width(Length::Fill)
+                    .height(Length::Fill);
+
+                    let popup_layer = container(
+                        container(help_popup)
+                            .align_x(iced::alignment::Horizontal::Center)
+                            .align_y(iced::alignment::Vertical::Center),
+                    )
+                    .width(Length::Fill)
+                    .height(Length::Fill);
+
+                    return stack![
+                        base_content,
+                        backdrop,
+                        popup_layer
+                    ]
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .into();
+                }
+
                 // Toast notification layer on top - centered horizontally
                 if self.toast_manager.has_toasts() {
                     if let Some(toast_view) = self.toast_manager.view() {

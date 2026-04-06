@@ -29,8 +29,11 @@ pub fn help_tooltip(content: Element<'static, ()>) -> Element<'static, ()> {
     .into()
 }
 
-/// Info box with icon and text
-pub fn info_box(title: &'static str, description: &'static str) -> Element<'static, ()> {
+/// Info box with icon and text - supports i18n via String
+pub fn info_box(title: impl Into<String>, description: impl Into<String>) -> Element<'static, ()> {
+    let title = title.into();
+    let description = description.into();
+    
     container(
         row![
             text(Bootstrap::InfoCircle.to_string())
@@ -61,8 +64,11 @@ pub fn info_box(title: &'static str, description: &'static str) -> Element<'stat
     .into()
 }
 
-/// Warning box
-pub fn warning_box(title: &'static str, description: &'static str) -> Element<'static, ()> {
+/// Warning box - supports i18n via String
+pub fn warning_box(title: impl Into<String>, description: impl Into<String>) -> Element<'static, ()> {
+    let title = title.into();
+    let description = description.into();
+    
     container(
         row![
             text(Bootstrap::ExclamationTriangle.to_string())
