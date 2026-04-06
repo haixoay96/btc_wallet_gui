@@ -19,6 +19,44 @@ fn format_timestamp(timestamp: u64) -> String {
     datetime.format("%d/%m/%Y %H:%M:%S").to_string()
 }
 
+/// Get confirmation status info for color coding and display
+fn confirmation_status(tx: &TxRecord) -> (String, String, Color, String) {
+    // Returns: (icon, status_text, color, estimated_time)
+    if !tx.confirmed || tx.confirmations == 0 {
+        (
+            "clock".to_string(),
+            t("Chờ xác nhận", "Pending").to_string(),
+            Colors::WARNING,
+            format!("~{}", t("đang chờ", "waiting")),
+        )
+    } else if tx.confirmations >= 6 {
+        (
+            "check".to_string(),
+            t("Đã xác nhận", "Confirmed").to_string(),
+            Colors::SUCCESS,
+            format!("✓ {} ({} {})", t("Đủ xác nhận", "Fully confirmed"), tx.confirmations, t("conf", "conf")),
+        )
+    } else if tx.confirmations >= 3 {
+        let remaining = 6 - tx.confirmations;
+        let est_minutes = remaining * 10;
+        (
+            "check-circle".to_string(),
+            format!("{} ({}/6)", t("Gần đủ", "Almost"), tx.confirmations),
+            Colors::CONFIRMED_PARTIAL,
+            format!("~{} {} (~{} {})", remaining, t("conf còn lại", "conf remaining"), est_minutes, t("phút", "min")),
+        )
+    } else {
+        let remaining = 6 - tx.confirmations;
+        let est_minutes = remaining * 10;
+        (
+            "hourglass".to_string(),
+            format!("{} ({}/6)", t("Ít xác nhận", "Low confirmations"), tx.confirmations),
+            Colors::CONFIRMED_LOW,
+            format!("~{} {} (~{} {})", remaining, t("conf còn lại", "conf remaining"), est_minutes, t("phút", "min")),
+        )
+    }
+}
+
 fn parse_date_input(input: &str) -> Option<i64> {
     if input.is_empty() {
         return None;
@@ -507,25 +545,35 @@ impl HistoryView {
                                 ].align_y(Alignment::Center),
                                 Space::with_height(4),
                                 row![
-                                    if tx.confirmed {
-                                        text(Bootstrap::Check.to_string())
+                                    {
+                                        let (icon_str, _, status_color, _) = confirmation_status(tx);
+                                        let icon_bootstrap = if icon_str == "check" {
+                                            Bootstrap::Check.to_string()
+                                        } else if icon_str == "check-circle" {
+                                            Bootstrap::CheckCircle.to_string()
+                                        } else if icon_str == "hourglass" {
+                                            Bootstrap::Hourglass.to_string()
+                                        } else {
+                                            Bootstrap::Clock.to_string()
+                                        };
+                                        text(icon_bootstrap)
                                             .font(BOOTSTRAP_FONT)
                                             .size(11)
-                                            .style(text_color(Colors::SUCCESS))
-                                    } else {
-                                        text(Bootstrap::Clock.to_string()) // Or ArrowRepeat
-                                            .font(BOOTSTRAP_FONT)
-                                            .size(11)
-                                            .style(text_color(Colors::WARNING))
+                                            .style(text_color(status_color))
                                     },
                                     Space::with_width(4),
-                                    text(if tx.confirmed {
-                                        format!("{} ({} conf)", t("Đã xác nhận", "Confirmed"), tx.confirmations)
-                                    } else {
-                                        t("Chờ xác nhận", "Pending").to_string()
-                                    })
-                                    .size(11)
-                                    .style(text_color(if tx.confirmed { Colors::SUCCESS } else { Colors::WARNING })),
+                                    {
+                                        let (_, status_text, status_color, est_time) = confirmation_status(tx);
+                                        column![
+                                            text(status_text)
+                                                .size(11)
+                                                .style(text_color(status_color)),
+                                            text(est_time)
+                                                .size(9)
+                                                .style(text_color(Colors::TEXT_MUTED)),
+                                        ]
+                                        .spacing(1)
+                                    },
                                     Space::with_width(Length::Fill),
                                     if let Some(block_time) = tx.block_time {
                                         text(format_timestamp(block_time)).size(11).style(text_color(Colors::TEXT_MUTED))
@@ -689,10 +737,9 @@ impl HistoryView {
             Space::with_height(8),
             info_row(t("Phí", "Fee"), tx.fee_sat.map(|f| format_btc_and_sat(f as i64)).unwrap_or_else(|| "N/A".to_string())),
             Space::with_height(8),
-            info_row(t("Trạng thái", "Status"), if tx.confirmed { 
-                format!("{} ({} confirmations)", t("Đã xác nhận", "Confirmed"), tx.confirmations) 
-            } else { 
-                t("Chờ xác nhận", "Pending").to_string() 
+            info_row(t("Trạng thái", "Status"), {
+                let (_, status_text, _, est_time) = confirmation_status(tx);
+                format!("{} - {}", status_text, est_time)
             }),
             Space::with_height(16),
             row![

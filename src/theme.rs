@@ -42,6 +42,8 @@ impl Colors {
     pub const SUCCESS: Color = Color::from_rgb(0.0, 0.83, 0.67); // #00D4AA
     pub const ERROR: Color = Color::from_rgb(1.0, 0.35, 0.35); // #FF5959
     pub const WARNING: Color = Color::from_rgb(1.0, 0.75, 0.0); // #FFBF00
+    pub const CONFIRMED_LOW: Color = Color::from_rgb(1.0, 0.6, 0.0); // #FF9900
+    pub const CONFIRMED_PARTIAL: Color = Color::from_rgb(0.4, 0.85, 0.5); // #66D980
 
     // Gradient colors
     pub const GRADIENT_START: Color = Color::from_rgb(0.48, 0.38, 1.0); // Purple

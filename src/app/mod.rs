@@ -120,6 +120,7 @@ pub enum AppMessage {
     KeyboardSaveState,
     KeyboardFocusSearch,
     ResetHelpDismissals,
+    AutoRefreshConfirmations,
 }
 
 #[derive(Debug, Clone)]
@@ -510,6 +511,15 @@ impl App {
             AppMessage::ResetHelpDismissals => {
                 self.help_dismissals.clear_all();
                 self.add_success_toast(t("Đã khôi phục tất cả gợi ý", "Restored all help hints").to_string());
+                Task::none()
+            }
+            
+            AppMessage::AutoRefreshConfirmations => {
+                // Only auto-refresh if we have pending transactions
+                let has_pending = self.wallets.iter().any(|w| w.history.iter().any(|tx| !tx.confirmed || tx.confirmations < 6));
+                if has_pending {
+                    return self.refresh_all_wallets();
+                }
                 Task::none()
             }
         }
@@ -1031,7 +1041,7 @@ impl App {
     }
 
     pub fn subscription(&self) -> Subscription<AppMessage> {
-        keyboard::on_key_press(|key_code, modifiers| {
+        let keyboard_sub = keyboard::on_key_press(|key_code, modifiers| {
             // Priority 1: Help shortcuts (always available)
             if modifiers.control() && key_code == keyboard::Key::Character("/".into()) {
                 return Some(AppMessage::ToggleShortcutsHelp);
@@ -1039,12 +1049,12 @@ impl App {
             if key_code == keyboard::Key::Named(keyboard::key::Named::F1) {
                 return Some(AppMessage::ToggleShortcutsHelp);
             }
-            
+
             // Priority 2: Esc to close popups (always available)
             if key_code == keyboard::Key::Named(keyboard::key::Named::Escape) {
                 return Some(AppMessage::GlobalEscKey);
             }
-            
+
             // Priority 3: Form and action shortcuts (when not in modal)
             if modifiers.control() || modifiers.command() {
                 match key_code {
@@ -1090,8 +1100,14 @@ impl App {
                     _ => {}
                 }
             }
-            
+
             None
-        })
+        });
+
+        // Auto-refresh confirmations every 2 minutes
+        let refresh_sub = iced::time::every(Duration::from_secs(120))
+            .map(|_| AppMessage::AutoRefreshConfirmations);
+
+        Subscription::batch([keyboard_sub, refresh_sub])
     }
 }
