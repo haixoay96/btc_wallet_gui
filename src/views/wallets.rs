@@ -7,8 +7,10 @@ use crate::components::modal;
 use crate::i18n::t;
 use crate::components::info_box;
 use crate::theme::{
-    card_style, danger_button_style, notice_style,
-    primary_button_style, secondary_button_style, selected_button_style, text_color, Colors,
+    card_style, danger_button_style, input_style, notice_style,
+    primary_button_style, secondary_button_style, selected_button_style, text_color,
+    text_primary_color, text_secondary_color, text_muted_color, get_theme_colors,
+    Colors,
     NoticeTone,
 };
 use crate::wallet::{AddressChain, Wallet, WalletNetwork};
@@ -776,7 +778,7 @@ impl WalletsView {
     ) -> Element<'a, WalletsMessage> {
         let title = text(t("Ví", "Wallets"))
             .size(32)
-            .style(text_color(Colors::TEXT_PRIMARY));
+            .style(text_primary_color());
 
         let create_toggle_btn = button(
             text(if self.show_create_form {
@@ -825,7 +827,7 @@ impl WalletsView {
                     row![
                         text(info.as_str())
                             .size(13)
-                            .style(text_color(Colors::TEXT_PRIMARY)),
+                            .style(text_primary_color()),
                         Space::with_width(Length::Fill),
                         button(text(t("Đóng", "Close")).size(12))
                             .on_press(WalletsMessage::DismissWalletNotice)
@@ -845,7 +847,7 @@ impl WalletsView {
                 container(
                     text(error.as_str())
                         .size(13)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                        .style(text_primary_color()),
                 )
                 .style(notice_style(NoticeTone::Error))
                 .padding(10)
@@ -886,13 +888,13 @@ impl WalletsView {
                 column![
                     text(t("Tạo ví mới", "Create New Wallet"))
                         .size(18)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                        .style(text_primary_color()),
                     text(t(
                         "Ví mới sẽ tạo mnemonic 12 từ và yêu cầu backup ngay sau khi tạo.",
                         "A new wallet will generate a 12-word mnemonic and prompt immediate backup.",
                     ))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                     Space::with_height(12),
                     name_input,
                     Space::with_height(8),
@@ -921,7 +923,8 @@ impl WalletsView {
             let import_name_input = text_input(import_name_placeholder, &self.import_name)
                 .on_input(WalletsMessage::ImportNameChanged)
                 .padding(12)
-                .size(16);
+                .size(16)
+                .style(input_style());
 
             let network_testnet = button(text(t("Testnet", "Testnet")).size(14))
                 .on_press(WalletsMessage::ImportNetworkChanged(WalletNetwork::Testnet))
@@ -971,14 +974,14 @@ impl WalletsView {
             let mut form_content = column![
                 text(t("Import ví", "Import Wallet"))
                     .size(18)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
                 Space::with_height(8),
                 text(t(
                     "Khôi phục từng ví riêng lẻ vào app hiện tại.",
                     "Restore individual wallets into the current app."
                 ))
                 .size(12)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
                 Space::with_height(12),
                 row![mode_bip39, mode_slip39, mode_encrypted].spacing(8),
             ]
@@ -992,7 +995,7 @@ impl WalletsView {
                             "This .enc file is for encrypted mnemonic backups and already contains the wallet name and network. You can optionally override the wallet name.",
                         ))
                         .size(12)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        .style(text_secondary_color()),
                     )
                     .push(import_name_input);
             } else {
@@ -1051,7 +1054,7 @@ impl WalletsView {
                             "Enter at least K shares, each field is one SLIP-0039 phrase",
                         ))
                         .size(12)
-                        .style(text_color(Colors::TEXT_SECONDARY))
+                        .style(text_secondary_color())
                     ]
                     .spacing(8);
 
@@ -1060,7 +1063,7 @@ impl WalletsView {
                             column![
                                 text(format!("{} #{}", t("Mảnh", "Share"), index + 1))
                                     .size(12)
-                                    .style(text_color(Colors::TEXT_PRIMARY)),
+                                    .style(text_primary_color()),
                                 text_input(
                                     t("Từ của SLIP-0039 share...", "SLIP-0039 share words..."),
                                     share_value
@@ -1158,7 +1161,7 @@ impl WalletsView {
                                 "If the wallet name override is empty, the app will use the wallet name stored in the encrypted mnemonic backup.",
                             ))
                             .size(12)
-                            .style(text_color(Colors::TEXT_SECONDARY)),
+                            .style(text_secondary_color()),
                         )
                         .push(Space::with_height(6))
                         .push(import_btn);
@@ -1186,7 +1189,7 @@ impl WalletsView {
                         column![
                             text(wallet.name.as_str())
                                 .size(16)
-                                .style(text_color(Colors::TEXT_PRIMARY)),
+                                .style(text_primary_color()),
                             text(format!(
                                 "{} | {:.8} BTC | {}",
                                 wallet.network.as_str(),
@@ -1194,7 +1197,7 @@ impl WalletsView {
                                 backup_status_text(wallet.has_mnemonic, wallet.mnemonic_backed_up)
                             ))
                             .size(12)
-                            .style(text_color(Colors::TEXT_SECONDARY)),
+                            .style(text_secondary_color()),
                         ]
                         .spacing(4),
                         Space::with_width(Length::Fill),
@@ -1255,7 +1258,7 @@ impl WalletsView {
                     column![
                         text(t("Danh sách ví", "Your Wallets"))
                             .size(18)
-                            .style(text_color(Colors::TEXT_PRIMARY)),
+                            .style(text_primary_color()),
                         Space::with_height(12),
                         wallet_list,
                     ]
@@ -1275,7 +1278,7 @@ impl WalletsView {
                         column![
                             text(t("Danh sách địa chỉ", "Addresses"))
                                 .size(18)
-                                .style(text_color(Colors::TEXT_PRIMARY)),
+                                .style(text_primary_color()),
                             Space::with_height(12),
                             wallet_addresses_detail(
                                 selected_wallet, 
@@ -1302,7 +1305,7 @@ impl WalletsView {
                         "No wallets yet. Create your first wallet!",
                     ))
                     .size(16)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 )
                 .padding(40)
                 .center_x(Length::Fill),
@@ -1323,7 +1326,7 @@ impl WalletsView {
             let delete_content = column![
                 text(format!("{} '{wallet_name}'?", t("Xóa ví", "Delete wallet")))
                     .size(16)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
                 Space::with_height(12),
                 text_input(
                     t("Nhập passphrase để xác nhận...", "Enter passphrase to confirm..."),
@@ -1375,7 +1378,7 @@ impl WalletsView {
 
         let mut panel = column![text(t("Backup Center", "Backup Center"))
             .size(18)
-            .style(text_color(Colors::TEXT_PRIMARY)),]
+            .style(text_primary_color()),]
         .spacing(8);
 
         if self.notice_wallet_index == Some(selected_index) && needs_backup {
@@ -1386,7 +1389,7 @@ impl WalletsView {
                         "This wallet has not backed up its mnemonic. Please complete the 3 steps below as soon as possible.",
                     ))
                     .size(13)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
                 )
                 .style(notice_style(NoticeTone::Warning))
                 .padding(12)
@@ -1401,7 +1404,7 @@ impl WalletsView {
                     "This wallet has no mnemonic (imported from xprv).",
                 ))
                 .size(13)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
             );
         } else if self.revealed_wallet_index != Some(selected_index) {
             let reveal_button_label = if wallet.mnemonic_backed_up {
@@ -1417,7 +1420,7 @@ impl WalletsView {
                 .push(
                     text(t("Bước 1. Mở mnemonic", "Step 1. Reveal the mnemonic"))
                         .size(14)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                        .style(text_primary_color()),
                 )
                 .push(
                     text(t(
@@ -1425,7 +1428,7 @@ impl WalletsView {
                         "Enter your current passphrase to view mnemonic",
                     ))
                     .size(13)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 )
                 .push(
                     text_input(
@@ -1457,7 +1460,7 @@ impl WalletsView {
                             "Mnemonic is hidden while backup test is active.",
                         ))
                         .size(12)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                        .style(text_primary_color()),
                     )
                     .style(notice_style(NoticeTone::Warning))
                     .padding(10)
@@ -1473,7 +1476,7 @@ impl WalletsView {
                                 t("từ", "words")
                             ))
                             .size(12)
-                            .style(text_color(Colors::TEXT_SECONDARY)),
+                            .style(text_secondary_color()),
                             Space::with_height(6),
                             text(mnemonic_line)
                                 .size(14)
@@ -1492,7 +1495,7 @@ impl WalletsView {
                         "Step 2. Save a safe backup",
                     ))
                     .size(14)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
                 );
 
                 panel = panel.push(
@@ -1510,7 +1513,7 @@ impl WalletsView {
                                 "Encrypted export uses the current app passphrase.",
                             ))
                             .size(12)
-                            .style(text_color(Colors::TEXT_SECONDARY)),
+                            .style(text_secondary_color()),
                             button(
                                 text(t(
                                     "Export mnemonic mã hóa (.enc)",
@@ -1533,13 +1536,15 @@ impl WalletsView {
                     .on_input(WalletsMessage::Slip39ExportThresholdChanged)
                     .padding(8)
                     .size(13)
-                    .width(Length::Fixed(100.0));
+                    .width(Length::Fixed(100.0))
+                    .style(input_style());
 
                 let slip39_share_count_input = text_input("N", &self.slip39_export_share_count)
                     .on_input(WalletsMessage::Slip39ExportShareCountChanged)
                     .padding(8)
                     .size(13)
-                    .width(Length::Fixed(100.0));
+                    .width(Length::Fixed(100.0))
+                    .style(input_style());
 
                 let slip39_passphrase_input = text_input(
                     t(
@@ -1551,7 +1556,8 @@ impl WalletsView {
                 .on_input(WalletsMessage::Slip39ExportPassphraseChanged)
                 .secure(true)
                 .padding(10)
-                .size(13);
+                .size(13)
+                .style(input_style());
 
                 panel =
                     panel.push(
@@ -1559,25 +1565,25 @@ impl WalletsView {
                             column![
                             text(t("Backup tách mảnh SLIP-0039", "SLIP-0039 split backup"))
                                 .size(13)
-                                .style(text_color(Colors::TEXT_PRIMARY)),
+                                .style(text_primary_color()),
                             text(t(
                                 "Cấu hình K/N (ví dụ 2/3) để tách mnemonic thành nhiều share.",
                                 "Configure K/N (e.g. 2/3) to split mnemonic into multiple shares.",
                             ))
                             .size(12)
-                            .style(text_color(Colors::TEXT_SECONDARY)),
+                            .style(text_secondary_color()),
                             row![
                                 column![
                                     text(t("Ngưỡng K", "Threshold K"))
                                         .size(12)
-                                        .style(text_color(Colors::TEXT_SECONDARY)),
+                                        .style(text_secondary_color()),
                                     slip39_threshold_input,
                                 ]
                                 .spacing(4),
                                 column![
                                     text(t("Tổng share N", "Total share N"))
                                         .size(12)
-                                        .style(text_color(Colors::TEXT_SECONDARY)),
+                                        .style(text_secondary_color()),
                                     slip39_share_count_input,
                                 ]
                                 .spacing(4),
@@ -1597,7 +1603,7 @@ impl WalletsView {
                                 "If you need a full app backup, use Encrypted App Backup in Settings instead of packing the shares into .enc.",
                             ))
                             .size(12)
-                            .style(text_color(Colors::TEXT_SECONDARY)),
+                            .style(text_secondary_color()),
                         ]
                             .spacing(8),
                         )
@@ -1620,7 +1626,7 @@ impl WalletsView {
                 panel = panel.push(
                     text(t("Bước 3. Xác minh backup", "Step 3. Verify the backup"))
                         .size(14)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                        .style(text_primary_color()),
                 );
                 panel = panel.push(
                     button(
@@ -1645,7 +1651,7 @@ impl WalletsView {
                         "Enter the correct words at positions to verify backup",
                     ))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),]
+                    .style(text_secondary_color()),]
                     .spacing(8);
 
                     for (field_index, position) in
@@ -1661,7 +1667,7 @@ impl WalletsView {
                             column![
                                 text(format!("{} #{}", t("Từ", "Word"), position))
                                     .size(12)
-                                    .style(text_color(Colors::TEXT_PRIMARY)),
+                                    .style(text_primary_color()),
                                 text_input(
                                     t("Nhập từ mnemonic...", "Enter mnemonic word..."),
                                     value
@@ -1746,7 +1752,7 @@ fn wallet_summary_card<'a>(wallet: &'a Wallet) -> Element<'a, WalletsMessage> {
         column![
             text(t("Wallet Summary", "Wallet Summary"))
                 .size(18)
-                .style(text_color(Colors::TEXT_PRIMARY)),
+                .style(text_primary_color()),
             Space::with_height(10),
             row![
                 summary_metric(t("Tên ví", "Wallet"), wallet.name.clone()),
@@ -1820,7 +1826,7 @@ fn wallet_addresses_detail<'a>(
                         external_addresses.len()
                     ))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                     Space::with_width(Length::Fill)
                 ]
                 .align_y(Alignment::Center)
@@ -1838,21 +1844,21 @@ fn wallet_addresses_detail<'a>(
             external_section = external_section.push(
                 text(t("Chưa có địa chỉ nhận", "No receiving addresses"))
                     .size(12)
-                    .style(text_color(Colors::TEXT_MUTED))
+                    .style(text_muted_color())
             );
         } else {
             let mut external_list = column![];
             for (i, addr) in external_addresses.iter().enumerate() {
                 let is_copied = copied_address == Some(addr.address.as_str());
-                
+
                 let row_content = row![
                     text(format!("#{}", addr.index))
                         .size(12)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                        .style(text_muted_color()),
                     Space::with_width(8),
                     text(addr.address.clone())
                         .size(12)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                        .style(text_primary_color()),
                     Space::with_width(Length::Fill),
                     if is_copied {
                         text(t("Đã sao chép", "Copied"))
@@ -1900,11 +1906,12 @@ fn wallet_addresses_detail<'a>(
             .width(Length::Fill)
             .height(external_container_height)
             .center_x(Length::Fill)
-            .style(|_theme: &_| {
+            .style(|theme: &iced::Theme| {
+                let colors = get_theme_colors(theme);
                 container::Style {
-                    background: Some(Background::Color(Colors::BG_CARD)),
+                    background: Some(Background::Color(colors.bg_card)),
                     border: iced::Border {
-                        color: Colors::BORDER_SUBTLE,
+                        color: colors.border_subtle,
                         width: 1.0,
                         radius: 12.0.into(),
                     },
@@ -1934,7 +1941,7 @@ fn wallet_addresses_detail<'a>(
                         internal_addresses.len()
                     ))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                     Space::with_width(Length::Fill)
                 ]
                 .align_y(Alignment::Center)
@@ -1952,21 +1959,21 @@ fn wallet_addresses_detail<'a>(
             internal_section = internal_section.push(
                 text(t("Chưa có địa chỉ đổi", "No change addresses"))
                     .size(12)
-                    .style(text_color(Colors::TEXT_MUTED))
+                    .style(text_muted_color())
             );
         } else {
             let mut internal_list = column![];
             for (i, addr) in internal_addresses.iter().enumerate() {
                 let is_copied = copied_address == Some(addr.address.as_str());
-                
+
                 let row_content = row![
                     text(format!("#{}", addr.index))
                         .size(12)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                        .style(text_muted_color()),
                     Space::with_width(8),
                     text(addr.address.clone())
                         .size(12)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                        .style(text_primary_color()),
                     Space::with_width(Length::Fill),
                     if is_copied {
                         text(t("Đã sao chép", "Copied"))
@@ -2014,11 +2021,12 @@ fn wallet_addresses_detail<'a>(
             .width(Length::Fill)
             .height(internal_container_height)
             .center_x(Length::Fill)
-            .style(|_theme: &_| {
+            .style(|theme: &iced::Theme| {
+                let colors = get_theme_colors(theme);
                 container::Style {
-                    background: Some(Background::Color(Colors::BG_CARD)),
+                    background: Some(Background::Color(colors.bg_card)),
                     border: iced::Border {
-                        color: Colors::BORDER_SUBTLE,
+                        color: colors.border_subtle,
                         width: 1.0,
                         radius: 12.0.into(),
                     },
@@ -2037,9 +2045,9 @@ fn summary_metric<'a>(label: &'a str, value: String) -> Element<'a, WalletsMessa
         column![
             text(label)
                 .size(12)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
             Space::with_height(4),
-            text(value).size(14).style(text_color(Colors::TEXT_PRIMARY)),
+            text(value).size(14).style(text_primary_color()),
         ]
         .spacing(0),
     )

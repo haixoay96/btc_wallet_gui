@@ -1,8 +1,10 @@
 use crate::i18n::t;
 use crate::components::{skeleton_transactions, modal};
 use crate::theme::{
-    card_style, pick_list_menu_style, pick_list_style, secondary_button_style,
-    selected_button_style, text_color, Colors, primary_button_style,
+    card_style, input_style, pick_list_menu_style, pick_list_style, secondary_button_style,
+    selected_button_style, text_color,
+    text_primary_color, text_secondary_color, text_muted_color,
+    Colors, primary_button_style,
 };
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
@@ -234,12 +236,12 @@ impl HistoryView {
 
         let title = text(t("Lịch sử giao dịch", "Transaction History"))
             .size(32)
-            .style(text_color(Colors::TEXT_PRIMARY));
+            .style(text_primary_color());
 
         let wallet_selector = column![
             text(t("Từ ví", "From Wallet"))
                 .size(14)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
             Space::with_height(4),
             pick_list(wallet_options, selected_wallet_option, |choice| {
                 HistoryMessage::SelectWallet(choice.index)
@@ -324,33 +326,37 @@ impl HistoryView {
             .on_input(HistoryMessage::DateFromChanged)
             .padding(6)
             .size(12)
-            .width(Length::Fixed(120.0));
-            
+            .width(Length::Fixed(120.0))
+            .style(input_style());
+
         let date_to_input = text_input("DD/MM/YYYY (Đến)", &self.date_to)
             .on_input(HistoryMessage::DateToChanged)
             .padding(6)
             .size(12)
-            .width(Length::Fixed(120.0));
+            .width(Length::Fixed(120.0))
+            .style(input_style());
 
         let amount_min_input = text_input("Min BTC", &self.min_amount)
             .on_input(HistoryMessage::MinAmountChanged)
             .padding(6)
             .size(12)
-            .width(Length::Fixed(80.0));
+            .width(Length::Fixed(80.0))
+            .style(input_style());
 
         let amount_max_input = text_input("Max BTC", &self.max_amount)
             .on_input(HistoryMessage::MaxAmountChanged)
             .padding(6)
             .size(12)
-            .width(Length::Fixed(80.0));
+            .width(Length::Fixed(80.0))
+            .style(input_style());
 
         let advanced_filter_row = row![
-            text(t("Ngày:", "Date:")).size(12).style(text_color(Colors::TEXT_SECONDARY)),
+            text(t("Ngày:", "Date:")).size(12).style(text_secondary_color()),
             date_from_input,
             Space::with_width(8),
             date_to_input,
             Space::with_width(16),
-            text(t("Tiền:", "Amt:")).size(12).style(text_color(Colors::TEXT_SECONDARY)),
+            text(t("Tiền:", "Amt:")).size(12).style(text_secondary_color()),
             amount_min_input,
             Space::with_width(8),
             amount_max_input,
@@ -367,7 +373,8 @@ impl HistoryView {
         .on_input(HistoryMessage::SearchChanged)
         .padding(8)
         .size(12)
-        .width(Length::Fixed(200.0));
+        .width(Length::Fixed(200.0))
+        .style(input_style());
 
         let export_row = row![
             button(text(t("Xuất CSV", "Export CSV")).size(11))
@@ -478,7 +485,7 @@ impl HistoryView {
                         container(
                             text(t("Không có giao dịch", "No transactions found"))
                                 .size(16)
-                                .style(text_color(Colors::TEXT_MUTED)),
+                                .style(text_muted_color()),
                         )
                         .padding(40)
                         .center_x(Length::Fill),
@@ -491,14 +498,14 @@ impl HistoryView {
                                 "{} {} ",
                                 total_items,
                                 t("giao dịch", "transactions")
-                            )).size(14).style(text_color(Colors::TEXT_SECONDARY)),
+                            )).size(14).style(text_secondary_color()),
                             Space::with_width(Length::Fill),
                             text(format!(
                                 "{} {}/{} ",
                                 t("Trang", "Page"),
                                 if total_pages == 0 { 0 } else { current_page + 1 },
                                 total_pages
-                            )).size(12).style(text_color(Colors::TEXT_MUTED))
+                            )).size(12).style(text_muted_color())
                         ]
                     );
                     content = content.push(Space::with_height(8));
@@ -537,7 +544,7 @@ impl HistoryView {
                                 row![
                                     text(direction_text).size(14).style(text_color(amount_color)),
                                     Space::with_width(12),
-                                    text(txid_short).size(14).style(text_color(Colors::TEXT_PRIMARY)),
+                                    text(txid_short).size(14).style(text_primary_color()),
                                     Space::with_width(Length::Fill),
                                     text(format!("{}{}", amount_sign, format_btc_and_sat(tx.amount_sat)))
                                         .size(14)
@@ -570,13 +577,13 @@ impl HistoryView {
                                                 .style(text_color(status_color)),
                                             text(est_time)
                                                 .size(9)
-                                                .style(text_color(Colors::TEXT_MUTED)),
+                                                .style(text_muted_color()),
                                         ]
                                         .spacing(1)
                                     },
                                     Space::with_width(Length::Fill),
                                     if let Some(block_time) = tx.block_time {
-                                        text(format_timestamp(block_time)).size(11).style(text_color(Colors::TEXT_MUTED))
+                                        text(format_timestamp(block_time)).size(11).style(text_muted_color())
                                     } else {
                                         text("").size(11)
                                     },
@@ -655,7 +662,7 @@ impl HistoryView {
                         content = content.push(row![
                             page_controls,
                             Space::with_width(Length::Fill),
-                            text(t("Hiển thị:", "Show:")).size(11).style(text_color(Colors::TEXT_SECONDARY)),
+                            text(t("Hiển thị:", "Show:")).size(11).style(text_secondary_color()),
                             items_picker
                         ].align_y(Alignment::Center));
                     }
@@ -680,8 +687,8 @@ impl HistoryView {
         if let Some(idx) = self.selected_tx_index {
             if let Some(wallet) = wallet {
                 if let Some(tx) = wallet.history.get(idx) {
-                    let modal_content = self.render_tx_detail_modal(tx, Some(wallet.network));
-                    return modal(main_content, "", modal_content, HistoryMessage::CloseTransactionDetail).into();
+                    let (modal_title, modal_content) = self.render_tx_detail_modal(tx, Some(wallet.network));
+                    return modal(main_content, modal_title, modal_content, HistoryMessage::CloseTransactionDetail).into();
                 }
             }
         }
@@ -693,7 +700,7 @@ impl HistoryView {
         &self,
         tx: &TxRecord,
         network: Option<WalletNetwork>,
-    ) -> Element<'a, HistoryMessage> {
+    ) -> (&'static str, Element<'a, HistoryMessage>) {
         let amount_color = match tx.direction {
             TxDirection::Incoming => Colors::SUCCESS,
             TxDirection::Outgoing => Colors::ERROR,
@@ -713,21 +720,14 @@ impl HistoryView {
 
         let info_row = |label: &str, value: String| -> Element<'a, HistoryMessage> {
             row![
-                text(format!("{}:", label)).size(13).style(text_color(Colors::TEXT_SECONDARY)).width(Length::Fixed(100.0)),
-                text(value).size(13).style(text_color(Colors::TEXT_PRIMARY)),
+                text(format!("{}:", label)).size(13).style(text_secondary_color()).width(Length::Fixed(100.0)),
+                text(value).size(13).style(text_primary_color()),
                 Space::with_width(Length::Fill),
             ].spacing(8).into()
         };
 
-        column![
-            row![
-                text(direction_text).size(18).style(text_color(amount_color)).style(text_color(Colors::TEXT_PRIMARY)),
-                Space::with_width(Length::Fill),
-                button(text(Bootstrap::X.to_string()).font(BOOTSTRAP_FONT).size(16))
-                    .on_press(HistoryMessage::CloseTransactionDetail)
-                    .padding(4)
-                    .style(secondary_button_style())
-            ].align_y(Alignment::Center),
+        let modal_content = column![
+            text(direction_text).size(18).style(text_color(amount_color)).style(text_primary_color()),
             Space::with_height(16),
             info_row(t("TxID", "TxID"), tx.txid.clone()),
             Space::with_height(8),
@@ -756,7 +756,9 @@ impl HistoryView {
         ]
         .padding(16)
         .width(Length::Fixed(450.0))
-        .into()
+        .into();
+
+        (direction_text, modal_content)
     }
 
     /// Get the currently selected transaction ID for copying

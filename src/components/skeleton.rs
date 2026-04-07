@@ -1,9 +1,9 @@
 use iced::{
     widget::{column, container, Space},
-    Color, Element, Length,
+    Color, Element, Length, Theme,
 };
 
-use crate::theme::{card_style, Colors};
+use crate::theme::{card_style, get_theme_colors};
 
 /// Skeleton loader types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,11 +14,19 @@ pub enum SkeletonType {
     Card,
 }
 
-fn skeleton_bg_style() -> impl Fn(&iced::Theme) -> iced::widget::container::Style {
-    |_| iced::widget::container::Style {
-        background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.15))),
-        border: iced::border::rounded(4),
-        ..Default::default()
+fn skeleton_bg_style() -> impl Fn(&Theme) -> iced::widget::container::Style {
+    |theme| {
+        let colors = get_theme_colors(theme);
+        iced::widget::container::Style {
+            background: Some(iced::Background::Color(Color::from_rgba(
+                colors.text_muted.r, 
+                colors.text_muted.g, 
+                colors.text_muted.b, 
+                0.15
+            ))),
+            border: iced::border::rounded(4),
+            ..Default::default()
+        }
     }
 }
 
@@ -29,10 +37,18 @@ pub fn skeleton(skeleton_type: SkeletonType, size: (f32, f32)) -> Element<'stati
             let (width, height) = size;
             let radius = (width.min(height)) / 2.0;
             container(Space::with_width(width).height(height))
-                .style(move |_| iced::widget::container::Style {
-                    background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.2))),
-                    border: iced::border::rounded(radius),
-                    ..Default::default()
+                .style(move |theme| {
+                    let colors = get_theme_colors(theme);
+                    iced::widget::container::Style {
+                        background: Some(iced::Background::Color(Color::from_rgba(
+                            colors.text_muted.r,
+                            colors.text_muted.g,
+                            colors.text_muted.b,
+                            0.20,
+                        ))),
+                        border: iced::border::rounded(radius),
+                        ..Default::default()
+                    }
                 })
                 .into()
         }

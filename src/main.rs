@@ -23,7 +23,7 @@ pub fn main() -> iced::Result {
             min_size: Some(Size::new(800.0, 600.0)),
             ..window::Settings::default()
         })
-        .theme(|_| Theme::Dark)
+        .theme(|state: &App| state.current_theme())
         .font(BOOTSTRAP_FONT_BYTES)
         .run_with(App::new)
 }

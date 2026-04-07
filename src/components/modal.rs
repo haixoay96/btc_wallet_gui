@@ -3,8 +3,42 @@ use iced::{
     Alignment, Element, Length,
 };
 
-use crate::theme::{popup_dialog_style, popup_overlay_style, text_color, Colors};
+use crate::theme::{popup_dialog_style, popup_overlay_style, text_primary_color, text_secondary_color, get_theme_colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
+
+/// Subtle close button style for modals
+fn close_button_style() -> impl Fn(&iced::Theme, button::Status) -> button::Style {
+    |theme: &iced::Theme, status: button::Status| {
+        let colors = get_theme_colors(theme);
+        let (background, text_color) = match status {
+            button::Status::Hovered => (
+                Some(iced::Background::Color(iced::Color::from_rgba(
+                    colors.error.r,
+                    colors.error.g,
+                    colors.error.b,
+                    0.12,
+                ))),
+                colors.error,
+            ),
+            _ => (
+                Some(iced::Background::Color(iced::Color::from_rgba(
+                    colors.text_muted.r,
+                    colors.text_muted.g,
+                    colors.text_muted.b,
+                    0.10,
+                ))),
+                colors.text_secondary,
+            ),
+        };
+
+        button::Style {
+            background,
+            text_color,
+            border: iced::Border::default(),
+            shadow: iced::Shadow::default(),
+        }
+    }
+}
 
 /// Tạo Modal Popup chuẩn:
 /// - Căn giữa ngang
@@ -36,16 +70,17 @@ pub fn modal<'a, Message: 'a + Clone>(
 
     // 2. Header với nút đóng X
     let header = row![
-        text(title).size(18).style(text_color(Colors::TEXT_PRIMARY)),
+        text(title).size(18).style(text_primary_color()),
         Space::with_width(Length::Fill),
         button(
             text(Bootstrap::X.to_string())
                 .size(16)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::TEXT_SECONDARY))
+                .style(text_secondary_color())
         )
         .on_press(on_close)
-        .padding(6),
+        .padding(6)
+        .style(close_button_style()),
     ]
     .align_y(Alignment::Center);
 

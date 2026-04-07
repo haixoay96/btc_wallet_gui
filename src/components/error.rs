@@ -4,6 +4,8 @@ use iced::{
 };
 
 use crate::i18n::t;
+use crate::theme::text_primary_color;
+use crate::theme::text_secondary_color;
 use crate::theme::text_color;
 use crate::theme::Colors;
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
@@ -23,13 +25,13 @@ pub fn error_card<Message: 'static + Clone>(
             Space::with_width(12),
             text(title)
                 .size(16)
-                .style(text_color(Colors::TEXT_PRIMARY))
+                .style(text_primary_color())
         ]
         .align_y(iced::Alignment::Center),
         Space::with_height(8),
         text(message)
             .size(13)
-            .style(text_color(Colors::TEXT_SECONDARY)),
+            .style(text_secondary_color()),
     ]
     .spacing(0);
 

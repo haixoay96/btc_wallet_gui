@@ -1,13 +1,17 @@
 use iced::{
-    widget::{button, column, container, row, scrollable, text, text_input, Space},
+    widget::{button, column, container, row, scrollable, text, text_input, pick_list, Space},
     Alignment, Element, Length,
 };
 
 use crate::components::modal;
 use crate::i18n::t;
+use crate::storage::AppTheme;
 use crate::theme::{
-    card_style, danger_button_style, info_style, notice_style, primary_button_style,
-    secondary_button_style, text_color, warning_style, Colors, NoticeTone,
+    card_style, danger_button_style, info_style, input_style, notice_style, primary_button_style,
+    secondary_button_style, text_color, warning_style,
+    text_primary_color, text_secondary_color, text_muted_color,
+    Colors, NoticeTone,
+    pick_list_style,
 };
 
 #[derive(Debug, Clone)]
@@ -23,6 +27,7 @@ pub enum SettingsMessage {
     ClearDataPassphraseChanged(String),
     ConfirmClearData,
     CancelClearData,
+    ThemeSelected(AppTheme),
 }
 
 #[derive(Debug, Clone)]
@@ -33,6 +38,7 @@ pub enum SettingsEvent {
     },
     ExportWallet,
     ClearAllData(String),
+    ThemeChanged(AppTheme),
 }
 
 pub struct SettingsView {
@@ -190,15 +196,51 @@ impl SettingsView {
                 self.clear_data_passphrase.clear();
                 None
             }
+            SettingsMessage::ThemeSelected(theme) => {
+                Some(SettingsEvent::ThemeChanged(theme))
+            }
         }
     }
 
-    pub fn view(&self) -> Element<'_, SettingsMessage> {
+    pub fn view(&self, current_theme: AppTheme) -> Element<'_, SettingsMessage> {
         let title = text(t("Cài đặt", "Settings"))
             .size(32)
-            .style(text_color(Colors::TEXT_PRIMARY));
+            .style(text_primary_color());
 
         let mut content = column![title].spacing(20).padding(32);
+
+        // Appearance / Theme Section
+        let theme_options: Vec<AppTheme> = vec![AppTheme::Dark, AppTheme::Light, AppTheme::System];
+        let _theme_display = |theme: &AppTheme| -> &'static str {
+            match theme {
+                AppTheme::Dark => t("Tối", "Dark"),
+                AppTheme::Light => t("Sáng", "Light"),
+                AppTheme::System => t("Theo hệ thống", "System Default"),
+            }
+        };
+
+        content = content.push(
+            container(column![
+                text(t("Giao diện", "Appearance"))
+                    .size(18)
+                    .style(text_primary_color()),
+                Space::with_height(8),
+                text(t("Chọn màu sắc giao diện", "Choose your theme preference"))
+                    .size(12)
+                    .style(text_secondary_color()),
+                Space::with_height(8),
+                pick_list(
+                    theme_options,
+                    Some(current_theme),
+                    SettingsMessage::ThemeSelected
+                )
+                .padding(10)
+                .style(pick_list_style()),
+            ])
+            .style(card_style())
+            .padding(16)
+            .width(Length::Fill),
+        );
 
         let change_passphrase_btn = button(text(t("Đổi passphrase", "Change Passphrase")).size(16))
             .on_press(SettingsMessage::ToggleChangePassphrase)
@@ -209,7 +251,7 @@ impl SettingsView {
             container(column![
                 text(t("Bảo mật", "Security"))
                     .size(18)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
                 Space::with_height(12),
                 change_passphrase_btn,
             ])
@@ -222,7 +264,7 @@ impl SettingsView {
             let current_input = column![
                 text(t("Passphrase hiện tại", "Current Passphrase"))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(4),
                 text_input(
                     t("Nhập passphrase hiện tại...", "Enter current passphrase..."),
@@ -232,13 +274,14 @@ impl SettingsView {
                 .secure(true)
                 .padding(10)
                 .size(14)
+                .style(input_style())
             ]
             .spacing(2);
 
             let new_input = column![
                 text(t("Passphrase mới", "New Passphrase"))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(4),
                 text_input(
                     t("Nhập passphrase mới...", "Enter new passphrase..."),
@@ -248,13 +291,14 @@ impl SettingsView {
                 .secure(true)
                 .padding(10)
                 .size(14)
+                .style(input_style())
             ]
             .spacing(2);
 
             let confirm_input = column![
                 text(t("Xác nhận passphrase mới", "Confirm New Passphrase"))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(4),
                 text_input(
                     t("Xác nhận passphrase mới...", "Confirm new passphrase..."),
@@ -264,6 +308,7 @@ impl SettingsView {
                 .secure(true)
                 .padding(10)
                 .size(14)
+                .style(input_style())
             ]
             .spacing(2);
 
@@ -289,14 +334,14 @@ impl SettingsView {
         let export_section = container(column![
             text(t("Xuất backup", "Export Backup"))
                 .size(18)
-                .style(text_color(Colors::TEXT_PRIMARY)),
+                .style(text_primary_color()),
             Space::with_height(8),
             text(t(
                 "Backup sẽ được mã hóa bằng passphrase hiện tại",
                 "Backup will be encrypted with the current passphrase"
             ))
                 .size(12)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
             text(t(
                 "Khuyến nghị: ưu tiên backup mnemonic cho từng wallet thay vì backup toàn app.",
                 "Recommended: backup each wallet mnemonic instead of full app backup."
@@ -308,7 +353,7 @@ impl SettingsView {
                 "Full app backup restore is only for the startup screen. Individual .enc wallet restore is available in Wallets > Import."
             ))
                 .size(12)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
             Space::with_height(10),
             button(text(t("Xuất backup ví", "Export Wallet Backup")).size(14))
                 .on_press(SettingsMessage::ExportWallet)
@@ -357,7 +402,7 @@ impl SettingsView {
                         "You will need the app backup or each wallet's own secret backup to restore later.",
                     ))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 ]
                 .spacing(6),
             );
@@ -378,7 +423,7 @@ impl SettingsView {
         let mut info_col = column![
             text(t("Thông tin", "Information"))
                 .size(18)
-                .style(text_color(Colors::TEXT_PRIMARY)),
+                .style(text_primary_color()),
             Space::with_height(12),
             about_btn,
         ]
@@ -389,12 +434,12 @@ impl SettingsView {
                 .push(
                     text("Bitcoin Wallet GUI v0.1.0")
                         .size(12)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                        .style(text_muted_color()),
                 )
                 .push(
                     text(t("Xây dựng với iced.rs", "Built with iced.rs"))
                         .size(12)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                        .style(text_muted_color()),
                 )
                 .push(
                     text(t(
@@ -402,7 +447,7 @@ impl SettingsView {
                         "Storage: encrypted backup (ChaCha20-Poly1305 + Argon2id)",
                     ))
                     .size(12)
-                    .style(text_color(Colors::TEXT_MUTED)),
+                    .style(text_muted_color()),
                 );
         }
 
@@ -418,7 +463,7 @@ impl SettingsView {
                 container(
                     text(err.as_str())
                         .size(13)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                        .style(text_primary_color()),
                 )
                 .style(notice_style(NoticeTone::Error))
                 .padding(12)
@@ -431,7 +476,7 @@ impl SettingsView {
                 container(
                     text(succ.as_str())
                         .size(13)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                        .style(text_primary_color()),
                 )
                 .style(notice_style(NoticeTone::Success))
                 .padding(12)
@@ -451,7 +496,7 @@ impl SettingsView {
                     "Wallet data on this device will be permanently deleted.",
                 ))
                 .size(14)
-                .style(text_color(Colors::TEXT_PRIMARY)),
+                .style(text_primary_color()),
                 Space::with_height(8),
                 text_input(
                     t("Nhập passphrase hiện tại...", "Enter current passphrase..."),
@@ -460,7 +505,8 @@ impl SettingsView {
                 .on_input(SettingsMessage::ClearDataPassphraseChanged)
                 .secure(true)
                 .padding(12)
-                .size(14),
+                .size(14)
+                .style(input_style()),
                 Space::with_height(12),
                 container(
                     row![

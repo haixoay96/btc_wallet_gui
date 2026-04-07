@@ -3,7 +3,9 @@ use iced::{
     Color, Element, Length,
 };
 
-use crate::theme::{text_color, Colors};
+use crate::theme::{text_color,
+    text_primary_color, text_secondary_color, text_muted_color,
+    Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
 /// Info box with icon and text - supports i18n via String
@@ -21,11 +23,11 @@ pub fn info_box(title: impl Into<String>, description: impl Into<String>) -> Ele
             column![
                 text(title)
                     .size(13)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
                 Space::with_height(2),
                 text(description)
                     .size(11)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
             ]
             .spacing(0),
         ]
@@ -56,11 +58,11 @@ pub fn warning_box(title: impl Into<String>, description: impl Into<String>) -> 
             column![
                 text(title)
                     .size(13)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
                 Space::with_height(2),
                 text(description)
                     .size(11)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
             ]
             .spacing(0),
         ]
@@ -129,13 +131,13 @@ pub fn tooltip_bubble(content: &TooltipContent) -> Element<'static, ()> {
                 Space::with_width(4),
                 text(crate::i18n::t(content.title_vi, content.title_en))
                     .size(12)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
             ]
             .align_y(iced::Alignment::Center),
             Space::with_height(4),
             text(crate::i18n::t(content.description_vi, content.description_en))
                 .size(10)
-                .style(text_color(Colors::TEXT_SECONDARY))
+                .style(text_secondary_color())
                 .width(Length::Shrink),
         ]
         .spacing(0)
@@ -238,12 +240,12 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
         Space::with_width(6),
         text(title)
             .size(12)
-            .style(text_color(Colors::TEXT_PRIMARY))
+            .style(text_primary_color())
             .width(Length::Fill),
         text(icon_char)
             .size(10)
             .font(BOOTSTRAP_FONT)
-            .style(text_color(Colors::TEXT_SECONDARY)),
+            .style(text_secondary_color()),
     ]
     .align_y(iced::Alignment::Center)
     .into();
@@ -256,7 +258,7 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
     if is_expanded {
         let description_text: Element<'_, Message> = text(description)
             .size(11)
-            .style(text_color(Colors::TEXT_SECONDARY))
+            .style(text_secondary_color())
             .width(Length::Fill)
             .into();
 
@@ -281,7 +283,7 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
             body = body.push(
                 text(detail_text)
                     .size(10)
-                    .style(text_color(Colors::TEXT_MUTED))
+                    .style(text_muted_color())
                     .width(Length::Fill),
             );
         }
@@ -315,7 +317,7 @@ pub fn help_button<'a, Message: Clone + 'a>(on_press: Message) -> Element<'a, Me
         text(Bootstrap::QuestionCircle.to_string())
             .size(14)
             .font(BOOTSTRAP_FONT)
-            .style(text_color(Colors::TEXT_SECONDARY)),
+            .style(text_secondary_color()),
     )
     .padding(4)
     .into()

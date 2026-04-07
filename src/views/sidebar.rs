@@ -1,6 +1,8 @@
 use crate::i18n::t;
 use crate::theme::{
-    secondary_button_style, selected_button_style, sidebar_style, text_color, Colors,
+    secondary_button_style, selected_button_style, sidebar_style, text_color,
+    text_primary_color, text_secondary_color,
+    Colors,
 };
 use iced::{
     widget::{button, column, container, row, text, Space},
@@ -108,13 +110,13 @@ impl Sidebar {
                         } else {
                             Colors::TEXT_SECONDARY
                         }));
-                    let title = text(item.title()).size(14);
+                    let title = text(item.title()).size(14).style(text_secondary_color());
 
                     let item_row = if item == NavItem::Wallets && wallet_count > 0 {
                         let badge = container(
                             text(format!("{}", wallet_count))
                                 .size(11)
-                                .style(text_color(Colors::TEXT_PRIMARY)),
+                                .style(text_primary_color()),
                         )
                         .padding(Padding::from([2, 6]));
 

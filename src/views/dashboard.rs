@@ -1,8 +1,9 @@
 use crate::i18n::t;
 use crate::components::skeleton_wallet_cards;
 use crate::theme::{
-    card_style, notice_style, primary_button_style, secondary_button_style, text_color, Colors,
-    NoticeTone,
+    card_style, notice_style, primary_button_style, secondary_button_style, 
+    text_primary_color, text_secondary_color, text_muted_color,
+    Colors, NoticeTone,
 };
 use crate::views::sidebar::NavItem;
 use iced::{
@@ -59,7 +60,7 @@ impl DashboardView {
     pub fn view(&self, is_refreshing: bool) -> Element<'_, DashboardMessage> {
         let title = text(t("Tổng quan", "Dashboard"))
             .size(32)
-            .style(text_color(Colors::TEXT_PRIMARY));
+            .style(text_primary_color());
 
         let total_btc = self.total_balance as f64 / 100_000_000.0;
         let confirmed_btc = self.confirmed_balance as f64 / 100_000_000.0;
@@ -69,15 +70,15 @@ impl DashboardView {
             column![
                 text(t("Tổng số dư", "Total Balance"))
                     .size(14)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(8),
                 text(format!("{:.8} BTC", total_btc))
                     .size(36)
-                    .style(text_color(Colors::ACCENT_TEAL)),
+                    .style(text_primary_color()),
                 Space::with_height(4),
                 text(format!("{} sat", self.total_balance))
                     .size(14)
-                    .style(text_color(Colors::TEXT_MUTED)),
+                    .style(text_muted_color()),
             ]
             .padding(24),
         )
@@ -88,15 +89,15 @@ impl DashboardView {
             column![
                 text(t("Số dư đã xác nhận", "Confirmed Balance"))
                     .size(14)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(8),
                 text(format!("{:.8} BTC", confirmed_btc))
                     .size(24)
-                    .style(text_color(Colors::SUCCESS)),
+                    .style(text_primary_color()),
                 Space::with_height(4),
                 text(format!("{} sat", self.confirmed_balance))
                     .size(14)
-                    .style(text_color(Colors::TEXT_MUTED)),
+                    .style(text_muted_color()),
             ]
             .padding(24),
         )
@@ -107,15 +108,15 @@ impl DashboardView {
             column![
                 text(t("Số dư chờ xác nhận", "Pending Balance"))
                     .size(14)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(8),
                 text(format!("{:.8} BTC", pending_btc))
                     .size(24)
-                    .style(text_color(Colors::WARNING)),
+                    .style(text_primary_color()),
                 Space::with_height(4),
                 text(format!("{} sat", self.pending_balance))
                     .size(14)
-                    .style(text_color(Colors::TEXT_MUTED)),
+                    .style(text_muted_color()),
             ]
             .padding(24),
         )
@@ -126,11 +127,11 @@ impl DashboardView {
             column![
                 text(t("Tổng số ví", "Total Wallets"))
                     .size(14)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(8),
                 text(format!("{}", self.wallet_count))
                     .size(36)
-                    .style(text_color(Colors::ACCENT_PURPLE)),
+                    .style(text_primary_color()),
             ]
             .padding(24),
         )
@@ -141,14 +142,14 @@ impl DashboardView {
             column![
                 text(t("Ví cần backup", "Wallets Needing Backup"))
                     .size(14)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(8),
                 text(format!("{}", self.backup_needed_wallets))
                     .size(28)
                     .style(if self.backup_needed_wallets == 0 {
-                        text_color(Colors::SUCCESS)
+                        text_primary_color()
                     } else {
-                        text_color(Colors::WARNING)
+                        text_secondary_color()
                     }),
                 Space::with_height(4),
                 text(if self.backup_needed_wallets == 0 {
@@ -163,7 +164,7 @@ impl DashboardView {
                     )
                 })
                 .size(12)
-                .style(text_color(Colors::TEXT_MUTED)),
+                .style(text_muted_color()),
             ]
             .padding(24),
         )
@@ -217,7 +218,7 @@ impl DashboardView {
                         last_synced
                     ))
                     .size(12)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
                 )
                 .style(notice_style(NoticeTone::Info))
                 .padding(12)
@@ -232,13 +233,13 @@ impl DashboardView {
                     column![
                         text(t("Chưa có ví nào", "No wallets yet"))
                             .size(22)
-                            .style(text_color(Colors::TEXT_PRIMARY)),
+                            .style(text_primary_color()),
                         text(t(
                             "Bắt đầu bằng cách tạo ví mới hoặc import một ví hiện có.",
                             "Start by creating a new wallet or importing an existing one.",
                         ))
                         .size(14)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        .style(text_secondary_color()),
                         Space::with_height(12),
                         button(text(t("Đi tới Wallets", "Go to Wallets")).size(14))
                             .on_press(DashboardMessage::Navigate(NavItem::Wallets))

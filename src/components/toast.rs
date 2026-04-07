@@ -5,7 +5,7 @@ use iced::{
     Alignment, Color, Element, Length,
 };
 
-use crate::theme::{popup_dialog_style, text_color, Colors};
+use crate::theme::{popup_dialog_style, text_color, text_primary_color, Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
 /// Toast notification types
@@ -133,7 +133,7 @@ impl ToastManager {
 
             let message_text = text(&toast.message)
                 .size(13)
-                .style(text_color(Colors::TEXT_PRIMARY));
+                .style(text_primary_color());
 
             let toast_element = container(
                 row![

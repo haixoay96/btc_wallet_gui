@@ -7,7 +7,9 @@ use crate::components::{calculate_strength, strength_bar};
 use crate::i18n::{t, AppLanguage};
 use crate::theme::{
     card_style, gradient_button_style, input_style, muted_button_style, notice_style,
-    screen_background_style, secondary_button_style, selected_button_style, text_color, Colors,
+    screen_background_style, secondary_button_style, selected_button_style, text_color,
+    text_primary_color, text_secondary_color, text_muted_color,
+    Colors,
     NoticeTone,
 };
 use crate::views::language_selector::LanguageSelector;
@@ -248,7 +250,7 @@ impl LoginView {
 
         let title = text(t("Mở Ví Bitcoin", "Open Bitcoin Wallet"))
             .size(36)
-            .style(text_color(Colors::TEXT_PRIMARY));
+            .style(text_primary_color());
 
         let subtitle = text(match self.mode {
             LoginMode::ExistingWallet => t(
@@ -265,7 +267,7 @@ impl LoginView {
             ),
         })
         .size(16)
-        .style(text_color(Colors::TEXT_SECONDARY));
+        .style(text_secondary_color());
 
         let mode_switcher: Element<'_, LoginMessage> = if self.can_create_new_passphrase {
             row![
@@ -311,7 +313,7 @@ impl LoginView {
                         "To restore additional individual wallets, use Wallets > Import after login.",
                     ))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 ]
                 .spacing(10),
             )
@@ -325,7 +327,7 @@ impl LoginView {
             column![
                 text(t("Tên hiển thị", "Display name"))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(4),
                 text_input(t("Nhập nickname...", "Enter nickname..."), &self.nickname)
                     .on_input(LoginMessage::NicknameChanged)
@@ -342,7 +344,7 @@ impl LoginView {
         let passphrase_input = column![
             text(t("Passphrase", "Passphrase"))
                 .size(12)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
             Space::with_height(4),
             row![
                 text_input(
@@ -363,7 +365,7 @@ impl LoginView {
                     })
                     .size(16)
                     .font(BOOTSTRAP_FONT)
-                    .style(text_color(Colors::TEXT_MUTED)),
+                    .style(text_muted_color()),
                 )
                 .on_press(LoginMessage::TogglePassphraseVisibility)
                 .padding(10)
@@ -377,11 +379,11 @@ impl LoginView {
         let confirm_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
             let strength = calculate_strength(&self.passphrase);
             let strength_widget = strength_bar(strength, true).map(|_| LoginMessage::Submit);
-            
+
             column![
                 text(t("Xác nhận passphrase", "Confirm passphrase"))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(4),
                 row![
                     text_input(
@@ -402,7 +404,7 @@ impl LoginView {
                         })
                         .size(16)
                         .font(BOOTSTRAP_FONT)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                        .style(text_muted_color()),
                     )
                     .on_press(LoginMessage::ToggleConfirmPassphraseVisibility)
                     .padding(10)
@@ -423,7 +425,7 @@ impl LoginView {
             let mut col = column![
                 text(t("File backup ứng dụng", "App backup file"))
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(4),
                 button(text(t("Chọn file backup", "Choose backup file")).size(14))
                     .on_press(LoginMessage::BrowseBackupPath)
@@ -437,7 +439,7 @@ impl LoginView {
                     container(
                         text(self.backup_path.as_str())
                             .size(13)
-                            .style(text_color(Colors::TEXT_PRIMARY)),
+                            .style(text_primary_color()),
                     )
                     .style(card_style())
                     .padding(12)
@@ -459,7 +461,7 @@ impl LoginView {
         let error_text: Element<'_, LoginMessage> = if let Some(error) = &self.error {
             container(
                 text(error.as_str())
-                    .style(text_color(Colors::TEXT_PRIMARY))
+                    .style(text_primary_color())
                     .size(14),
             )
             .style(notice_style(NoticeTone::Error))

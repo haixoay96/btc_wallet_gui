@@ -2,7 +2,7 @@ use iced::Task;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::storage::Storage;
+use crate::storage::{AppTheme, Storage};
 use crate::utils::{pick_export_backup_path, resolve_user_path};
 use crate::views::settings::{SettingsEvent, SettingsMessage};
 
@@ -31,6 +31,9 @@ impl App {
                     self.settings_view.clear_sensitive_inputs();
                     return task;
                 }
+                SettingsEvent::ThemeChanged(theme) => {
+                    return self.handle_change_theme(theme);
+                }
             }
         }
         Task::none()
@@ -47,6 +50,34 @@ impl App {
             ));
         }
         self.save_state();
+        Task::none()
+    }
+
+    pub fn handle_change_theme(&mut self, theme: AppTheme) -> Task<AppMessage> {
+        self.theme = theme;
+        if let Ok(storage) = Storage::new() {
+            let _ = storage.save_theme(theme);
+        }
+        self.settings_view.set_success(t(
+            "Đã đổi giao diện",
+            "Theme updated successfully",
+        ));
+        Task::none()
+    }
+
+    pub fn handle_toggle_high_contrast(&mut self, enabled: bool) -> Task<AppMessage> {
+        self.high_contrast = enabled;
+        if let Ok(storage) = Storage::new() {
+            let _ = storage.save_high_contrast(enabled);
+        }
+        Task::none()
+    }
+
+    pub fn handle_font_scale_changed(&mut self, scale: f64) -> Task<AppMessage> {
+        self.font_scale = scale.clamp(0.8, 1.5);
+        if let Ok(storage) = Storage::new() {
+            let _ = storage.save_font_scale(self.font_scale);
+        }
         Task::none()
     }
 

@@ -5,7 +5,9 @@ use iced::{
 
 use crate::i18n::t;
 use crate::storage::address_book::{AddressBook, ContactEntry};
-use crate::theme::{primary_button_style, secondary_button_style, text_color, Colors};
+use crate::theme::{input_style, primary_button_style, secondary_button_style, text_color,
+    text_primary_color, text_secondary_color, text_muted_color,
+    get_theme_colors, Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
 /// Contact picker for Send screen
@@ -26,20 +28,29 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
             text(Bootstrap::Search.to_string())
                 .size(14)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
             Space::with_width(6),
             text_input(t("Tìm kiếm contact...", "Search contacts..."), search_query)
                 .on_input(on_search_changed)
                 .padding(8)
                 .size(12)
-                .width(Length::Fill),
+                .width(Length::Fill)
+                .style(input_style()),
         ]
         .align_y(iced::Alignment::Center),
     )
-    .style(|_| iced::widget::container::Style {
-        background: Some(iced::Background::Color(iced::Color::from_rgba(0.2, 0.2, 0.25, 0.4))),
-        border: iced::border::rounded(8),
-        ..Default::default()
+    .style(|theme: &iced::Theme| {
+        let colors = get_theme_colors(theme);
+        iced::widget::container::Style {
+            background: Some(iced::Background::Color(iced::Color::from_rgba(
+                colors.text_muted.r,
+                colors.text_muted.g,
+                colors.text_muted.b,
+                0.15
+            ))),
+            border: iced::border::rounded(8),
+            ..Default::default()
+        }
     })
     .padding(iced::padding::Padding {
         top: 6.0,
@@ -57,13 +68,13 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
             Space::with_width(6),
             text(t("Contact", "Contact"))
                 .size(14)
-                .style(text_color(Colors::TEXT_PRIMARY)),
+                .style(text_primary_color()),
             Space::with_width(Length::Fill),
             button(
                 text(Bootstrap::Plus.to_string())
                     .size(14)
                     .font(BOOTSTRAP_FONT)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
             )
             .on_press(on_add_new_contact)
             .padding([4, 8])
@@ -80,7 +91,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                 container(
                     text(t("Chưa có contact nào. Thêm contact mới!", "No contacts yet. Add a new one!"))
                         .size(12)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                        .style(text_muted_color()),
                 )
                 .padding(16)
                 .center_x(Length::Fill),
@@ -90,7 +101,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                 container(
                     text(t("Không tìm thấy contact nào", "No contacts found"))
                         .size(12)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                        .style(text_muted_color()),
                 )
                 .padding(16)
                 .center_x(Length::Fill),
@@ -108,22 +119,30 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                 column![
                     text(&contact.name)
                         .size(13)
-                        .style(text_color(Colors::TEXT_PRIMARY)),
+                        .style(text_primary_color()),
                     text(&contact.address)
                         .size(10)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        .style(text_secondary_color()),
                 ].spacing(2),
                 Space::with_width(Length::Fill),
                 if !contact.note.is_empty() {
                     container(
                         text(&contact.note)
                             .size(9)
-                            .style(text_color(Colors::TEXT_MUTED)),
+                            .style(text_muted_color()),
                     )
-                    .style(|_| iced::widget::container::Style {
-                        background: Some(iced::Background::Color(iced::Color::from_rgba(0.5, 0.5, 0.5, 0.15))),
-                        border: iced::border::rounded(8),
-                        ..Default::default()
+                    .style(|theme: &iced::Theme| {
+                        let colors = get_theme_colors(theme);
+                        iced::widget::container::Style {
+                            background: Some(iced::Background::Color(iced::Color::from_rgba(
+                                colors.text_muted.r,
+                                colors.text_muted.g,
+                                colors.text_muted.b,
+                                0.15
+                            ))),
+                            border: iced::border::rounded(8),
+                            ..Default::default()
+                        }
                     })
                     .padding([2, 6])
                 } else {
@@ -166,10 +185,18 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
     }
     
     container(content)
-        .style(|_| iced::widget::container::Style {
-            background: Some(iced::Background::Color(iced::Color::from_rgba(0.15, 0.15, 0.2, 0.95))),
-            border: iced::border::rounded(12),
-            ..Default::default()
+        .style(|theme: &iced::Theme| {
+            let colors = get_theme_colors(theme);
+            iced::widget::container::Style {
+                background: Some(iced::Background::Color(iced::Color::from_rgba(
+                    colors.bg_secondary.r,
+                    colors.bg_secondary.g,
+                    colors.bg_secondary.b,
+                    0.95
+                ))),
+                border: iced::border::rounded(12),
+                ..Default::default()
+            }
         })
         .padding(12)
         .width(Length::Fill)
@@ -265,7 +292,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 Space::with_width(6),
                 text(title)
                     .size(14)
-                    .style(text_color(Colors::TEXT_PRIMARY)),
+                    .style(text_primary_color()),
             ]
             .align_y(iced::Alignment::Center),
             Space::with_height(12),
@@ -273,25 +300,26 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 row![
                     text(t("Tên", "Name"))
                         .size(12)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        .style(text_secondary_color()),
                     Space::with_width(Length::Fill),
                     text(t("(Ctrl+Shift+V để dán tiếng Việt)", "(Ctrl+Shift+V to paste Vietnamese)"))
                         .size(9)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                        .style(text_muted_color()),
                 ]
                 .align_y(iced::Alignment::Center),
                 Space::with_height(4),
                 text_input(t("VD: Ví cá nhân, Binance...", "e.g. Alice, Binance..."), name)
                     .on_input(on_name_changed)
                     .padding(8)
-                    .size(12),
+                    .size(12)
+                    .style(input_style()),
             ].spacing(4),
             Space::with_height(8),
             column![
                 row![
                     text(t("Địa chỉ BTC", "BTC Address"))
                         .size(12)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        .style(text_secondary_color()),
                     Space::with_width(Length::Fill),
                     if address_error.is_some() && !address.trim().is_empty() {
                         text(Bootstrap::ExclamationTriangle.to_string())
@@ -312,7 +340,8 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 text_input(t("VD: bc1q...", "e.g. bc1q..."), address)
                     .on_input(on_address_changed)
                     .padding(8)
-                    .size(12),
+                    .size(12)
+                    .style(input_style()),
                 if address_error.is_some() && !address.trim().is_empty() {
                     text(address_error.unwrap())
                         .size(11)
@@ -327,27 +356,36 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 row![
                     text(t("Ghi chú (tùy chọn)", "Note (optional)"))
                         .size(12)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        .style(text_secondary_color()),
                     Space::with_width(Length::Fill),
                     text(t("(Ctrl+Shift+V để dán tiếng Việt)", "(Ctrl+Shift+V to paste Vietnamese)"))
                         .size(9)
-                        .style(text_color(Colors::TEXT_MUTED)),
+                        .style(text_muted_color()),
                 ]
                 .align_y(iced::Alignment::Center),
                 Space::with_height(4),
                 text_input(t("VD: Ví cá nhân, Exchange...", "e.g. Personal wallet, Exchange..."), note)
                     .on_input(on_note_changed)
                     .padding(8)
-                    .size(12),
+                    .size(12)
+                    .style(input_style()),
             ].spacing(4),
             Space::with_height(12),
             buttons,
         ].spacing(4),
     )
-    .style(|_| iced::widget::container::Style {
-        background: Some(iced::Background::Color(iced::Color::from_rgba(0.15, 0.15, 0.2, 0.98))),
-        border: iced::border::rounded(12),
-        ..Default::default()
+    .style(|theme: &iced::Theme| {
+        let colors = get_theme_colors(theme);
+        iced::widget::container::Style {
+            background: Some(iced::Background::Color(iced::Color::from_rgba(
+                colors.bg_card.r,
+                colors.bg_card.g,
+                colors.bg_card.b,
+                0.98
+            ))),
+            border: iced::border::rounded(12),
+            ..Default::default()
+        }
     })
     .padding(16)
     .width(Length::Fill)

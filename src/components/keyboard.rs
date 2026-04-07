@@ -4,7 +4,9 @@ use iced::{
     Color, Element, Length,
 };
 
-use crate::theme::{popup_dialog_style, text_color, Colors};
+use crate::theme::{popup_dialog_style, text_color,
+    text_primary_color, text_secondary_color,
+    Colors};
 
 /// Platform-aware key modifier display (Cmd on macOS, Ctrl elsewhere)
 pub fn ctrl_label() -> &'static str {
@@ -113,7 +115,7 @@ fn key_badge(key: &str) -> Element<'static, ()> {
     } else {
         Colors::TEXT_PRIMARY
     };
-    
+
     let key_owned = key.to_string();
     container(text(key_owned).size(11).style(text_color(text_color_val)))
         .style(|_| iced::widget::container::Style {
@@ -206,7 +208,7 @@ fn shortcut_row(shortcut: &KeyboardShortcut) -> Element<'static, ()> {
         Space::with_width(16),
         text(t(shortcut.description_vi, shortcut.description_en))
             .size(12)
-            .style(text_color(Colors::TEXT_SECONDARY)),
+            .style(text_secondary_color()),
     ]
     .align_y(iced::Alignment::Center);
 

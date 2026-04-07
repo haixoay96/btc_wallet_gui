@@ -10,7 +10,9 @@ use crate::components::{modal, warning_box};
 use crate::i18n::t;
 use crate::theme::{
     card_style, pick_list_menu_style, pick_list_style,
-    primary_button_style, secondary_button_style, selected_button_style, text_color, Colors,
+    primary_button_style, secondary_button_style, selected_button_style, text_color,
+    text_primary_color, text_secondary_color, text_muted_color,
+    Colors,
 };
 use crate::views::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::wallet::{AddressChain, Wallet};
@@ -123,12 +125,12 @@ impl ReceiveView {
 
         let title = text(t("Nhận BTC", "Receive BTC"))
             .size(32)
-            .style(text_color(Colors::TEXT_PRIMARY));
+            .style(text_primary_color());
 
         let wallet_selector = column![
             text(t("Ví", "Wallet"))
                 .size(14)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
             Space::with_height(4),
             pick_list(wallet_options, selected_wallet_option, |choice| {
                 ReceiveMessage::SelectWallet(choice.index)
@@ -159,7 +161,7 @@ impl ReceiveView {
                     row![
                         text(format!("{}: {:.8} BTC", t("Số dư", "Balance"), balance_btc))
                             .size(14)
-                            .style(text_color(Colors::TEXT_PRIMARY)),
+                            .style(text_primary_color()),
                         Space::with_width(Length::Fill),
                         text(format!(
                             "{}: {}",
@@ -167,7 +169,7 @@ impl ReceiveView {
                             wallet.network.as_str()
                         ))
                         .size(12)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        .style(text_secondary_color()),
                     ]
                     .align_y(Alignment::Center),
                 )
@@ -199,7 +201,7 @@ impl ReceiveView {
                         "This wallet has no address yet, click 'Derive New Address'.",
                     ))
                     .size(14)
-                    .style(text_color(Colors::TEXT_MUTED)),
+                    .style(text_muted_color()),
                 );
             } else {
                 let selected_index = self.selected_index.min(receive_addresses.len() - 1);
@@ -209,7 +211,7 @@ impl ReceiveView {
                             column![
                                 text(t("Địa chỉ nhận hiện tại", "Current receiving address"))
                                     .size(12)
-                                    .style(text_color(Colors::TEXT_SECONDARY)),
+                                    .style(text_secondary_color()),
                                 Space::with_height(8),
                                 text(addr.address.clone())
                                     .size(16)
@@ -220,7 +222,7 @@ impl ReceiveView {
                                     "Share this address or open its QR code for direct scanning.",
                                 ))
                                 .size(12)
-                                .style(text_color(Colors::TEXT_MUTED)),
+                                .style(text_muted_color()),
                             ]
                             .spacing(0),
                         )
@@ -296,7 +298,7 @@ impl ReceiveView {
                     content = content.push(
                         text(t("Tất cả địa chỉ nhận", "All receiving addresses"))
                             .size(18)
-                            .style(text_color(Colors::TEXT_PRIMARY)),
+                            .style(text_primary_color()),
                     );
 
                     let mut list = column![];
@@ -305,11 +307,11 @@ impl ReceiveView {
                         let row_content = row![
                             text(format!("#{}", addr.index))
                                 .size(12)
-                                .style(text_color(Colors::TEXT_MUTED)),
+                                .style(text_muted_color()),
                             Space::with_width(8),
                             text(addr.address.clone())
                                 .size(12)
-                                .style(text_color(Colors::TEXT_PRIMARY)),
+                                .style(text_primary_color()),
                             Space::with_width(Length::Fill),
                             if is_selected {
                                 text(t("Đang chọn", "Selected"))
@@ -359,7 +361,7 @@ impl ReceiveView {
             let qr_content = column![
                 text(address.as_str())
                     .size(12)
-                    .style(text_color(Colors::TEXT_SECONDARY)),
+                    .style(text_secondary_color()),
                 Space::with_height(10),
                 container(
                     image::Image::new(handle.clone())

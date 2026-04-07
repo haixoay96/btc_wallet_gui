@@ -9,14 +9,14 @@ use chrono::Local;
 use iced::{
     clipboard, keyboard,
     widget::{column, container, row, text, Space},
-    Element, Length, Subscription, Task,
+    Element, Length, Subscription, Task, Theme,
 };
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal, error_card, HelpDismissals};
 use crate::error::AppError;
 use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::storage::{PersistedState, RuntimeState, Storage, UserProfile, AddressBook};
+use crate::storage::{AppTheme, PersistedState, RuntimeState, Storage, UserProfile, AddressBook};
 use crate::theme::{
     notice_style, screen_background_style, secondary_button_style, text_color, Colors, NoticeTone,
 };
@@ -26,6 +26,7 @@ use crate::views::{
     history::{HistoryEvent, HistoryMessage, HistoryView},
     language_selector::LanguageSelector,
     login::{LoginMessage, LoginMode, LoginView},
+    onboarding::{OnboardingMessage, OnboardingView},
     receive::{ReceiveMessage, ReceiveView},
     send::{SendMessage, SendView},
     settings::{SettingsMessage, SettingsView},
@@ -47,6 +48,9 @@ pub struct App {
     pub state: AppState,
     pub storage_passphrase: Option<SecretString>,
     pub language: AppLanguage,
+    pub theme: AppTheme,
+    pub high_contrast: bool,
+    pub font_scale: f64,
     pub user_nickname: Option<String>,
     pub wallets: Vec<Wallet>,
     pub wallet_vault: WalletSecretsVault,
@@ -86,7 +90,11 @@ pub struct App {
     
     // Help system
     pub help_dismissals: HelpDismissals,
-    
+
+    // Onboarding
+    pub show_onboarding: bool,
+    pub onboarding_view: OnboardingView,
+
     // Address Book / Contact Book
     pub address_book: AddressBook,
 }
@@ -102,6 +110,9 @@ pub enum AppMessage {
     HistoryMessage(HistoryMessage),
     SettingsMessage(SettingsMessage),
     LanguageChanged(AppLanguage),
+    ThemeChanged(AppTheme),
+    HighContrastToggled(bool),
+    FontScaleChanged(f64),
     RefreshWalletsFinished(Result<RefreshWalletsResult, String>),
     EstimateSendFeeFinished(Result<u64, String>),
     MaxAmountFinished(Result<(u64, u64), String>),
@@ -122,6 +133,7 @@ pub enum AppMessage {
     KeyboardFocusSearch,
     ResetHelpDismissals,
     AutoRefreshConfirmations,
+    OnboardingMessage(OnboardingMessage),
 }
 
 #[derive(Debug, Clone)]
@@ -143,14 +155,18 @@ pub struct SendExecutionResult {
 impl App {
     pub fn new() -> (Self, Task<AppMessage>) {
         let fallback_language = AppLanguage::English;
-        let (initial_language, has_existing_state) = match Storage::new() {
+        let (initial_language, has_existing_state, initial_theme, initial_high_contrast, initial_font_scale, onboarding_completed) = match Storage::new() {
             Ok(storage) => {
                 let language = storage
                     .load_language_preference()
                     .unwrap_or(fallback_language);
-                (language, storage.has_existing_state())
+                let theme = storage.load_theme().unwrap_or(AppTheme::Dark);
+                let high_contrast = storage.load_high_contrast().unwrap_or(false);
+                let font_scale = storage.load_font_scale().unwrap_or(1.0);
+                let onboarding = storage.load_onboarding_completed().unwrap_or(false);
+                (language, storage.has_existing_state(), theme, high_contrast, font_scale, onboarding)
             }
-            Err(_) => (fallback_language, false),
+            Err(_) => (fallback_language, false, AppTheme::Dark, false, 1.0, false),
         };
         set_current_language(initial_language);
 
@@ -165,6 +181,9 @@ impl App {
                 state: AppState::Login,
                 storage_passphrase: None,
                 language: initial_language,
+                theme: initial_theme,
+                high_contrast: initial_high_contrast,
+                font_scale: initial_font_scale,
                 user_nickname: None,
                 wallets: Vec::new(),
                 wallet_vault: WalletSecretsVault::new(),
@@ -192,6 +211,8 @@ impl App {
                 focus_search_history: false,
                 focus_paste_send: false,
                 help_dismissals: HelpDismissals::new(),
+                show_onboarding: !onboarding_completed && !has_existing_state,
+                onboarding_view: OnboardingView::new(),
                 address_book: AddressBook::load().unwrap_or_default(),
             },
             // Start toast cleanup task
@@ -381,6 +402,9 @@ impl App {
             AppMessage::SettingsMessage(msg) => self.handle_settings_message(msg),
 
             AppMessage::LanguageChanged(language) => self.handle_change_language(language),
+            AppMessage::ThemeChanged(theme) => self.handle_change_theme(theme),
+            AppMessage::HighContrastToggled(enabled) => self.handle_toggle_high_contrast(enabled),
+            AppMessage::FontScaleChanged(scale) => self.handle_font_scale_changed(scale),
             AppMessage::RefreshWalletsFinished(result) => {
                 self.handle_refresh_wallets_finished(result)
             }
@@ -523,6 +547,20 @@ impl App {
                 }
                 Task::none()
             }
+            AppMessage::OnboardingMessage(msg) => {
+                use crate::views::onboarding::OnboardingEvent;
+                if let Some(event) = self.onboarding_view.update(msg) {
+                    match event {
+                        OnboardingEvent::Finished | OnboardingEvent::Skipped => {
+                            self.show_onboarding = false;
+                            if let Ok(storage) = Storage::new() {
+                                let _ = storage.save_onboarding_completed(true);
+                            }
+                        }
+                    }
+                }
+                Task::none()
+            }
         }
     }
 
@@ -568,7 +606,7 @@ impl App {
                         .history_view
                         .view(&self.wallets, self.selected_wallet, self.is_refreshing)
                         .map(AppMessage::HistoryMessage),
-                    NavItem::Settings => self.settings_view.view().map(AppMessage::SettingsMessage),
+                    NavItem::Settings => self.settings_view.view(self.theme).map(AppMessage::SettingsMessage),
                 };
 
                 let error_bar = if let Some(app_error) = &self.error {
@@ -671,7 +709,12 @@ impl App {
                     }
                 }
 
-                base_content.into()
+                let final_content = if self.show_onboarding {
+                    self.onboarding_view.view().map(AppMessage::OnboardingMessage)
+                } else {
+                    base_content.into()
+                };
+                final_content.into()
             }
         }
     }
@@ -1120,5 +1163,13 @@ impl App {
             .map(|_| AppMessage::AutoRefreshConfirmations);
 
         Subscription::batch([keyboard_sub, refresh_sub])
+    }
+
+    pub fn current_theme(&self) -> Theme {
+        match self.theme {
+            crate::storage::AppTheme::Dark => Theme::Dark,
+            crate::storage::AppTheme::Light => Theme::Light,
+            crate::storage::AppTheme::System => Theme::Dark, // Fallback
+        }
     }
 }

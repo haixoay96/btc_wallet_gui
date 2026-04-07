@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 use crate::i18n::t;
-use crate::theme::{secondary_button_style, text_color, Colors};
+use crate::theme::{secondary_button_style,
+    text_primary_color, text_secondary_color, text_muted_color,
+    text_color, Colors};
 use iced::{
     widget::{button, column, container, row, text, Space},
     Element, Length,
@@ -72,7 +74,7 @@ pub fn help_hint_banner<'a, Message: Clone + 'a>(
         Space::with_width(6),
         text(title)
             .size(12)
-            .style(text_color(Colors::TEXT_PRIMARY))
+            .style(text_primary_color())
             .width(Length::Fill),
     ]
     .align_y(iced::Alignment::Center);
@@ -82,7 +84,7 @@ pub fn help_hint_banner<'a, Message: Clone + 'a>(
             text(expand_icon)
                 .size(10)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
         );
     }
 
@@ -92,7 +94,7 @@ pub fn help_hint_banner<'a, Message: Clone + 'a>(
             text(Bootstrap::X.to_string())
                 .size(10)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::TEXT_SECONDARY)),
+                .style(text_secondary_color()),
         )
         .on_press(on_dismiss)
         .padding(4)
@@ -104,7 +106,7 @@ pub fn help_hint_banner<'a, Message: Clone + 'a>(
     if let Some(toggle_msg) = on_toggle_expand {
         let expanded_text: Element<'_, Message> = text(description)
             .size(11)
-            .style(text_color(Colors::TEXT_SECONDARY))
+            .style(text_secondary_color())
             .width(Length::Fill)
             .into();
 
@@ -152,7 +154,7 @@ pub fn show_help_reset_button<'a, Message: Clone + 'a>(
         return container(
             text(t("Không có gợi ý nào bị ẩn", "No hidden hints"))
                 .size(12)
-                .style(text_color(Colors::TEXT_MUTED)),
+                .style(text_muted_color()),
         )
         .into();
     }
