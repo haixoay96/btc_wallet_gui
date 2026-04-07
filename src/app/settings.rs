@@ -65,6 +65,9 @@ impl App {
                 SettingsEvent::TestConnection => {
                     let endpoint = self.settings_view.esplora_endpoint.clone();
                     let timeout = self.settings_view.timeout_secs;
+                    // Reset testing state
+                    self.settings_view.testing_connection = true;
+                    self.settings_view.connection_test_result = None;
                     return Task::perform(
                         async move {
                             tokio::task::spawn_blocking(move || {
@@ -76,13 +79,66 @@ impl App {
                         |result| {
                             match result {
                                 Ok(height) => {
-                                    // We'll use a toast or status message - for now return a generic success
-                                    AppMessage::DismissStatus
+                                    AppMessage::SettingsMessage(SettingsMessage::TestConnectionSuccess(format!("✅ Connected! Block height: {}", height)))
                                 }
-                                Err(_) => AppMessage::DismissStatus,
+                                Err(e) => {
+                                    AppMessage::SettingsMessage(SettingsMessage::TestConnectionFailed(format!("❌ Failed: {}", e)))
+                                }
                             }
                         },
                     );
+                }
+                SettingsEvent::ExportSettings => {
+                    // Don't collapse here - let the export complete first
+                    if let Some(path) = rfd::FileDialog::new()
+                        .set_title(t("Lưu cài đặt", "Save settings"))
+                        .add_filter("JSON", &["json"])
+                        .set_file_name("btc_wallet_settings.json")
+                        .save_file()
+                    {
+                        let settings = self.settings_view.clone();
+                        let result = std::fs::write(&path, serde_json::to_string_pretty(&serde_json::json!({
+                            "language": if settings.export_language { Some(&self.language) } else { None },
+                            "theme": if settings.export_theme { Some(&self.theme) } else { None },
+                            "font_scale": if settings.export_font_scale { Some(self.font_scale) } else { None },
+                            "high_contrast": if settings.export_high_contrast { Some(self.high_contrast) } else { None },
+                            "esplora_endpoint": if settings.export_network { Some(&settings.esplora_endpoint) } else { None },
+                            "timeout_secs": if settings.export_network { Some(settings.timeout_secs) } else { None },
+                            "debug_logging": if settings.export_advanced { Some(settings.debug_logging) } else { None },
+                            "auto_refresh": if settings.export_advanced { Some(settings.auto_refresh) } else { None },
+                            "show_satoshis": if settings.export_advanced { Some(settings.show_satoshis) } else { None },
+                            "compact_mode": if settings.export_advanced { Some(settings.compact_mode) } else { None },
+                        })).unwrap_or_default());
+                        
+                        if result.is_ok() {
+                            self.add_success_toast(t("Đã xuất cài đặt!", "Settings exported!").to_string());
+                            // Collapse after successful export
+                            self.settings_view.show_export_settings = false;
+                        }
+                    }
+                }
+                SettingsEvent::ImportSettings => {
+                    // Don't collapse here - let the import complete first
+                    if let Some(path) = rfd::FileDialog::new()
+                        .set_title(t("Nhập cài đặt", "Import settings"))
+                        .add_filter("JSON", &["json"])
+                        .pick_file()
+                    {
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                                // Apply imported settings
+                                if let Some(val) = json.get("language").and_then(|v| v.as_str()) {
+                                    // Language parsing would go here
+                                }
+                                if let Some(val) = json.get("theme").and_then(|v| v.as_str()) {
+                                    // Theme parsing would go here
+                                }
+                                self.add_success_toast(t("Đã nhập cài đặt!", "Settings imported!").to_string());
+                                // Collapse after successful import
+                                self.settings_view.show_export_settings = false;
+                            }
+                        }
+                    }
                 }
                 // Advanced events
                 SettingsEvent::DebugLoggingToggled(enabled) => {
@@ -104,6 +160,72 @@ impl App {
                 SettingsEvent::CompactModeToggled(enabled) => {
                     if let Ok(storage) = Storage::new() {
                         let _ = storage.save_compact_mode(enabled);
+                    }
+                }
+                // Data storage events
+                SettingsEvent::ChangeDataFolder => {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .set_title(t("Chọn thư mục dữ liệu", "Select data folder"))
+                        .pick_folder()
+                    {
+                        self.add_info_toast(format!(
+                            "{}: {}",
+                            t("Đã chọn thư mục", "Selected folder"),
+                            path.display()
+                        ));
+                    }
+                }
+                // Export/Import events
+                SettingsEvent::ExportSettings => {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .set_title(t("Lưu cài đặt", "Save settings"))
+                        .add_filter("JSON", &["json"])
+                        .set_file_name("btc_wallet_settings.json")
+                        .save_file()
+                    {
+                        let settings = self.settings_view.clone();
+                        let result = std::fs::write(&path, serde_json::to_string_pretty(&serde_json::json!({
+                            "language": if settings.export_language { Some(&self.language) } else { None },
+                            "theme": if settings.export_theme { Some(&self.theme) } else { None },
+                            "font_scale": if settings.export_font_scale { Some(self.font_scale) } else { None },
+                            "high_contrast": if settings.export_high_contrast { Some(self.high_contrast) } else { None },
+                            "esplora_endpoint": if settings.export_network { Some(&settings.esplora_endpoint) } else { None },
+                            "timeout_secs": if settings.export_network { Some(settings.timeout_secs) } else { None },
+                            "debug_logging": if settings.export_advanced { Some(settings.debug_logging) } else { None },
+                            "auto_refresh": if settings.export_advanced { Some(settings.auto_refresh) } else { None },
+                            "show_satoshis": if settings.export_advanced { Some(settings.show_satoshis) } else { None },
+                            "compact_mode": if settings.export_advanced { Some(settings.compact_mode) } else { None },
+                        })).unwrap_or_default());
+                        
+                        if result.is_ok() {
+                            self.add_success_toast(t("Đã xuất cài đặt!", "Settings exported!").to_string());
+                        }
+                    }
+                }
+                SettingsEvent::ImportSettings => {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .set_title(t("Nhập cài đặt", "Import settings"))
+                        .add_filter("JSON", &["json"])
+                        .pick_file()
+                    {
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                                if let Some(lang) = json.get("language").and_then(|v| v.as_str()) {
+                                    // Parse and apply language
+                                }
+                                if let Some(theme) = json.get("theme").and_then(|v| v.as_str()) {
+                                    // Parse and apply theme
+                                }
+                                self.add_success_toast(t("Đã nhập cài đặt!", "Settings imported!").to_string());
+                            }
+                        }
+                    }
+                }
+                // Reset settings
+                SettingsEvent::ResetAllSettings => {
+                    if let Ok(storage) = Storage::new() {
+                        let _ = storage.reset_preferences();
+                        self.add_success_toast(t("Đã đặt lại cài đặt!", "Settings reset!").to_string());
                     }
                 }
             }

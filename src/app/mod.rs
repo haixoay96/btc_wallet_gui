@@ -260,6 +260,37 @@ impl App {
                     SidebarEvent::Navigate(page) => {
                         self.current_page = page;
                         self.sidebar.set_active(page);
+                        if page == NavItem::Settings {
+                            // Only sync once when navigating TO Settings
+                            // Don't sync font_scale/high_contrast here to allow real-time slider updates
+                            self.settings_view.esplora_endpoint = if let Ok(storage) = Storage::new() {
+                                storage.load_esplora_endpoint().unwrap_or_default()
+                            } else {
+                                "https://blockstream.info/api".to_string()
+                            };
+                            self.settings_view.timeout_secs = if let Ok(storage) = Storage::new() {
+                                storage.load_timeout_secs().unwrap_or(15)
+                            } else {
+                                15
+                            };
+                            self.settings_view.debug_logging = if let Ok(storage) = Storage::new() {
+                                storage.load_enable_debug().unwrap_or(false)
+                            } else {
+                                false
+                            };
+                            self.settings_view.auto_refresh = if let Ok(storage) = Storage::new() {
+                                storage.load_auto_refresh().unwrap_or(false)
+                            } else {
+                                false
+                            };
+                            self.settings_view.show_satoshis = self.show_satoshis;
+                            self.settings_view.compact_mode = if let Ok(storage) = Storage::new() {
+                                storage.load_compact_mode().unwrap_or(false)
+                            } else {
+                                false
+                            };
+                            self.settings_view.load_data_folder_info();
+                        }
                     }
                 }
                 Task::none()
@@ -592,6 +623,19 @@ impl App {
                 Task::none()
             }
             AppMessage::StartOnboardingDelay => Task::none(),
+            AppMessage::SettingsMessage(SettingsMessage::ResetAllSettings) => {
+                // Reset all settings to default values
+                self.theme = AppTheme::Dark;
+                self.font_scale = 1.0;
+                self.high_contrast = false;
+                self.show_satoshis = false;
+                if let Ok(storage) = Storage::new() {
+                    let _ = storage.reset_preferences();
+                }
+                self.settings_view = crate::views::settings::SettingsView::new();
+                self.add_success_toast(t("Đã đặt lại cài đặt!", "Settings reset!").to_string());
+                Task::none()
+            }
         }
     }
 
