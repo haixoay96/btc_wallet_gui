@@ -28,6 +28,7 @@ pub enum SettingsMessage {
     ConfirmClearData,
     CancelClearData,
     ThemeSelected(AppTheme),
+    ShowOnboardingTour,
 }
 
 #[derive(Debug, Clone)]
@@ -39,6 +40,7 @@ pub enum SettingsEvent {
     ExportWallet,
     ClearAllData(String),
     ThemeChanged(AppTheme),
+    ShowOnboardingTour,
 }
 
 pub struct SettingsView {
@@ -198,6 +200,9 @@ impl SettingsView {
             }
             SettingsMessage::ThemeSelected(theme) => {
                 Some(SettingsEvent::ThemeChanged(theme))
+            }
+            SettingsMessage::ShowOnboardingTour => {
+                Some(SettingsEvent::ShowOnboardingTour)
             }
         }
     }
@@ -415,6 +420,11 @@ impl SettingsView {
                 .width(Length::Fill),
         );
 
+        let tour_btn = button(text(t("Xem hướng dẫn", "Show Onboarding Tour")).size(14))
+            .on_press(SettingsMessage::ShowOnboardingTour)
+            .padding(12)
+            .style(secondary_button_style());
+
         let about_btn = button(text(t("Giới thiệu", "About")).size(16))
             .on_press(SettingsMessage::ToggleAbout)
             .padding(12)
@@ -425,6 +435,8 @@ impl SettingsView {
                 .size(18)
                 .style(text_primary_color()),
             Space::with_height(12),
+            tour_btn,
+            Space::with_height(8),
             about_btn,
         ]
         .spacing(8);

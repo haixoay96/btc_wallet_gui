@@ -34,6 +34,16 @@ impl App {
                 SettingsEvent::ThemeChanged(theme) => {
                     return self.handle_change_theme(theme);
                 }
+                SettingsEvent::ShowOnboardingTour => {
+                    self.show_onboarding = true;
+                    if let Ok(storage) = Storage::new() {
+                        let _ = storage.save_onboarding_completed(false);
+                    }
+                    self.add_info_toast(t(
+                        "Đang mở hướng dẫn...",
+                        "Opening onboarding tour...",
+                    ).to_string());
+                }
             }
         }
         Task::none()

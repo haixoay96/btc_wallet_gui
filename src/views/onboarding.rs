@@ -6,7 +6,7 @@ use iced::{
 use crate::i18n::t;
 use crate::theme::{
     card_style, primary_button_style, secondary_button_style,
-    text_primary_color, text_secondary_color,
+    text_primary_color, text_secondary_color, text_muted_color, text_color,
     get_theme_colors, Colors,
 };
 
@@ -24,13 +24,6 @@ pub enum OnboardingEvent {
     Skipped,
 }
 
-pub struct OnboardingStep {
-    pub title_vi: &'static str,
-    pub title_en: &'static str,
-    pub description_vi: &'static str,
-    pub description_en: &'static str,
-}
-
 pub struct OnboardingView {
     pub current_step: u8,
     pub total_steps: u8,
@@ -42,41 +35,6 @@ impl OnboardingView {
             current_step: 0,
             total_steps: 5,
         }
-    }
-
-    pub fn steps() -> Vec<OnboardingStep> {
-        vec![
-            OnboardingStep {
-                title_vi: "Chào mừng!",
-                title_en: "Welcome!",
-                description_vi: "Chào mừng đến với Bitcoin Wallet! Hãy cùng khám phá các tính năng.",
-                description_en: "Welcome to Bitcoin Wallet! Let's explore the features together.",
-            },
-            OnboardingStep {
-                title_vi: "Dashboard",
-                title_en: "Dashboard",
-                description_vi: "Đây là Dashboard - xem tổng số dư và số ví của bạn",
-                description_en: "This is the Dashboard - view your total balance and wallet count",
-            },
-            OnboardingStep {
-                title_vi: "Quản lý ví",
-                title_en: "Wallet Management",
-                description_vi: "Quản lý ví tại đây - tạo, import, backup ví Bitcoin",
-                description_en: "Manage wallets here - create, import, and backup Bitcoin wallets",
-            },
-            OnboardingStep {
-                title_vi: "Gửi & Nhận",
-                title_en: "Send & Receive",
-                description_vi: "Gửi và nhận BTC dễ dàng với địa chỉ và QR code",
-                description_en: "Send and receive BTC easily with addresses and QR codes",
-            },
-            OnboardingStep {
-                title_vi: "Bảo mật",
-                title_en: "Security",
-                description_vi: "Đừng quên backup mnemonic! Đây là chìa khóa khôi phục ví",
-                description_en: "Don't forget to backup your mnemonic! It's the key to recover your wallets",
-            },
-        ]
     }
 
     pub fn update(&mut self, message: OnboardingMessage) -> Option<OnboardingEvent> {
@@ -100,69 +58,365 @@ impl OnboardingView {
         }
     }
 
-    pub fn view(&self) -> Element<'_, OnboardingMessage> {
-        let steps = Self::steps();
-        let step = &steps[self.current_step as usize];
+    fn step_title(step: u8) -> &'static str {
+        match step {
+            0 => t("Chào mừng!", "Welcome!"),
+            1 => t("Dashboard - Tổng quan", "Dashboard - Overview"),
+            2 => t("Quản lý ví", "Wallet Management"),
+            3 => t("Gửi & Nhận BTC", "Send & Receive BTC"),
+            4 => t("Bảo mật & Backup", "Security & Backup"),
+            _ => "",
+        }
+    }
 
-        let title = text(t(step.title_vi, step.title_en))
-            .size(28)
-            .style(text_primary_color());
+    fn step_description(step: u8) -> &'static str {
+        match step {
+            0 => t(
+                "Bitcoin Wallet giúp bạn quản lý Bitcoin an toàn, phi tập trung.\nKhông tài khoản, không trung gian - chỉ có bạn và blockchain.",
+                "Bitcoin Wallet helps you manage Bitcoin securely & decentral.\nNo accounts, no intermediaries - just you and the blockchain.",
+            ),
+            1 => t(
+                "Theo dõi toàn bộ tài sản, số dư đã xác nhận & đang chờ.\nXem nhanh số ví, giao dịch gần nhất và trạng thái backup.",
+                "Track all assets, confirmed & pending balances.\nQuick view of wallets, recent transactions & backup status.",
+            ),
+            2 => t(
+                "Tạo ví mới, nhập ví có sẵn hoặc khôi phục từ mnemonic seed.\nHỗ trợ đa ví, chuyển đổi linh hoạt giữa Mainnet & Testnet.",
+                "Create new wallets, import existing ones or restore from mnemonic seed.\nMulti-wallet support, seamless Mainnet & Testnet switching.",
+            ),
+            3 => t(
+                "Gửi Bitcoin đến bất kỳ địa chỉ nào với ước tính phí thông minh.\nNhận thanh toán dễ dàng qua QR Code hoặc sao chép địa chỉ.",
+                "Send Bitcoin to any address with smart fee estimation.\nReceive payments easily via QR Code or copy-paste address.",
+            ),
+            4 => t(
+                "Mnemonic seed là CHÌA KHÓA DUY NHẤT khôi phục ví. Mất seed = Mất BTC!\nHãy backup ngay và lưu trữ offline an toàn tuyệt đối.",
+                "Mnemonic seed is the ONLY KEY to recover your wallet. Lost seed = Lost BTC!\nBackup now and store offline securely.",
+            ),
+            _ => "",
+        }
+    }
 
-        let description = text(t(step.description_vi, step.description_en))
-            .size(16)
-            .style(text_secondary_color());
-
-        // Progress dots
-        let mut dots = row![];
-        for i in 0..self.total_steps {
-            let dot = container(Space::with_width(12).height(12))
-                .style(move |_| {
-                    let color = if i == self.current_step {
-                        Colors::ACCENT_PURPLE
-                    } else if i < self.current_step {
-                        Colors::ACCENT_TEAL
-                    } else {
-                        Colors::BORDER
-                    };
+    fn step_mockup(step: u8) -> Element<'static, OnboardingMessage> {
+        match step {
+            0 => {
+                container(
+                    text('₿')
+                        .size(64)
+                        .style(text_color(Colors::ACCENT_TEAL)),
+                )
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .align_x(Alignment::Center)
+                .align_y(Alignment::Center)
+                .into()
+            }
+            1 => {
+                let total_card = container(
+                    column![
+                        text(t("Tổng số dư", "Total Balance"))
+                            .size(10)
+                            .style(text_muted_color()),
+                        Space::with_height(4),
+                        text("0.12345678 BTC")
+                            .size(18)
+                            .style(text_color(Colors::ACCENT_TEAL)),
+                    ]
+                    .padding(12),
+                )
+                .style(|theme: &iced::Theme| {
+                    let colors = get_theme_colors(theme);
                     iced::widget::container::Style {
-                        background: Some(iced::Background::Color(color)),
-                        border: iced::border::rounded(6),
+                        background: Some(iced::Background::Color(colors.bg_input)),
+                        border: iced::border::rounded(8),
                         ..Default::default()
                     }
-                });
-            dots = dots.push(dot);
-            if i < self.total_steps - 1 {
-                dots = dots.push(Space::with_width(8));
-            }
-        }
+                })
+                .width(Length::Fill);
 
-        let progress_indicator = container(dots)
-            .padding(12)
+                let stats_row = row![
+                    container(
+                        column![
+                            text(t("Ví", "Wallets")).size(9).style(text_muted_color()),
+                            Space::with_height(2),
+                            text("3").size(16).style(text_primary_color()),
+                        ]
+                        .padding(8)
+                    )
+                    .style(|theme: &iced::Theme| {
+                        let colors = get_theme_colors(theme);
+                        iced::widget::container::Style {
+                            background: Some(iced::Background::Color(colors.bg_input)),
+                            border: iced::border::rounded(8),
+                            ..Default::default()
+                        }
+                    })
+                    .width(Length::Fill),
+                    Space::with_width(8),
+                    container(
+                        column![
+                            text(t("Giao dịch", "Txns")).size(9).style(text_muted_color()),
+                            Space::with_height(2),
+                            text("42").size(16).style(text_primary_color()),
+                        ]
+                        .padding(8)
+                    )
+                    .style(|theme: &iced::Theme| {
+                        let colors = get_theme_colors(theme);
+                        iced::widget::container::Style {
+                            background: Some(iced::Background::Color(colors.bg_input)),
+                            border: iced::border::rounded(8),
+                            ..Default::default()
+                        }
+                    })
+                    .width(Length::Fill),
+                ];
+
+                column![total_card, Space::with_height(8), stats_row]
+                    .spacing(0)
+                    .into()
+            }
+            2 => {
+                let wallet_cards = column![
+                    container(
+                        row![
+                            text("Main").size(11).style(text_primary_color()),
+                            Space::with_width(Length::Fill),
+                            text("0.08 BTC").size(11).style(text_color(Colors::ACCENT_TEAL)),
+                        ]
+                        .padding(10)
+                    )
+                    .style(|theme: &iced::Theme| {
+                        let colors = get_theme_colors(theme);
+                        iced::widget::container::Style {
+                            background: Some(iced::Background::Color(colors.bg_input)),
+                            border: iced::border::rounded(8),
+                            ..Default::default()
+                        }
+                    })
+                    .width(Length::Fill),
+                    Space::with_height(6),
+                    container(
+                        row![
+                            text("Testnet").size(11).style(text_primary_color()),
+                            Space::with_width(Length::Fill),
+                            text("0.04 BTC").size(11).style(text_color(Colors::ACCENT_TEAL)),
+                        ]
+                        .padding(10)
+                    )
+                    .style(|theme: &iced::Theme| {
+                        let colors = get_theme_colors(theme);
+                        iced::widget::container::Style {
+                            background: Some(iced::Background::Color(colors.bg_input)),
+                            border: iced::border::rounded(8),
+                            ..Default::default()
+                        }
+                    })
+                    .width(Length::Fill),
+                    Space::with_height(6),
+                    container(
+                        row![
+                            text("+").size(12).style(text_muted_color()),
+                            Space::with_width(6),
+                            text(t("Thêm ví mới", "Add new wallet")).size(11).style(text_muted_color()),
+                        ]
+                        .padding(10)
+                        .align_y(Alignment::Center)
+                    )
+                    .style(|theme: &iced::Theme| {
+                        let colors = get_theme_colors(theme);
+                        iced::widget::container::Style {
+                            background: Some(iced::Background::Color(colors.bg_secondary)),
+                            border: iced::border::rounded(8),
+                            ..Default::default()
+                        }
+                    })
+                    .width(Length::Fill),
+                ];
+                wallet_cards.into()
+            }
+            3 => {
+                let qr_placeholder = container(
+                    column![
+                        text("QR").size(24).style(text_primary_color()),
+                        Space::with_height(4),
+                        text("Code").size(9).style(text_muted_color()),
+                    ]
+                    .align_x(Alignment::Center)
+                )
+                .style(|theme: &iced::Theme| {
+                    let colors = get_theme_colors(theme);
+                    iced::widget::container::Style {
+                        background: Some(iced::Background::Color(colors.bg_input)),
+                        border: iced::border::rounded(8),
+                        ..Default::default()
+                    }
+                })
+                .width(Length::Fixed(80.0))
+                .height(Length::Fixed(80.0))
+                .align_x(Alignment::Center)
+                .align_y(Alignment::Center);
+
+                let address_preview = container(
+                    text("bc1q...2dreul").size(10).style(text_color(Colors::ACCENT_PURPLE)),
+                )
+                .style(|theme: &iced::Theme| {
+                    let colors = get_theme_colors(theme);
+                    iced::widget::container::Style {
+                        background: Some(iced::Background::Color(colors.bg_input)),
+                        border: iced::border::rounded(8),
+                        ..Default::default()
+                    }
+                })
+                .padding(8)
+                .width(Length::Fill);
+
+                row![
+                    qr_placeholder,
+                    Space::with_width(12),
+                    column![
+                        address_preview,
+                        Space::with_height(8),
+                        container(
+                            text(t("Sao chép", "Copy")).size(10).style(text_color(iced::Color::from_rgb(1.0, 1.0, 1.0))),
+                        )
+                        .style(|_| iced::widget::container::Style {
+                            background: Some(iced::Background::Color(Colors::ACCENT_TEAL)),
+                            border: iced::border::rounded(6),
+                            ..Default::default()
+                        })
+                        .padding(6),
+                    ]
+                    .width(Length::Fill),
+                ]
+                .into()
+            }
+            4 => {
+                let warning_banner = container(
+                    row![
+                        text("!").size(16).style(text_color(Colors::WARNING)),
+                        Space::with_width(8),
+                        text(t("Backup ngay!", "Backup now!")).size(12).style(text_color(Colors::WARNING)),
+                    ]
+                    .align_y(Alignment::Center)
+                )
+                .style(|theme: &iced::Theme| {
+                    let colors = get_theme_colors(theme);
+                    iced::widget::container::Style {
+                        background: Some(iced::Background::Color(iced::Color::from_rgba(colors.warning.r, colors.warning.g, colors.warning.b, 0.15))),
+                        border: iced::border::rounded(8),
+                        ..Default::default()
+                    }
+                })
+                .padding(10)
+                .width(Length::Fill);
+
+                let seed_preview = container(
+                    column![
+                        row![
+                            text("1.").size(10).style(text_muted_color()),
+                            Space::with_width(4),
+                            text("abandon").size(10).style(text_primary_color()),
+                        ],
+                        row![
+                            text("2.").size(10).style(text_muted_color()),
+                            Space::with_width(4),
+                            text("ability").size(10).style(text_primary_color()),
+                        ],
+                        row![
+                            text("3.").size(10).style(text_muted_color()),
+                            Space::with_width(4),
+                            text("able").size(10).style(text_primary_color()),
+                        ],
+                    ]
+                    .padding(8)
+                )
+                .style(|theme: &iced::Theme| {
+                    let colors = get_theme_colors(theme);
+                    iced::widget::container::Style {
+                        background: Some(iced::Background::Color(colors.bg_input)),
+                        border: iced::border::rounded(8),
+                        ..Default::default()
+                    }
+                })
+                .width(Length::Fill);
+
+                column![
+                    warning_banner,
+                    Space::with_height(8),
+                    text(t("12 từ mnemonic", "12-word mnemonic")).size(10).style(text_muted_color()),
+                    Space::with_height(4),
+                    seed_preview,
+                ]
+                .into()
+            }
+            _ => Space::with_height(80).into(),
+        }
+    }
+
+    pub fn view(&self) -> Element<'_, OnboardingMessage> {
+        let title = text(Self::step_title(self.current_step))
+            .size(24)
+            .style(text_primary_color());
+
+        let description = text(Self::step_description(self.current_step))
+            .size(14)
+            .style(text_secondary_color())
+            .width(Length::Fill);
+
+        let mockup = container(Self::step_mockup(self.current_step).map(|_| OnboardingMessage::Next))
             .style(|theme: &iced::Theme| {
                 let colors = get_theme_colors(theme);
                 iced::widget::container::Style {
-                    background: Some(iced::Background::Color(colors.bg_input)),
-                    border: iced::border::rounded(16),
+                    background: Some(iced::Background::Color(iced::Color::from_rgba(
+                        colors.bg_card.r,
+                        colors.bg_card.g,
+                        colors.bg_card.b,
+                        0.95,
+                    ))),
+                    border: iced::border::rounded(12),
                     ..Default::default()
                 }
-            });
+            })
+            .padding(20)
+            .height(Length::Fixed(160.0))
+            .width(Length::Fill);
 
-        // Navigation buttons
+        let mut dots = row![];
+        for i in 0..self.total_steps {
+            let color = if i == self.current_step {
+                Colors::ACCENT_PURPLE
+            } else if i < self.current_step {
+                Colors::ACCENT_TEAL
+            } else {
+                Colors::BORDER
+            };
+            let dot = container(Space::with_width(10).height(10))
+                .style(move |_| iced::widget::container::Style {
+                    background: Some(iced::Background::Color(color)),
+                    border: iced::border::rounded(5),
+                    ..Default::default()
+                });
+            dots = dots.push(dot);
+            if i < self.total_steps - 1 {
+                dots = dots.push(Space::with_width(6));
+            }
+        }
+
+        let progress_indicator = container(dots).padding(10);
+
         let mut nav_buttons = row![];
-        
         if self.current_step > 0 {
             nav_buttons = nav_buttons.push(
-                button(text(t("Quay lại", "Back")).size(14))
+                button(text(t("Quay lại", "Back")).size(13))
                     .on_press(OnboardingMessage::Previous)
-                    .padding(12)
+                    .padding([10, 16])
                     .style(secondary_button_style()),
             );
             nav_buttons = nav_buttons.push(Space::with_width(12));
         } else {
             nav_buttons = nav_buttons.push(
-                button(text(t("Bỏ qua", "Skip")).size(14))
+                button(text(t("Bỏ qua", "Skip")).size(13))
                     .on_press(OnboardingMessage::Skip)
-                    .padding(12)
+                    .padding([10, 16])
                     .style(secondary_button_style()),
             );
             nav_buttons = nav_buttons.push(Space::with_width(12));
@@ -170,39 +424,42 @@ impl OnboardingView {
 
         if self.current_step < self.total_steps - 1 {
             nav_buttons = nav_buttons.push(
-                button(text(t("Tiếp theo", "Next")).size(14))
+                button(text(t("Tiếp theo", "Next")).size(13))
                     .on_press(OnboardingMessage::Next)
-                    .padding(12)
+                    .padding([10, 16])
                     .style(primary_button_style()),
             );
         } else {
             nav_buttons = nav_buttons.push(
-                button(text(t("Bắt đầu", "Get Started")).size(14))
+                button(text(t("Bắt đầu", "Get Started")).size(13))
                     .on_press(OnboardingMessage::Complete)
-                    .padding(12)
+                    .padding([10, 16])
                     .style(primary_button_style()),
             );
         }
 
-        let content = column![
+        let content: Element<'_, OnboardingMessage> = column![
             progress_indicator,
-            Space::with_height(24),
-            title,
             Space::with_height(16),
+            mockup,
+            Space::with_height(20),
+            title,
+            Space::with_height(10),
             description,
-            Space::with_height(40),
+            Space::with_height(28),
             nav_buttons.align_y(Alignment::Center),
         ]
         .align_x(Alignment::Center)
-        .padding(40)
-        .spacing(0);
+        .padding(36)
+        .width(Length::Fixed(440.0))
+        .into();
 
         container(content)
             .style(card_style())
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .align_x(Alignment::Center)
-            .align_y(Alignment::Center)
+            .width(Length::Shrink)
+            .height(Length::Shrink)
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
             .into()
     }
 }

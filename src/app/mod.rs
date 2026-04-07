@@ -19,6 +19,7 @@ use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{AppTheme, PersistedState, RuntimeState, Storage, UserProfile, AddressBook};
 use crate::theme::{
     notice_style, screen_background_style, secondary_button_style, text_color, Colors, NoticeTone,
+    get_theme_colors,
 };
 use crate::utils::{normalize_nickname, wallet_count_text, export::{export_history_csv, export_history_pdf}};
 use crate::views::{
@@ -94,6 +95,7 @@ pub struct App {
     // Onboarding
     pub show_onboarding: bool,
     pub onboarding_view: OnboardingView,
+    pub onboarding_delay_timer: bool, // true = đang chờ delay
 
     // Address Book / Contact Book
     pub address_book: AddressBook,
@@ -134,6 +136,8 @@ pub enum AppMessage {
     ResetHelpDismissals,
     AutoRefreshConfirmations,
     OnboardingMessage(OnboardingMessage),
+    StartOnboardingDelay,
+    ShowOnboarding,
 }
 
 #[derive(Debug, Clone)]
@@ -211,17 +215,28 @@ impl App {
                 focus_search_history: false,
                 focus_paste_send: false,
                 help_dismissals: HelpDismissals::new(),
-                show_onboarding: !onboarding_completed && !has_existing_state,
+                show_onboarding: false, // Start hidden, show after delay
                 onboarding_view: OnboardingView::new(),
+                onboarding_delay_timer: true, // Always check onboarding on fresh start
                 address_book: AddressBook::load().unwrap_or_default(),
             },
-            // Start toast cleanup task
-            Task::perform(
-                async move {
-                    tokio::time::sleep(Duration::from_secs(2)).await;
-                },
-                |_| AppMessage::ToastCleanup,
-            ),
+            // Start toast cleanup task + onboarding delay if needed
+            {
+                let mut tasks = vec![Task::perform(
+                    async move {
+                        tokio::time::sleep(Duration::from_secs(2)).await;
+                    },
+                    |_| AppMessage::ToastCleanup,
+                )];
+                // Always show onboarding delay on fresh app start
+                tasks.push(Task::perform(
+                    async move {
+                        tokio::time::sleep(Duration::from_millis(1200)).await;
+                    },
+                    |_| AppMessage::ShowOnboarding,
+                ));
+                Task::batch(tasks)
+            },
         )
     }
 
@@ -561,6 +576,11 @@ impl App {
                 }
                 Task::none()
             }
+            AppMessage::ShowOnboarding => {
+                self.show_onboarding = true;
+                Task::none()
+            }
+            AppMessage::StartOnboardingDelay => Task::none(),
         }
     }
 
@@ -709,8 +729,32 @@ impl App {
                     }
                 }
 
-                let final_content = if self.show_onboarding {
-                    self.onboarding_view.view().map(AppMessage::OnboardingMessage)
+                let final_content: Element<'_, AppMessage> = if self.show_onboarding {
+                    // Stack onboarding overlay on top of main content
+                    iced::widget::stack![
+                        base_content,
+                        // Semi-transparent overlay background
+                        container(Space::with_width(Length::Fill))
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .style(|theme: &iced::Theme| {
+                                let colors = get_theme_colors(theme);
+                                iced::widget::container::Style {
+                                    background: Some(iced::Background::Color(iced::Color::from_rgba(
+                                        colors.bg_primary.r,
+                                        colors.bg_primary.g,
+                                        colors.bg_primary.b,
+                                        0.75,
+                                    ))),
+                                    ..Default::default()
+                                }
+                            }),
+                        // Onboarding card
+                        self.onboarding_view.view().map(AppMessage::OnboardingMessage)
+                    ]
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .into()
                 } else {
                     base_content.into()
                 };
