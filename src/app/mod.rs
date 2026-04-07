@@ -95,7 +95,8 @@ pub struct App {
     // Onboarding
     pub show_onboarding: bool,
     pub onboarding_view: OnboardingView,
-    pub onboarding_delay_timer: bool, // true = đang chờ delay
+    pub onboarding_delay_timer: bool,
+    pub show_satoshis: bool,
 
     // Address Book / Contact Book
     pub address_book: AddressBook,
@@ -159,7 +160,7 @@ pub struct SendExecutionResult {
 impl App {
     pub fn new() -> (Self, Task<AppMessage>) {
         let fallback_language = AppLanguage::English;
-        let (initial_language, has_existing_state, initial_theme, initial_high_contrast, initial_font_scale, onboarding_completed) = match Storage::new() {
+        let (initial_language, has_existing_state, initial_theme, initial_high_contrast, initial_font_scale, onboarding_completed, initial_show_satoshis) = match Storage::new() {
             Ok(storage) => {
                 let language = storage
                     .load_language_preference()
@@ -168,12 +169,13 @@ impl App {
                 let high_contrast = storage.load_high_contrast().unwrap_or(false);
                 let font_scale = storage.load_font_scale().unwrap_or(1.0);
                 let onboarding = storage.load_onboarding_completed().unwrap_or(false);
+                let show_satoshis = storage.load_show_satoshis().unwrap_or(false);
                 // Set global states
                 crate::theme::set_high_contrast(high_contrast);
                 crate::theme::set_font_scale(font_scale);
-                (language, storage.has_existing_state(), theme, high_contrast, font_scale, onboarding)
+                (language, storage.has_existing_state(), theme, high_contrast, font_scale, onboarding, show_satoshis)
             }
-            Err(_) => (fallback_language, false, AppTheme::Dark, false, 1.0, false),
+            Err(_) => (fallback_language, false, AppTheme::Dark, false, 1.0, false, false),
         };
         set_current_language(initial_language);
 
@@ -221,6 +223,7 @@ impl App {
                 show_onboarding: false, // Start hidden, show after delay
                 onboarding_view: OnboardingView::new(),
                 onboarding_delay_timer: true, // Always check onboarding on fresh start
+                show_satoshis: initial_show_satoshis,
                 address_book: AddressBook::load().unwrap_or_default(),
             },
             // Start toast cleanup task + onboarding delay if needed
@@ -558,7 +561,12 @@ impl App {
             }
             
             AppMessage::AutoRefreshConfirmations => {
-                // Only auto-refresh if we have pending transactions
+                // Only auto-refresh if auto_refresh is enabled AND we have pending transactions
+                if let Ok(storage) = Storage::new() {
+                    if !storage.load_auto_refresh().unwrap_or(false) {
+                        return Task::none();
+                    }
+                }
                 let has_pending = self.wallets.iter().any(|w| w.history.iter().any(|tx| !tx.confirmed || tx.confirmations < 6));
                 if has_pending {
                     return self.refresh_all_wallets();
@@ -600,7 +608,7 @@ impl App {
                 let main_content = match self.current_page {
                     NavItem::Dashboard => self
                         .dashboard
-                        .view(self.is_refreshing)
+                        .view(self.is_refreshing, self.show_satoshis)
                         .map(AppMessage::DashboardMessage),
                     NavItem::Wallets => self
                         .wallets_view
@@ -1211,9 +1219,23 @@ impl App {
             None
         });
 
-        // Auto-refresh confirmations every 2 minutes
-        let refresh_sub = iced::time::every(Duration::from_secs(120))
-            .map(|_| AppMessage::AutoRefreshConfirmations);
+        // Auto-refresh confirmations - interval based on setting
+        let refresh_interval_secs = if let Ok(storage) = crate::storage::Storage::new() {
+            if storage.load_auto_refresh().unwrap_or(false) {
+                120 // 2 minutes
+            } else {
+                0 // Disabled
+            }
+        } else {
+            120
+        };
+        
+        let refresh_sub = if refresh_interval_secs > 0 {
+            iced::time::every(Duration::from_secs(refresh_interval_secs))
+                .map(|_| AppMessage::AutoRefreshConfirmations)
+        } else {
+            Subscription::none()
+        };
 
         Subscription::batch([keyboard_sub, refresh_sub])
     }

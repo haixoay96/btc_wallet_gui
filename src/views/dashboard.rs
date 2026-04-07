@@ -57,7 +57,7 @@ impl DashboardView {
         self.last_synced_label = label;
     }
 
-    pub fn view(&self, is_refreshing: bool) -> Element<'_, DashboardMessage> {
+    pub fn view(&self, is_refreshing: bool, show_satoshis: bool) -> Element<'_, DashboardMessage> {
         let title = text_scaled(t("Tổng quan", "Dashboard"), 32)
             .style(text_primary_color());
 

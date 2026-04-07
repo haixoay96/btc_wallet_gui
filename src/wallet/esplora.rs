@@ -7,26 +7,52 @@ use reqwest::blocking::Client;
 use super::api_types::{ApiAddressUtxo, ApiTx};
 use super::WalletNetwork;
 
+const DEFAULT_ESPLORA_ENDPOINT: &str = "https://blockstream.info/api";
 const DEFAULT_HTTP_TIMEOUT_SECS: u64 = 15;
 const ESPLORA_CONFIRMED_PAGE_SIZE: usize = 25;
 
 pub struct EsploraClient {
     client: Client,
-    network: WalletNetwork,
+    base_url: String,
 }
 
 impl EsploraClient {
     pub fn new(network: WalletNetwork) -> Result<Self> {
+        Self::with_custom_endpoint(None, network)
+    }
+
+    pub fn with_custom_endpoint(custom_endpoint: Option<String>, network: WalletNetwork) -> Result<Self> {
+        // Load timeout from storage if available, otherwise use default
+        let timeout_secs = if let Ok(storage) = crate::storage::Storage::new() {
+            storage.load_timeout_secs().unwrap_or(DEFAULT_HTTP_TIMEOUT_SECS)
+        } else {
+            DEFAULT_HTTP_TIMEOUT_SECS
+        };
+
         let client = Client::builder()
-            .timeout(Duration::from_secs(DEFAULT_HTTP_TIMEOUT_SECS))
+            .timeout(Duration::from_secs(timeout_secs))
             .build()
             .context("Không khởi tạo được HTTP client")?;
 
-        Ok(Self { client, network })
+        let base_url = custom_endpoint
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| network.blockstream_base_url().to_string());
+
+        Ok(Self { client, base_url })
+    }
+
+    pub fn test_connection(endpoint: &str, timeout_secs: u64) -> Result<String> {
+        let client = Client::builder()
+            .timeout(Duration::from_secs(timeout_secs))
+            .build()?;
+        let health_url = format!("{}/blocks/tip/height", endpoint);
+        let resp = client.get(&health_url).send()?;
+        let height: String = resp.text()?;
+        Ok(height.trim().to_string())
     }
 
     pub fn fetch_all_address_txs(&self, address: &str) -> Result<Vec<ApiTx>> {
-        let base_url = self.network.blockstream_base_url();
+        let base_url = &self.base_url;
         let first_page_url = format!("{base_url}/address/{address}/txs");
         let mut txs = self.fetch_txs_page(&first_page_url, address)?;
 
@@ -61,7 +87,7 @@ impl EsploraClient {
     pub fn fetch_address_utxos(&self, address: &str) -> Result<Vec<ApiAddressUtxo>> {
         let url = format!(
             "{}/address/{address}/utxo",
-            self.network.blockstream_base_url()
+            &self.base_url
         );
         self.client
             .get(&url)
@@ -74,7 +100,7 @@ impl EsploraClient {
     }
 
     pub fn fetch_fee_rate_sat_vb(&self) -> Result<f64> {
-        let url = format!("{}/fee-estimates", self.network.blockstream_base_url());
+        let url = format!("{}/fee-estimates", &self.base_url);
 
         let fee_map: HashMap<String, f64> = self
             .client
@@ -103,7 +129,7 @@ impl EsploraClient {
     }
 
     pub fn broadcast_transaction(&self, raw_hex: &str) -> Result<String> {
-        let url = format!("{}/tx", self.network.blockstream_base_url());
+        let url = format!("{}/tx", &self.base_url);
         let response = self
             .client
             .post(&url)
@@ -133,7 +159,7 @@ impl EsploraClient {
 
     /// Lấy chiều cao blockchain hiện tại
     pub fn get_blockchain_height(&self) -> Result<u32> {
-        let url = format!("{}/blocks/tip/height", self.network.blockstream_base_url());
+        let url = format!("{}/blocks/tip/height", &self.base_url);
         self.client
             .get(&url)
             .send()

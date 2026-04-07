@@ -1,5 +1,5 @@
 mod api_types;
-mod esplora;
+pub mod esplora;
 mod secrets;
 mod structure;
 mod validation;
