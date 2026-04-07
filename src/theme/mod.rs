@@ -26,7 +26,7 @@ pub use structure::{
 pub use colors::{DarkColors, LightColors, HighContrastColors};
 
 // Export từ palette
-pub use palette::{ThemeColorPalette, get_theme_colors};
+pub use palette::{ThemeColorPalette, get_theme_colors, set_high_contrast, is_high_contrast, set_font_scale, get_font_scale};
 
 // Export button styles
 pub use button_styles::{
@@ -65,4 +65,5 @@ pub use text_styles::{
     text_primary_color,
     text_secondary_color,
     text_muted_color,
+    text_scaled,
 };

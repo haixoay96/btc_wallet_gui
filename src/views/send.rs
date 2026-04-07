@@ -9,7 +9,7 @@ use crate::i18n::t;
 use crate::components::{BtcUnit, info_box, modal, help_topic_panel, contact_picker_view, contact_form_view};
 use crate::components::help_content::send_screen_topics;
 use crate::storage::address_book::{AddressBook, ContactEntry};
-use crate::theme::{
+use crate::theme::{text_scaled,
     card_style, input_style, notice_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, selected_button_style, text_color,
     text_primary_color, text_secondary_color, text_muted_color,
@@ -574,13 +574,11 @@ impl SendView {
         let wallet = wallets.get(selected_wallet);
         let is_any_busy = is_estimating_fee || is_calculating_max || is_sending;
 
-        let title = text(t("Gửi BTC", "Send BTC"))
-            .size(32)
+        let title = text_scaled(t("Gửi BTC", "Send BTC"), 32)
             .style(text_primary_color());
 
         let wallet_selector = column![
-            text(t("Từ ví", "From Wallet"))
-                .size(14)
+            text_scaled(t("Từ ví", "From Wallet"), 14)
                 .style(text_secondary_color()),
             Space::with_height(4),
             pick_list(wallet_options, selected_wallet_option, |choice| {
@@ -621,8 +619,7 @@ impl SendView {
             .padding(14)
         } else {
             container(
-                text(t("Chưa chọn ví", "No wallet selected"))
-                    .size(14)
+                text_scaled(t("Chưa chọn ví", "No wallet selected"), 14)
                     .style(text_primary_color()),
             )
             .style(notice_style(NoticeTone::Warning))
@@ -630,11 +627,10 @@ impl SendView {
         };
 
         let to_label = row![
-            text(t("Địa chỉ nhận", "To Address"))
-                .size(14)
+            text_scaled(t("Địa chỉ nhận", "To Address"), 14)
                 .style(text_secondary_color()),
             Space::with_width(8),
-            button(text(Bootstrap::QuestionCircle.to_string()).size(12).font(iced_fonts::BOOTSTRAP_FONT).style(text_muted_color()))
+            button(text_scaled(Bootstrap::QuestionCircle.to_string(), 12).font(iced_fonts::BOOTSTRAP_FONT).style(text_muted_color()))
                 .on_press(SendMessage::ToggleAddressHelp)
                 .padding(4)
                 .style(secondary_button_style()),
@@ -647,13 +643,11 @@ impl SendView {
                 Space::with_width(Length::Fill),
                 button(
                     row![
-                        text(Bootstrap::Person.to_string())
-                            .size(12)
+                        text_scaled(Bootstrap::Person.to_string(), 12)
                             .font(BOOTSTRAP_FONT)
                             .style(text_color(Colors::ACCENT_TEAL)),
                         Space::with_width(4),
-                        text(t("Contact", "Contact"))
-                            .size(11)
+                        text_scaled(t("Contact", "Contact"), 11)
                             .style(text_primary_color()),
                     ]
                     .align_y(Alignment::Center),
@@ -675,8 +669,7 @@ impl SendView {
             // Show matched contact label if exists
             if let Some(contact_name) = &self.matched_contact_name {
                 row![
-                    text(Bootstrap::PersonFill.to_string())
-                        .size(10)
+                    text_scaled(Bootstrap::PersonFill.to_string(), 10)
                         .font(BOOTSTRAP_FONT)
                         .style(text_color(Colors::ACCENT_PURPLE)),
                     Space::with_width(4),
@@ -689,8 +682,7 @@ impl SendView {
                 row![]
             },
             if let Some(error) = &self.to_address_error {
-                text(error.as_str())
-                    .size(12)
+                text_scaled(error.as_str(), 12)
                     .style(text_color(Colors::ERROR))
             } else {
                 text("")
@@ -714,7 +706,7 @@ impl SendView {
         } else {
             t("Dùng tối đa", "Use max")
         };
-        let mut max_button = button(text(max_label).size(12))
+        let mut max_button = button(text_scaled(max_label, 12))
             .padding(6)
             .style(primary_button_style());
         if !is_calculating_max {
@@ -726,7 +718,7 @@ impl SendView {
                 .size(14)
                 .style(text_secondary_color()),
             Space::with_width(8),
-            button(text(Bootstrap::QuestionCircle.to_string()).size(12).font(iced_fonts::BOOTSTRAP_FONT).style(text_muted_color()))
+            button(text_scaled(Bootstrap::QuestionCircle.to_string(), 12).font(iced_fonts::BOOTSTRAP_FONT).style(text_muted_color()))
                 .on_press(SendMessage::ShowAmountHelp)
                 .padding(4)
                 .style(secondary_button_style()),
@@ -748,8 +740,7 @@ impl SendView {
         .align_y(Alignment::Center);
 
         let amount_info: Element<'_, SendMessage> = if let Some(error) = &self.amount_error {
-            text(error.as_str())
-                .size(12)
+            text_scaled(error.as_str(), 12)
                 .style(text_color(Colors::ERROR))
                 .into()
         } else if let Ok(amount_btc) = self.amount.trim().parse::<f64>() {
@@ -796,7 +787,7 @@ impl SendView {
         } else {
             t("Ước tính tự động", "Auto estimate")
         };
-        let mut estimate_btn = button(text(estimate_label).size(14))
+        let mut estimate_btn = button(text_scaled(estimate_label, 14))
             .padding(6)
             .style(primary_button_style());
         if !is_estimating_fee {
@@ -808,7 +799,7 @@ impl SendView {
                 .size(14)
                 .style(text_secondary_color()),
             Space::with_width(8),
-            button(text(Bootstrap::QuestionCircle.to_string()).size(12).font(iced_fonts::BOOTSTRAP_FONT).style(text_muted_color()))
+            button(text_scaled(Bootstrap::QuestionCircle.to_string(), 12).font(iced_fonts::BOOTSTRAP_FONT).style(text_muted_color()))
                 .on_press(SendMessage::ShowFeeHelp)
                 .padding(4)
                 .style(secondary_button_style()),
@@ -830,8 +821,7 @@ impl SendView {
         .align_y(Alignment::Center);
 
         let fee_info: Element<'_, SendMessage> = if let Some(error) = &self.fee_error {
-            text(error.as_str())
-                .size(12)
+            text_scaled(error.as_str(), 12)
                 .style(text_color(Colors::ERROR))
                 .into()
         } else if let Ok(fee_btc) = self.fee_amount.trim().parse::<f64>() {
@@ -874,12 +864,11 @@ impl SendView {
         };
 
         let advanced_toggle = button(
-            text(if self.show_advanced {
+            text_scaled(if self.show_advanced {
                 t("Ẩn tùy chọn nâng cao", "Hide advanced options")
             } else {
                 t("Hiện tùy chọn nâng cao", "Show advanced options")
-            })
-            .size(13),
+            }, 13),
         )
         .on_press(SendMessage::ToggleAdvanced)
         .padding(10)
@@ -892,11 +881,10 @@ impl SendView {
         let advanced_section: Element<'_, SendMessage> = if self.show_advanced {
             container(
                 column![
-                    text(t(
+                    text_scaled(t(
                         "Tùy chọn nâng cao chỉ cần khi bạn muốn kiểm soát input/change cụ thể.",
                         "Advanced options are only needed when you want to control specific inputs/change.",
-                    ))
-                    .size(12)
+                    ), 12)
                     .style(text_secondary_color()),
                     Space::with_height(8),
                     column![
@@ -943,8 +931,7 @@ impl SendView {
 
         let error_text: Element<'_, SendMessage> = if let Some(error) = &self.error {
             container(
-                text(error.as_str())
-                    .size(14)
+                text_scaled(error.as_str(), 14)
                     .style(text_primary_color()),
             )
             .style(notice_style(NoticeTone::Error))
@@ -957,8 +944,7 @@ impl SendView {
 
         let success_text: Element<'_, SendMessage> = if let Some(success) = &self.success {
             container(
-                text(success.as_str())
-                    .size(14)
+                text_scaled(success.as_str(), 14)
                     .style(text_primary_color()),
             )
             .style(notice_style(NoticeTone::Success))
@@ -974,7 +960,7 @@ impl SendView {
         } else {
             t("Gửi giao dịch", "Send Transaction")
         };
-        let mut send_btn = button(text(send_label).size(16))
+        let mut send_btn = button(text_scaled(send_label, 16))
             .padding(14)
             .width(Length::Fill)
             .style(primary_button_style());
@@ -1016,8 +1002,7 @@ impl SendView {
             send_btn,
             Space::with_height(24),
             // Help topics section
-            text(t("Trợ giúp", "Help"))
-                .size(14)
+            text_scaled(t("Trợ giúp", "Help"), 14)
                 .style(text_primary_color()),
             Space::with_height(8),
         ]
@@ -1125,11 +1110,10 @@ impl SendView {
                 .unwrap_or_else(|| t("Chưa chọn ví", "No wallet selected").to_string());
 
             let confirm_content = column![
-                text(t(
+                text_scaled(t(
                     "Kiểm tra kỹ thông tin trước khi broadcast lên mạng.",
                     "Review the details carefully before broadcasting to the network.",
-                ))
-                .size(13)
+                ), 13)
                 .style(text_secondary_color()),
                 Space::with_height(16),
                 summary_row(t("Từ ví", "From Wallet"), source_label),
@@ -1183,12 +1167,12 @@ impl SendView {
                 Space::with_height(16),
                 container(
                     row![
-                        button(text(t("Hủy", "Cancel")).size(14))
+                        button(text_scaled(t("Hủy", "Cancel"), 14))
                             .on_press(SendMessage::CancelSend)
                             .padding(10)
                             .style(secondary_button_style()),
                         Space::with_width(10),
-                        button(text(t("Broadcast giao dịch", "Broadcast transaction")).size(14))
+                        button(text_scaled(t("Broadcast giao dịch", "Broadcast transaction"), 14))
                             .on_press(SendMessage::ConfirmSend)
                             .padding(10)
                             .style(primary_button_style()),
@@ -1214,11 +1198,10 @@ impl SendView {
 
 fn summary_row<'a>(label: &'a str, value: String) -> Element<'a, SendMessage> {
     row![
-        text(label)
-            .size(13)
+        text_scaled(label, 13)
             .style(text_secondary_color()),
         Space::with_width(Length::Fill),
-        text(value).size(13).style(text_primary_color()),
+        text_scaled(value, 13).style(text_primary_color()),
     ]
     .align_y(Alignment::Center)
     .into()

@@ -3,7 +3,7 @@ use iced::{
     Color, Element, Length, Theme,
 };
 
-use crate::theme::{card_style, get_theme_colors};
+use crate::theme::{text_scaled,card_style, get_theme_colors};
 
 /// Skeleton loader types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

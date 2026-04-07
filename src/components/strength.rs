@@ -4,7 +4,7 @@ use iced::{
 };
 
 use crate::i18n::t;
-use crate::theme::{card_style, text_color, Colors};
+use crate::theme::{text_scaled,card_style, text_color, Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
 /// Passphrase strength levels
@@ -140,13 +140,11 @@ pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'
         let color = strength.color();
         
         let label_row = row![
-            text(icon)
-                .size(11)
+            text_scaled(icon, 11)
                 .font(BOOTSTRAP_FONT)
                 .style(text_color(color)),
             Space::with_width(4),
-            text(t(label, label_en))
-                .size(11)
+            text_scaled(t(label, label_en), 11)
                 .style(text_color(color)),
         ]
         .spacing(4)
@@ -189,12 +187,11 @@ pub fn requirements_checklist(passphrase: &str) -> Element<'static, ()> {
         let icon_color = if met { Colors::SUCCESS } else { Colors::TEXT_MUTED };
 
         let item = row![
-            text(icon)
-                .size(11)
+            text_scaled(icon, 11)
                 .font(BOOTSTRAP_FONT)
                 .style(text_color(icon_color)),
             Space::with_width(6),
-            text(label).size(11).style(text_color(if met {
+            text_scaled(label, 11).style(text_color(if met {
                 Colors::SUCCESS
             } else {
                 Colors::TEXT_MUTED

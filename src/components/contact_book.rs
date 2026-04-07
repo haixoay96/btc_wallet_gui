@@ -5,7 +5,7 @@ use iced::{
 
 use crate::i18n::t;
 use crate::storage::address_book::{AddressBook, ContactEntry};
-use crate::theme::{input_style, primary_button_style, secondary_button_style, text_color,
+use crate::theme::{text_scaled,input_style, primary_button_style, secondary_button_style, text_color,
     text_primary_color, text_secondary_color, text_muted_color,
     get_theme_colors, Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
@@ -25,8 +25,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
     
     let search_box = container(
         row![
-            text(Bootstrap::Search.to_string())
-                .size(14)
+            text(Bootstrap::Search.to_string()).size(14)
                 .font(BOOTSTRAP_FONT)
                 .style(text_secondary_color()),
             Space::with_width(6),
@@ -61,18 +60,15 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
     
     let mut content = column![
         row![
-            text(Bootstrap::Person.to_string())
-                .size(16)
+            text(Bootstrap::Person.to_string()).size(16)
                 .font(BOOTSTRAP_FONT)
                 .style(text_color(Colors::ACCENT_TEAL)),
             Space::with_width(6),
-            text(t("Contact", "Contact"))
-                .size(14)
+            text(t("Contact", "Contact")).size(14)
                 .style(text_primary_color()),
             Space::with_width(Length::Fill),
             button(
-                text(Bootstrap::Plus.to_string())
-                    .size(14)
+                text(Bootstrap::Plus.to_string()).size(14)
                     .font(BOOTSTRAP_FONT)
                     .style(text_primary_color()),
             )
@@ -89,8 +85,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
         if search_query.is_empty() {
             content = content.push(
                 container(
-                    text(t("Chưa có contact nào. Thêm contact mới!", "No contacts yet. Add a new one!"))
-                        .size(12)
+                    text(t("Chưa có contact nào. Thêm contact mới!", "No contacts yet. Add a new one!")).size(12)
                         .style(text_muted_color()),
                 )
                 .padding(16)
@@ -99,8 +94,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
         } else {
             content = content.push(
                 container(
-                    text(t("Không tìm thấy contact nào", "No contacts found"))
-                        .size(12)
+                    text(t("Không tìm thấy contact nào", "No contacts found")).size(12)
                         .style(text_muted_color()),
                 )
                 .padding(16)
@@ -111,24 +105,20 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
         let mut contact_list = column![];
         for contact in contacts {
             let contact_item = row![
-                text(Bootstrap::PersonFill.to_string())
-                    .size(14)
+                text(Bootstrap::PersonFill.to_string()).size(14)
                     .font(BOOTSTRAP_FONT)
                     .style(text_color(Colors::ACCENT_PURPLE)),
                 Space::with_width(8),
                 column![
-                    text(&contact.name)
-                        .size(13)
+                    text(&contact.name).size(13)
                         .style(text_primary_color()),
-                    text(&contact.address)
-                        .size(10)
+                    text(&contact.address).size(10)
                         .style(text_secondary_color()),
                 ].spacing(2),
                 Space::with_width(Length::Fill),
                 if !contact.note.is_empty() {
                     container(
-                        text(&contact.note)
-                            .size(9)
+                        text(&contact.note).size(9)
                             .style(text_muted_color()),
                     )
                     .style(|theme: &iced::Theme| {
@@ -150,8 +140,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                 },
                 Space::with_width(4),
                 button(
-                    text(Bootstrap::Pencil.to_string())
-                        .size(10)
+                    text(Bootstrap::Pencil.to_string()).size(10)
                         .font(BOOTSTRAP_FONT)
                         .style(text_color(Colors::ACCENT_TEAL)),
                 )
@@ -159,8 +148,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                 .padding([4, 6])
                 .style(secondary_button_style()),
                 button(
-                    text(Bootstrap::Trash.to_string())
-                        .size(11)
+                    text(Bootstrap::Trash.to_string()).size(11)
                         .font(BOOTSTRAP_FONT)
                         .style(text_color(Colors::ERROR)),
                 )
@@ -250,8 +238,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
         if let Some(delete_msg) = on_delete {
             Some(
                 button(
-                    text(Bootstrap::Trash.to_string())
-                        .size(12)
+                    text(Bootstrap::Trash.to_string()).size(12)
                         .font(BOOTSTRAP_FONT)
                         .style(text_color(Colors::ERROR)),
                 )
@@ -285,21 +272,18 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
     container(
         column![
             row![
-                text(Bootstrap::PersonPlus.to_string())
-                    .size(16)
+                text(Bootstrap::PersonPlus.to_string()).size(16)
                     .font(BOOTSTRAP_FONT)
                     .style(text_color(Colors::ACCENT_TEAL)),
                 Space::with_width(6),
-                text(title)
-                    .size(14)
+                text(title).size(14)
                     .style(text_primary_color()),
             ]
             .align_y(iced::Alignment::Center),
             Space::with_height(12),
             column![
                 row![
-                    text(t("Tên", "Name"))
-                        .size(12)
+                    text(t("Tên", "Name")).size(12)
                         .style(text_secondary_color()),
                     Space::with_width(Length::Fill),
                     text(t("(Ctrl+Shift+V để dán tiếng Việt)", "(Ctrl+Shift+V to paste Vietnamese)"))
@@ -317,18 +301,15 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
             Space::with_height(8),
             column![
                 row![
-                    text(t("Địa chỉ BTC", "BTC Address"))
-                        .size(12)
+                    text(t("Địa chỉ BTC", "BTC Address")).size(12)
                         .style(text_secondary_color()),
                     Space::with_width(Length::Fill),
                     if address_error.is_some() && !address.trim().is_empty() {
-                        text(Bootstrap::ExclamationTriangle.to_string())
-                            .size(10)
+                        text(Bootstrap::ExclamationTriangle.to_string()).size(10)
                             .font(BOOTSTRAP_FONT)
                             .style(text_color(Colors::ERROR))
                     } else if is_address_valid {
-                        text(Bootstrap::CheckCircle.to_string())
-                            .size(10)
+                        text(Bootstrap::CheckCircle.to_string()).size(10)
                             .font(BOOTSTRAP_FONT)
                             .style(text_color(Colors::SUCCESS))
                     } else {
@@ -343,12 +324,10 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                     .size(12)
                     .style(input_style()),
                 if address_error.is_some() && !address.trim().is_empty() {
-                    text(address_error.unwrap())
-                        .size(11)
+                    text(address_error.unwrap()).size(11)
                         .style(text_color(Colors::ERROR))
                 } else {
-                    text("")
-                        .size(11)
+                    text("").size(11)
                 },
             ].spacing(4),
             Space::with_height(8),

@@ -168,6 +168,9 @@ impl App {
                 let high_contrast = storage.load_high_contrast().unwrap_or(false);
                 let font_scale = storage.load_font_scale().unwrap_or(1.0);
                 let onboarding = storage.load_onboarding_completed().unwrap_or(false);
+                // Set global states
+                crate::theme::set_high_contrast(high_contrast);
+                crate::theme::set_font_scale(font_scale);
                 (language, storage.has_existing_state(), theme, high_contrast, font_scale, onboarding)
             }
             Err(_) => (fallback_language, false, AppTheme::Dark, false, 1.0, false),
@@ -626,7 +629,13 @@ impl App {
                         .history_view
                         .view(&self.wallets, self.selected_wallet, self.is_refreshing)
                         .map(AppMessage::HistoryMessage),
-                    NavItem::Settings => self.settings_view.view(self.theme).map(AppMessage::SettingsMessage),
+                    NavItem::Settings => {
+                        self.settings_view.view(
+                            self.theme,
+                            self.font_scale,
+                            self.high_contrast
+                        ).map(AppMessage::SettingsMessage)
+                    }
                 };
 
                 let error_bar = if let Some(app_error) = &self.error {

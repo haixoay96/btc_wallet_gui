@@ -18,19 +18,16 @@ pub fn error_card<Message: 'static + Clone>(
 ) -> Element<'static, Message> {
     let mut content = column![
         row![
-            text(Bootstrap::XCircle.to_string())
-                .size(24)
+            text(Bootstrap::XCircle.to_string()).size(24)
                 .font(BOOTSTRAP_FONT)
                 .style(text_color(Colors::ERROR)),
             Space::with_width(12),
-            text(title)
-                .size(16)
+            text(title).size(16)
                 .style(text_primary_color())
         ]
         .align_y(iced::Alignment::Center),
         Space::with_height(8),
-        text(message)
-            .size(13)
+        text(message).size(13)
             .style(text_secondary_color()),
     ]
     .spacing(0);

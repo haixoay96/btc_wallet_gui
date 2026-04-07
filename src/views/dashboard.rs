@@ -1,6 +1,6 @@
 use crate::i18n::t;
 use crate::components::skeleton_wallet_cards;
-use crate::theme::{
+use crate::theme::{text_scaled,
     card_style, notice_style, primary_button_style, secondary_button_style, 
     text_primary_color, text_secondary_color, text_muted_color,
     Colors, NoticeTone,
@@ -58,8 +58,7 @@ impl DashboardView {
     }
 
     pub fn view(&self, is_refreshing: bool) -> Element<'_, DashboardMessage> {
-        let title = text(t("Tổng quan", "Dashboard"))
-            .size(32)
+        let title = text_scaled(t("Tổng quan", "Dashboard"), 32)
             .style(text_primary_color());
 
         let total_btc = self.total_balance as f64 / 100_000_000.0;
@@ -68,16 +67,13 @@ impl DashboardView {
 
         let balance_card = container(
             column![
-                text(t("Tổng số dư", "Total Balance"))
-                    .size(14)
+                text_scaled(t("Tổng số dư", "Total Balance"), 14)
                     .style(text_secondary_color()),
                 Space::with_height(8),
-                text(format!("{:.8} BTC", total_btc))
-                    .size(36)
+                text_scaled(format!("{:.8} BTC", total_btc), 36)
                     .style(text_primary_color()),
                 Space::with_height(4),
-                text(format!("{} sat", self.total_balance))
-                    .size(14)
+                text_scaled(format!("{} sat", self.total_balance), 14)
                     .style(text_muted_color()),
             ]
             .padding(24),
@@ -87,16 +83,13 @@ impl DashboardView {
 
         let confirmed_card = container(
             column![
-                text(t("Số dư đã xác nhận", "Confirmed Balance"))
-                    .size(14)
+                text_scaled(t("Số dư đã xác nhận", "Confirmed Balance"), 14)
                     .style(text_secondary_color()),
                 Space::with_height(8),
-                text(format!("{:.8} BTC", confirmed_btc))
-                    .size(24)
+                text_scaled(format!("{:.8} BTC", confirmed_btc), 24)
                     .style(text_primary_color()),
                 Space::with_height(4),
-                text(format!("{} sat", self.confirmed_balance))
-                    .size(14)
+                text_scaled(format!("{} sat", self.confirmed_balance), 14)
                     .style(text_muted_color()),
             ]
             .padding(24),
@@ -106,16 +99,13 @@ impl DashboardView {
 
         let pending_card = container(
             column![
-                text(t("Số dư chờ xác nhận", "Pending Balance"))
-                    .size(14)
+                text_scaled(t("Số dư chờ xác nhận", "Pending Balance"), 14)
                     .style(text_secondary_color()),
                 Space::with_height(8),
-                text(format!("{:.8} BTC", pending_btc))
-                    .size(24)
+                text_scaled(format!("{:.8} BTC", pending_btc), 24)
                     .style(text_primary_color()),
                 Space::with_height(4),
-                text(format!("{} sat", self.pending_balance))
-                    .size(14)
+                text_scaled(format!("{} sat", self.pending_balance), 14)
                     .style(text_muted_color()),
             ]
             .padding(24),
@@ -125,12 +115,10 @@ impl DashboardView {
 
         let wallets_card = container(
             column![
-                text(t("Tổng số ví", "Total Wallets"))
-                    .size(14)
+                text_scaled(t("Tổng số ví", "Total Wallets"), 14)
                     .style(text_secondary_color()),
                 Space::with_height(8),
-                text(format!("{}", self.wallet_count))
-                    .size(36)
+                text_scaled(format!("{}", self.wallet_count), 36)
                     .style(text_primary_color()),
             ]
             .padding(24),
@@ -140,19 +128,17 @@ impl DashboardView {
 
         let backup_card = container(
             column![
-                text(t("Ví cần backup", "Wallets Needing Backup"))
-                    .size(14)
+                text_scaled(t("Ví cần backup", "Wallets Needing Backup"), 14)
                     .style(text_secondary_color()),
                 Space::with_height(8),
-                text(format!("{}", self.backup_needed_wallets))
-                    .size(28)
+                text_scaled(format!("{}", self.backup_needed_wallets), 28)
                     .style(if self.backup_needed_wallets == 0 {
                         text_primary_color()
                     } else {
                         text_secondary_color()
                     }),
                 Space::with_height(4),
-                text(if self.backup_needed_wallets == 0 {
+                text_scaled(if self.backup_needed_wallets == 0 {
                     t(
                         "Tất cả ví đã xác minh backup",
                         "All wallets have verified backups",
@@ -162,8 +148,7 @@ impl DashboardView {
                         "Nên xử lý sớm để tránh mất seed",
                         "Should be handled soon to avoid seed loss",
                     )
-                })
-                .size(12)
+                }, 12)
                 .style(text_muted_color()),
             ]
             .padding(24),
@@ -177,7 +162,7 @@ impl DashboardView {
             t("Làm mới", "Refresh")
         };
 
-        let mut refresh_button = button(text(refresh_label).size(16))
+        let mut refresh_button = button(text_scaled(refresh_label, 16))
             .padding(12)
             .style(primary_button_style());
         if !is_refreshing {
@@ -185,15 +170,15 @@ impl DashboardView {
         }
 
         let quick_actions = row![
-            button(text(t("Quản lý ví", "Manage Wallets")).size(14))
+            button(text_scaled(t("Quản lý ví", "Manage Wallets"), 14))
                 .on_press(DashboardMessage::Navigate(NavItem::Wallets))
                 .padding(12)
                 .style(secondary_button_style()),
-            button(text(t("Gửi BTC", "Send BTC")).size(14))
+            button(text_scaled(t("Gửi BTC", "Send BTC"), 14))
                 .on_press(DashboardMessage::Navigate(NavItem::Send))
                 .padding(12)
                 .style(secondary_button_style()),
-            button(text(t("Nhận BTC", "Receive BTC")).size(14))
+            button(text_scaled(t("Nhận BTC", "Receive BTC"), 14))
                 .on_press(DashboardMessage::Navigate(NavItem::Receive))
                 .padding(12)
                 .style(secondary_button_style()),
@@ -231,17 +216,15 @@ impl DashboardView {
             content = content.push(
                 container(
                     column![
-                        text(t("Chưa có ví nào", "No wallets yet"))
-                            .size(22)
+                        text_scaled(t("Chưa có ví nào", "No wallets yet"), 22)
                             .style(text_primary_color()),
-                        text(t(
+                        text_scaled(t(
                             "Bắt đầu bằng cách tạo ví mới hoặc import một ví hiện có.",
                             "Start by creating a new wallet or importing an existing one.",
-                        ))
-                        .size(14)
+                        ), 14)
                         .style(text_secondary_color()),
                         Space::with_height(12),
-                        button(text(t("Đi tới Wallets", "Go to Wallets")).size(14))
+                        button(text_scaled(t("Đi tới Wallets", "Go to Wallets"), 14))
                             .on_press(DashboardMessage::Navigate(NavItem::Wallets))
                             .padding(12)
                             .style(primary_button_style()),

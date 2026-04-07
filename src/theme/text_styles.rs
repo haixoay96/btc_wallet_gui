@@ -1,7 +1,14 @@
 use iced::widget::text;
 use iced::{Color, Theme};
 use super::structure::TextStyleFn;
-use super::palette::get_theme_colors;
+use super::palette::{get_theme_colors, get_font_scale};
+
+/// Create text element with auto-scaled size based on global font scale
+pub fn text_scaled<T: std::fmt::Display>(content: T, base_size: u16) -> iced::widget::Text<'static> {
+    let scale = get_font_scale();
+    let scaled_size = (base_size as f64 * scale).round() as u16;
+    text(content.to_string()).size(scaled_size)
+}
 
 /// Text style với màu custom
 pub fn text_color(color: Color) -> Box<TextStyleFn> {

@@ -1,5 +1,5 @@
 use crate::i18n::t;
-use crate::theme::{
+use crate::theme::{text_scaled,
     secondary_button_style, selected_button_style, sidebar_style, text_color,
     text_primary_color, text_secondary_color,
     Colors,
@@ -91,7 +91,7 @@ impl Sidebar {
     }
 
     pub fn view(&self, wallet_count: usize) -> Element<'_, SidebarMessage> {
-        let logo = text("₿").size(48).style(text_color(Colors::ACCENT_PURPLE));
+        let logo = text_scaled("₿", 48).style(text_color(Colors::ACCENT_PURPLE));
 
         let logo_container = container(logo)
             .padding(Padding::from([20, 30]))
@@ -102,20 +102,18 @@ impl Sidebar {
                 .into_iter()
                 .map(|item| {
                     let is_active = self.active == item;
-                    let icon = text(item.icon_char())
-                        .size(20)
+                    let icon = text_scaled(item.icon_char(), 20)
                         .font(BOOTSTRAP_FONT)
                         .style(text_color(if is_active {
                             Colors::ACCENT_TEAL
                         } else {
                             Colors::TEXT_SECONDARY
                         }));
-                    let title = text(item.title()).size(14).style(text_secondary_color());
+                    let title = text_scaled(item.title(), 14).style(text_secondary_color());
 
                     let item_row = if item == NavItem::Wallets && wallet_count > 0 {
                         let badge = container(
-                            text(format!("{}", wallet_count))
-                                .size(11)
+                            text_scaled(format!("{}", wallet_count), 11)
                                 .style(text_primary_color()),
                         )
                         .padding(Padding::from([2, 6]));

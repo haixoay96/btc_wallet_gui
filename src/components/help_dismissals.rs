@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 use crate::i18n::t;
-use crate::theme::{secondary_button_style,
+use crate::theme::{text_scaled,secondary_button_style,
     text_primary_color, text_secondary_color, text_muted_color,
     text_color, Colors};
 use iced::{
@@ -67,13 +67,11 @@ pub fn help_hint_banner<'a, Message: Clone + 'a>(
     };
 
     let mut header_row = row![
-        text(icon.to_string())
-            .size(14)
+        text(icon.to_string()).size(14)
             .font(BOOTSTRAP_FONT)
             .style(text_color(Colors::ACCENT_TEAL)),
         Space::with_width(6),
-        text(title)
-            .size(12)
+        text(title).size(12)
             .style(text_primary_color())
             .width(Length::Fill),
     ]
@@ -81,8 +79,7 @@ pub fn help_hint_banner<'a, Message: Clone + 'a>(
 
     if on_toggle_expand.is_some() {
         header_row = header_row.push(
-            text(expand_icon)
-                .size(10)
+            text(expand_icon).size(10)
                 .font(BOOTSTRAP_FONT)
                 .style(text_secondary_color()),
         );
@@ -91,8 +88,7 @@ pub fn help_hint_banner<'a, Message: Clone + 'a>(
     header_row = header_row.push(Space::with_width(4));
     header_row = header_row.push(
         button(
-            text(Bootstrap::X.to_string())
-                .size(10)
+            text(Bootstrap::X.to_string()).size(10)
                 .font(BOOTSTRAP_FONT)
                 .style(text_secondary_color()),
         )
@@ -104,8 +100,7 @@ pub fn help_hint_banner<'a, Message: Clone + 'a>(
     let mut content = column![header_row];
 
     if let Some(toggle_msg) = on_toggle_expand {
-        let expanded_text: Element<'_, Message> = text(description)
-            .size(11)
+        let expanded_text: Element<'_, Message> = text(description).size(11)
             .style(text_secondary_color())
             .width(Length::Fill)
             .into();
@@ -152,8 +147,7 @@ pub fn show_help_reset_button<'a, Message: Clone + 'a>(
 ) -> Element<'a, Message> {
     if dismissed_count == 0 {
         return container(
-            text(t("Không có gợi ý nào bị ẩn", "No hidden hints"))
-                .size(12)
+            text(t("Không có gợi ý nào bị ẩn", "No hidden hints")).size(12)
                 .style(text_muted_color()),
         )
         .into();
@@ -166,7 +160,7 @@ pub fn show_help_reset_button<'a, Message: Clone + 'a>(
     );
 
     container(
-        button(text(reset_label).size(12))
+        button(text(reset_label.to_string()).size(12))
             .on_press(on_reset)
             .padding(8)
             .style(secondary_button_style()),

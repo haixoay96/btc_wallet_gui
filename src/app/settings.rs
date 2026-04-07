@@ -44,6 +44,51 @@ impl App {
                         "Opening onboarding tour...",
                     ).to_string());
                 }
+                // Accessibility events
+                SettingsEvent::FontScaleChanged(scale) => {
+                    return self.handle_font_scale_changed(scale);
+                }
+                SettingsEvent::HighContrastToggled(enabled) => {
+                    return self.handle_toggle_high_contrast(enabled);
+                }
+                // Network events
+                SettingsEvent::EsploraEndpointChanged(endpoint) => {
+                    if let Ok(storage) = Storage::new() {
+                        let _ = storage.save_esplora_endpoint(endpoint);
+                    }
+                }
+                SettingsEvent::TimeoutSecsChanged(secs) => {
+                    if let Ok(storage) = Storage::new() {
+                        let _ = storage.save_timeout_secs(secs);
+                    }
+                }
+                SettingsEvent::TestConnection => {
+                    self.add_info_toast(t(
+                        "Đang test kết nối...",
+                        "Testing connection...",
+                    ).to_string());
+                }
+                // Advanced events
+                SettingsEvent::DebugLoggingToggled(enabled) => {
+                    if let Ok(storage) = Storage::new() {
+                        let _ = storage.save_enable_debug(enabled);
+                    }
+                }
+                SettingsEvent::AutoRefreshToggled(enabled) => {
+                    if let Ok(storage) = Storage::new() {
+                        let _ = storage.save_auto_refresh(enabled);
+                    }
+                }
+                SettingsEvent::ShowSatoshisToggled(enabled) => {
+                    if let Ok(storage) = Storage::new() {
+                        let _ = storage.save_show_satoshis(enabled);
+                    }
+                }
+                SettingsEvent::CompactModeToggled(enabled) => {
+                    if let Ok(storage) = Storage::new() {
+                        let _ = storage.save_compact_mode(enabled);
+                    }
+                }
             }
         }
         Task::none()
@@ -77,6 +122,7 @@ impl App {
 
     pub fn handle_toggle_high_contrast(&mut self, enabled: bool) -> Task<AppMessage> {
         self.high_contrast = enabled;
+        crate::theme::set_high_contrast(enabled);
         if let Ok(storage) = Storage::new() {
             let _ = storage.save_high_contrast(enabled);
         }
@@ -85,6 +131,7 @@ impl App {
 
     pub fn handle_font_scale_changed(&mut self, scale: f64) -> Task<AppMessage> {
         self.font_scale = scale.clamp(0.8, 1.5);
+        crate::theme::set_font_scale(self.font_scale);
         if let Ok(storage) = Storage::new() {
             let _ = storage.save_font_scale(self.font_scale);
         }

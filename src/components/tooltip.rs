@@ -3,7 +3,7 @@ use iced::{
     Color, Element, Length,
 };
 
-use crate::theme::{text_color,
+use crate::theme::{text_scaled,text_color,
     text_primary_color, text_secondary_color, text_muted_color,
     Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
@@ -15,18 +15,15 @@ pub fn info_box(title: impl Into<String>, description: impl Into<String>) -> Ele
 
     container(
         row![
-            text(Bootstrap::InfoCircle.to_string())
-                .size(16)
+            text(Bootstrap::InfoCircle.to_string()).size(16)
                 .font(BOOTSTRAP_FONT)
                 .style(text_color(Colors::ACCENT_BLUE)),
             Space::with_width(8),
             column![
-                text(title)
-                    .size(13)
+                text(title).size(13)
                     .style(text_primary_color()),
                 Space::with_height(2),
-                text(description)
-                    .size(11)
+                text(description).size(11)
                     .style(text_secondary_color()),
             ]
             .spacing(0),
@@ -50,18 +47,15 @@ pub fn warning_box(title: impl Into<String>, description: impl Into<String>) -> 
 
     container(
         row![
-            text(Bootstrap::ExclamationTriangle.to_string())
-                .size(16)
+            text(Bootstrap::ExclamationTriangle.to_string()).size(16)
                 .font(BOOTSTRAP_FONT)
                 .style(text_color(Colors::WARNING)),
             Space::with_width(8),
             column![
-                text(title)
-                    .size(13)
+                text(title).size(13)
                     .style(text_primary_color()),
                 Space::with_height(2),
-                text(description)
-                    .size(11)
+                text(description).size(11)
                     .style(text_secondary_color()),
             ]
             .spacing(0),
@@ -124,19 +118,16 @@ pub fn tooltip_bubble(content: &TooltipContent) -> Element<'static, ()> {
     container(
         column![
             row![
-                text(Bootstrap::InfoCircle.to_string())
-                    .size(12)
+                text(Bootstrap::InfoCircle.to_string()).size(12)
                     .font(BOOTSTRAP_FONT)
                     .style(text_color(Colors::ACCENT_BLUE)),
                 Space::with_width(4),
-                text(crate::i18n::t(content.title_vi, content.title_en))
-                    .size(12)
+                text(crate::i18n::t(content.title_vi, content.title_en)).size(12)
                     .style(text_primary_color()),
             ]
             .align_y(iced::Alignment::Center),
             Space::with_height(4),
-            text(crate::i18n::t(content.description_vi, content.description_en))
-                .size(10)
+            text(crate::i18n::t(content.description_vi, content.description_en)).size(10)
                 .style(text_secondary_color())
                 .width(Length::Shrink),
         ]
@@ -233,17 +224,14 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
     };
 
     let header: Element<'_, Message> = row![
-        text(icon.to_string())
-            .size(14)
+        text(icon.to_string()).size(14)
             .font(BOOTSTRAP_FONT)
             .style(text_color(Colors::ACCENT_TEAL)),
         Space::with_width(6),
-        text(title)
-            .size(12)
+        text(title).size(12)
             .style(text_primary_color())
             .width(Length::Fill),
-        text(icon_char)
-            .size(10)
+        text(icon_char).size(10)
             .font(BOOTSTRAP_FONT)
             .style(text_secondary_color()),
     ]
@@ -256,8 +244,7 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
     let mut content = column![header_element].spacing(0);
 
     if is_expanded {
-        let description_text: Element<'_, Message> = text(description)
-            .size(11)
+        let description_text: Element<'_, Message> = text(description).size(11)
             .style(text_secondary_color())
             .width(Length::Fill)
             .into();
@@ -281,8 +268,7 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
         if let Some(detail_text) = detail {
             body = body.push(Space::with_height(6));
             body = body.push(
-                text(detail_text)
-                    .size(10)
+                text(detail_text).size(10)
                     .style(text_muted_color())
                     .width(Length::Fill),
             );
@@ -314,8 +300,7 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
 /// Help button icon - can be placed next to form fields
 pub fn help_button<'a, Message: Clone + 'a>(on_press: Message) -> Element<'a, Message> {
     container(
-        text(Bootstrap::QuestionCircle.to_string())
-            .size(14)
+        text(Bootstrap::QuestionCircle.to_string()).size(14)
             .font(BOOTSTRAP_FONT)
             .style(text_secondary_color()),
     )

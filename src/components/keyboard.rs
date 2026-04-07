@@ -4,7 +4,7 @@ use iced::{
     Color, Element, Length,
 };
 
-use crate::theme::{popup_dialog_style, text_color,
+use crate::theme::{text_scaled,popup_dialog_style, text_color,
     text_primary_color, text_secondary_color,
     Colors};
 
@@ -117,7 +117,7 @@ fn key_badge(key: &str) -> Element<'static, ()> {
     };
 
     let key_owned = key.to_string();
-    container(text(key_owned).size(11).style(text_color(text_color_val)))
+    container(text_scaled(key_owned, 11).style(text_color(text_color_val)))
         .style(|_| iced::widget::container::Style {
             background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.2))),
             border: iced::border::rounded(4),
@@ -128,7 +128,7 @@ fn key_badge(key: &str) -> Element<'static, ()> {
 }
 
 fn shortcut_section_header(vi: &'static str, en: &'static str) -> Element<'static, ()> {
-    container(text(t(vi, en)).size(12).style(text_color(Colors::ACCENT_TEAL)))
+    container(text_scaled(t(vi, en), 12).style(text_color(Colors::ACCENT_TEAL)))
         .padding(iced::padding::Padding {
             top: 8.0,
             right: 0.0,
@@ -206,8 +206,7 @@ fn shortcut_row(shortcut: &KeyboardShortcut) -> Element<'static, ()> {
     let item = row![
         keys_row,
         Space::with_width(16),
-        text(t(shortcut.description_vi, shortcut.description_en))
-            .size(12)
+        text_scaled(t(shortcut.description_vi, shortcut.description_en), 12)
             .style(text_secondary_color()),
     ]
     .align_y(iced::Alignment::Center);

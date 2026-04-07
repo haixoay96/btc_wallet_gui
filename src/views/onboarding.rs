@@ -4,7 +4,7 @@ use iced::{
 };
 
 use crate::i18n::t;
-use crate::theme::{
+use crate::theme::{text_scaled,
     card_style, primary_button_style, secondary_button_style,
     text_primary_color, text_secondary_color, text_muted_color, text_color,
     get_theme_colors, Colors,
@@ -99,8 +99,7 @@ impl OnboardingView {
         match step {
             0 => {
                 container(
-                    text('₿')
-                        .size(64)
+                    text_scaled('₿', 64)
                         .style(text_color(Colors::ACCENT_TEAL)),
                 )
                 .width(Length::Fill)
@@ -112,12 +111,10 @@ impl OnboardingView {
             1 => {
                 let total_card = container(
                     column![
-                        text(t("Tổng số dư", "Total Balance"))
-                            .size(10)
+                        text_scaled(t("Tổng số dư", "Total Balance"), 10)
                             .style(text_muted_color()),
                         Space::with_height(4),
-                        text("0.12345678 BTC")
-                            .size(18)
+                        text_scaled("0.12345678 BTC", 18)
                             .style(text_color(Colors::ACCENT_TEAL)),
                     ]
                     .padding(12),
@@ -135,9 +132,9 @@ impl OnboardingView {
                 let stats_row = row![
                     container(
                         column![
-                            text(t("Ví", "Wallets")).size(9).style(text_muted_color()),
+                            text_scaled(t("Ví", "Wallets"), 9).style(text_muted_color()),
                             Space::with_height(2),
-                            text("3").size(16).style(text_primary_color()),
+                            text_scaled("3", 16).style(text_primary_color()),
                         ]
                         .padding(8)
                     )
@@ -153,9 +150,9 @@ impl OnboardingView {
                     Space::with_width(8),
                     container(
                         column![
-                            text(t("Giao dịch", "Txns")).size(9).style(text_muted_color()),
+                            text_scaled(t("Giao dịch", "Txns"), 9).style(text_muted_color()),
                             Space::with_height(2),
-                            text("42").size(16).style(text_primary_color()),
+                            text_scaled("42", 16).style(text_primary_color()),
                         ]
                         .padding(8)
                     )
@@ -178,9 +175,9 @@ impl OnboardingView {
                 let wallet_cards = column![
                     container(
                         row![
-                            text("Main").size(11).style(text_primary_color()),
+                            text_scaled("Main", 11).style(text_primary_color()),
                             Space::with_width(Length::Fill),
-                            text("0.08 BTC").size(11).style(text_color(Colors::ACCENT_TEAL)),
+                            text_scaled("0.08 BTC", 11).style(text_color(Colors::ACCENT_TEAL)),
                         ]
                         .padding(10)
                     )
@@ -196,9 +193,9 @@ impl OnboardingView {
                     Space::with_height(6),
                     container(
                         row![
-                            text("Testnet").size(11).style(text_primary_color()),
+                            text_scaled("Testnet", 11).style(text_primary_color()),
                             Space::with_width(Length::Fill),
-                            text("0.04 BTC").size(11).style(text_color(Colors::ACCENT_TEAL)),
+                            text_scaled("0.04 BTC", 11).style(text_color(Colors::ACCENT_TEAL)),
                         ]
                         .padding(10)
                     )
@@ -214,9 +211,9 @@ impl OnboardingView {
                     Space::with_height(6),
                     container(
                         row![
-                            text("+").size(12).style(text_muted_color()),
+                            text_scaled("+", 12).style(text_muted_color()),
                             Space::with_width(6),
-                            text(t("Thêm ví mới", "Add new wallet")).size(11).style(text_muted_color()),
+                            text_scaled(t("Thêm ví mới", "Add new wallet"), 11).style(text_muted_color()),
                         ]
                         .padding(10)
                         .align_y(Alignment::Center)
@@ -236,9 +233,9 @@ impl OnboardingView {
             3 => {
                 let qr_placeholder = container(
                     column![
-                        text("QR").size(24).style(text_primary_color()),
+                        text_scaled("QR", 24).style(text_primary_color()),
                         Space::with_height(4),
-                        text("Code").size(9).style(text_muted_color()),
+                        text_scaled("Code", 9).style(text_muted_color()),
                     ]
                     .align_x(Alignment::Center)
                 )
@@ -256,7 +253,7 @@ impl OnboardingView {
                 .align_y(Alignment::Center);
 
                 let address_preview = container(
-                    text("bc1q...2dreul").size(10).style(text_color(Colors::ACCENT_PURPLE)),
+                    text_scaled("bc1q...2dreul", 10).style(text_color(Colors::ACCENT_PURPLE)),
                 )
                 .style(|theme: &iced::Theme| {
                     let colors = get_theme_colors(theme);
@@ -276,7 +273,7 @@ impl OnboardingView {
                         address_preview,
                         Space::with_height(8),
                         container(
-                            text(t("Sao chép", "Copy")).size(10).style(text_color(iced::Color::from_rgb(1.0, 1.0, 1.0))),
+                            text_scaled(t("Sao chép", "Copy"), 10).style(text_color(iced::Color::from_rgb(1.0, 1.0, 1.0))),
                         )
                         .style(|_| iced::widget::container::Style {
                             background: Some(iced::Background::Color(Colors::ACCENT_TEAL)),
@@ -292,9 +289,9 @@ impl OnboardingView {
             4 => {
                 let warning_banner = container(
                     row![
-                        text("!").size(16).style(text_color(Colors::WARNING)),
+                        text_scaled("!", 16).style(text_color(Colors::WARNING)),
                         Space::with_width(8),
-                        text(t("Backup ngay!", "Backup now!")).size(12).style(text_color(Colors::WARNING)),
+                        text_scaled(t("Backup ngay!", "Backup now!"), 12).style(text_color(Colors::WARNING)),
                     ]
                     .align_y(Alignment::Center)
                 )
@@ -312,19 +309,19 @@ impl OnboardingView {
                 let seed_preview = container(
                     column![
                         row![
-                            text("1.").size(10).style(text_muted_color()),
+                            text_scaled("1.", 10).style(text_muted_color()),
                             Space::with_width(4),
-                            text("abandon").size(10).style(text_primary_color()),
+                            text_scaled("abandon", 10).style(text_primary_color()),
                         ],
                         row![
-                            text("2.").size(10).style(text_muted_color()),
+                            text_scaled("2.", 10).style(text_muted_color()),
                             Space::with_width(4),
-                            text("ability").size(10).style(text_primary_color()),
+                            text_scaled("ability", 10).style(text_primary_color()),
                         ],
                         row![
-                            text("3.").size(10).style(text_muted_color()),
+                            text_scaled("3.", 10).style(text_muted_color()),
                             Space::with_width(4),
-                            text("able").size(10).style(text_primary_color()),
+                            text_scaled("able", 10).style(text_primary_color()),
                         ],
                     ]
                     .padding(8)
@@ -342,7 +339,7 @@ impl OnboardingView {
                 column![
                     warning_banner,
                     Space::with_height(8),
-                    text(t("12 từ mnemonic", "12-word mnemonic")).size(10).style(text_muted_color()),
+                    text_scaled(t("12 từ mnemonic", "12-word mnemonic"), 10).style(text_muted_color()),
                     Space::with_height(4),
                     seed_preview,
                 ]
@@ -353,12 +350,10 @@ impl OnboardingView {
     }
 
     pub fn view(&self) -> Element<'_, OnboardingMessage> {
-        let title = text(Self::step_title(self.current_step))
-            .size(24)
+        let title = text_scaled(Self::step_title(self.current_step), 24)
             .style(text_primary_color());
 
-        let description = text(Self::step_description(self.current_step))
-            .size(14)
+        let description = text_scaled(Self::step_description(self.current_step), 14)
             .style(text_secondary_color())
             .width(Length::Fill);
 
@@ -406,7 +401,7 @@ impl OnboardingView {
         let mut nav_buttons = row![];
         if self.current_step > 0 {
             nav_buttons = nav_buttons.push(
-                button(text(t("Quay lại", "Back")).size(13))
+                button(text_scaled(t("Quay lại", "Back"), 13))
                     .on_press(OnboardingMessage::Previous)
                     .padding([10, 16])
                     .style(secondary_button_style()),
@@ -414,7 +409,7 @@ impl OnboardingView {
             nav_buttons = nav_buttons.push(Space::with_width(12));
         } else {
             nav_buttons = nav_buttons.push(
-                button(text(t("Bỏ qua", "Skip")).size(13))
+                button(text_scaled(t("Bỏ qua", "Skip"), 13))
                     .on_press(OnboardingMessage::Skip)
                     .padding([10, 16])
                     .style(secondary_button_style()),
@@ -424,14 +419,14 @@ impl OnboardingView {
 
         if self.current_step < self.total_steps - 1 {
             nav_buttons = nav_buttons.push(
-                button(text(t("Tiếp theo", "Next")).size(13))
+                button(text_scaled(t("Tiếp theo", "Next"), 13))
                     .on_press(OnboardingMessage::Next)
                     .padding([10, 16])
                     .style(primary_button_style()),
             );
         } else {
             nav_buttons = nav_buttons.push(
-                button(text(t("Bắt đầu", "Get Started")).size(13))
+                button(text_scaled(t("Bắt đầu", "Get Started"), 13))
                     .on_press(OnboardingMessage::Complete)
                     .padding([10, 16])
                     .style(primary_button_style()),

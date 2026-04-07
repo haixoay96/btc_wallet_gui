@@ -1,6 +1,33 @@
-use iced::{Color, Theme};
-use super::colors::{DarkColors, LightColors};
+use iced::{Color, Theme, widget::Text};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use super::colors::{DarkColors, LightColors, HighContrastColors};
 use super::structure::color_with_alpha;
+
+/// Global high contrast state
+static HIGH_CONTRAST_ENABLED: AtomicBool = AtomicBool::new(false);
+
+/// Global font scale (stored as u32 = scale * 1000 for atomic operations)
+static FONT_SCALE_RAW: AtomicU32 = AtomicU32::new(1000); // 1.0 * 1000
+
+/// Set global high contrast mode
+pub fn set_high_contrast(enabled: bool) {
+    HIGH_CONTRAST_ENABLED.store(enabled, Ordering::Relaxed);
+}
+
+/// Get current high contrast state
+pub fn is_high_contrast() -> bool {
+    HIGH_CONTRAST_ENABLED.load(Ordering::Relaxed)
+}
+
+/// Set global font scale
+pub fn set_font_scale(scale: f64) {
+    FONT_SCALE_RAW.store((scale * 1000.0) as u32, Ordering::Relaxed);
+}
+
+/// Get current font scale
+pub fn get_font_scale() -> f64 {
+    FONT_SCALE_RAW.load(Ordering::Relaxed) as f64 / 1000.0
+}
 
 /// Theme color palette that can be used dynamically
 pub struct ThemeColorPalette {
@@ -73,12 +100,40 @@ impl ThemeColorPalette {
             border_subtle: Color::from_rgb(0.75, 0.75, 0.80),
         }
     }
+
+    pub fn high_contrast() -> Self {
+        Self {
+            bg_primary: HighContrastColors::BG_PRIMARY,
+            bg_secondary: HighContrastColors::BG_SECONDARY,
+            bg_card: HighContrastColors::BG_CARD,
+            bg_input: HighContrastColors::BG_INPUT,
+            bg_hover: HighContrastColors::BG_HOVER,
+            accent_purple: HighContrastColors::ACCENT_PURPLE,
+            accent_teal: HighContrastColors::ACCENT_TEAL,
+            accent_blue: HighContrastColors::ACCENT_BLUE,
+            text_primary: HighContrastColors::TEXT_PRIMARY,
+            text_secondary: HighContrastColors::TEXT_SECONDARY,
+            text_muted: HighContrastColors::TEXT_MUTED,
+            text_placeholder: Color::from_rgb(0.70, 0.70, 0.70),
+            success: HighContrastColors::SUCCESS,
+            error: HighContrastColors::ERROR,
+            warning: HighContrastColors::WARNING,
+            gradient_start: HighContrastColors::GRADIENT_START,
+            border: HighContrastColors::BORDER,
+            border_focused: HighContrastColors::BORDER_FOCUSED,
+            border_subtle: HighContrastColors::BORDER_SUBTLE,
+        }
+    }
 }
 
-/// Get colors based on current theme
+/// Get colors based on current theme and global high contrast setting
 pub fn get_theme_colors(theme: &Theme) -> ThemeColorPalette {
-    match theme {
-        Theme::Light => ThemeColorPalette::light(),
-        Theme::Dark | _ => ThemeColorPalette::dark(),
+    if is_high_contrast() {
+        ThemeColorPalette::high_contrast()
+    } else {
+        match theme {
+            Theme::Light => ThemeColorPalette::light(),
+            Theme::Dark | _ => ThemeColorPalette::dark(),
+        }
     }
 }
