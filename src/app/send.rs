@@ -328,8 +328,9 @@ impl App {
             }
             Err(err) => {
                 self.send_view.set_error(err.clone());
-                self.error = Some(AppError::api(
+                self.error = Some(AppError::api_with_status(
                     "fee_estimation",
+                    500,
                     &format!("{}: {err}", t("Ước tính phí thất bại", "Fee estimation failed")),
                 ));
             }
@@ -359,8 +360,9 @@ impl App {
             }
             Err(err) => {
                 self.send_view.set_error(err.clone());
-                self.error = Some(AppError::api(
+                self.error = Some(AppError::api_with_status(
                     "max_amount",
+                    500,
                     &format!("{}: {err}", t("Không thể tính số lượng tối đa", "Cannot calculate max amount")),
                 ));
             }
@@ -418,8 +420,9 @@ impl App {
             }
             Err(err) => {
                 self.send_view.set_error(err.clone());
-                self.error = Some(AppError::api(
+                self.error = Some(AppError::api_with_status(
                     "send_transaction",
+                    500,
                     &format!("{}: {err}", t("Gửi giao dịch thất bại", "Send transaction failed")),
                 ));
             }

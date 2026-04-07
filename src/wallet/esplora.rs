@@ -112,9 +112,9 @@ impl EsploraClient {
             .with_context(|| format!("Không gọi được API broadcast: {url}"))?;
 
         if !response.status().is_success() {
-            let status = response.status();
+            let status = response.status().as_u16();
             let body = response.text().unwrap_or_default();
-            return Err(anyhow!("Broadcast thất bại ({status}): {body}"));
+            return Err(anyhow!("Broadcast thất bại (HTTP {status}): {body}"));
         }
 
         Ok(response.text().unwrap_or_default())

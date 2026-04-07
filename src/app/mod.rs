@@ -431,7 +431,7 @@ impl App {
                         self.add_success_toast(t("Xuất file thành công!", "Export successful!").to_string());
                     }
                     Err(e) => {
-                        self.error = Some(AppError::storage("storage", &format!("{}: {}", t("Lỗi export", "Export error"), e)));
+                        self.error = Some(AppError::storage("export", &format!("{}: {}", t("Lỗi export", "Export error"), e)));
                     }
                 }
                 Task::none()
@@ -761,8 +761,13 @@ impl App {
             Storage::new().and_then(|storage| storage.save_language_preference(self.language));
         if let Err(err) = result {
             if self.error.is_none() {
-                self.error = Some(AppError::storage(
+                let path = match Storage::new() {
+                    Ok(s) => s.file_path().display().to_string(),
+                    Err(_) => "unknown".to_string(),
+                };
+                self.error = Some(AppError::storage_with_path(
                     "language_preference",
+                    &path,
                     &format!("{}: {err}", t("Không thể lưu cài đặt ngôn ngữ", "Could not save language preference")),
                 ));
             }
@@ -788,8 +793,9 @@ impl App {
                     }
                 };
                 if let Err(err) = storage.save_state(&state, passphrase.expose_secret()) {
-                    self.error = Some(AppError::storage(
+                    self.error = Some(AppError::storage_with_path(
                         "save_state",
+                        &storage.file_path().display().to_string(),
                         &format!("{}: {err}", t("Không thể lưu trạng thái", "Failed to save app state")),
                     ));
                     false
@@ -803,8 +809,9 @@ impl App {
                 }
             }
             Err(err) => {
-                self.error = Some(AppError::storage(
+                self.error = Some(AppError::storage_with_path(
                     "init_storage",
+                    &format!("{}", err),
                     &format!("{}: {err}", t("Không thể khởi tạo storage", "Failed to initialize storage")),
                 ));
                 false
@@ -996,8 +1003,9 @@ impl App {
                 let refresh_error: Option<AppError> = if payload.errors.is_empty() {
                     None
                 } else {
-                    Some(AppError::api(
+                    Some(AppError::api_with_status(
                         "refresh_errors",
+                        500,
                         &format!("{}: {}", t("Một số ví làm mới lỗi", "Some wallets failed to refresh"), payload.errors.join(" | ")),
                     ))
                 };
@@ -1011,8 +1019,9 @@ impl App {
                 };
             }
             Err(err) => {
-                self.error = Some(AppError::api(
+                self.error = Some(AppError::api_with_status(
                     "wallet_refresh",
+                    500,
                     &format!("{}: {err}", t("Làm mới ví thất bại", "Wallet refresh failed")),
                 ));
             }

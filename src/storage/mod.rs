@@ -90,6 +90,11 @@ impl Storage {
         Ok(Self { paths })
     }
 
+    /// Get the path to the encrypted state file
+    pub fn file_path(&self) -> &std::path::Path {
+        &self.paths.encrypted_state_file
+    }
+
     pub fn load_state(&self, passphrase: &str) -> Result<PersistedState> {
         if self.paths.encrypted_state_file.exists() {
             return self.load_encrypted_state(&self.paths.encrypted_state_file, passphrase);

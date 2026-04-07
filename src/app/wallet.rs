@@ -433,8 +433,9 @@ impl App {
                     }
                 }
                 Err(err) => {
-                    self.error = Some(AppError::api(
+                    self.error = Some(AppError::api_with_status(
                         "address_derivation",
+                        500,
                         &format!("{}: {err}", t("Không thể tạo địa chỉ mới", "Could not derive new addresses")),
                     ));
                 }
