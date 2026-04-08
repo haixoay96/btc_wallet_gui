@@ -568,11 +568,17 @@ impl SendView {
         is_calculating_max: bool,
         is_sending: bool,
         address_book: &'a AddressBook,
+        compact: bool,
     ) -> Element<'a, SendMessage> {
         let wallet_options = wallet_choices(wallets);
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
         let wallet = wallets.get(selected_wallet);
         let is_any_busy = is_estimating_fee || is_calculating_max || is_sending;
+
+        // Apply compact mode
+        let content_padding = if compact { 16 } else { 32 };
+        let spacing = if compact { 8 } else { 16 };
+        let card_padding = if compact { 12 } else { 16 };
 
         let title = text_scaled(t("Gửi BTC", "Send BTC"), 32)
             .style(text_primary_color());
@@ -1007,7 +1013,7 @@ impl SendView {
             Space::with_height(8),
         ]
         .spacing(8)
-        .padding(32);
+        .padding(content_padding);
 
         // Add help topics
         let help_topics = send_screen_topics();
@@ -1041,9 +1047,13 @@ impl SendView {
 
         let content = column![
             content
-        ];
+        ]
+        .padding(content_padding);
 
-        let mut base_content: Element<'_, SendMessage> = scrollable(content).width(Length::Fill).height(Length::Fill).into();
+        let mut base_content: Element<'_, SendMessage> = scrollable(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into();
 
         // Contact Picker Modal
         if self.show_contact_picker || self.show_contact_form {
@@ -1090,6 +1100,7 @@ impl SendView {
                 },
                 contact_ui,
                 SendMessage::HideContactPicker,
+                compact,
             );
         }
 
@@ -1189,6 +1200,7 @@ impl SendView {
                 t("Xác nhận giao dịch", "Confirm Transaction"),
                 confirm_content.into(),
                 SendMessage::CancelSend,
+                compact,
             )
         } else {
             base_content.into()

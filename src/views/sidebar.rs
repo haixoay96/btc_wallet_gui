@@ -90,11 +90,20 @@ impl Sidebar {
         }
     }
 
-    pub fn view(&self, wallet_count: usize) -> Element<'_, SidebarMessage> {
+    pub fn view(&self, wallet_count: usize, compact: bool) -> Element<'_, SidebarMessage> {
         let logo = text_scaled("₿", 48).style(text_color(Colors::ACCENT_PURPLE));
+        let icon_size = if compact { 16 } else { 20 };
+        let title_size = if compact { 12 } else { 14 };
+        let item_padding = if compact { 8 } else { 12 };
+        let item_spacing = if compact { 6 } else { 8 };
+        let logo_padding = if compact {
+            iced::Padding::from([12, 20])
+        } else {
+            iced::Padding::from([20, 30])
+        };
 
         let logo_container = container(logo)
-            .padding(Padding::from([20, 30]))
+            .padding(logo_padding)
             .center_x(Length::Fill);
 
         let nav_items: Element<_> = column(
@@ -102,14 +111,14 @@ impl Sidebar {
                 .into_iter()
                 .map(|item| {
                     let is_active = self.active == item;
-                    let icon = text_scaled(item.icon_char(), 20)
+                    let icon = text_scaled(item.icon_char(), icon_size as u16)
                         .font(BOOTSTRAP_FONT)
                         .style(text_color(if is_active {
                             Colors::ACCENT_TEAL
                         } else {
                             Colors::TEXT_SECONDARY
                         }));
-                    let title = text_scaled(item.title(), 14).style(text_secondary_color());
+                    let title = text_scaled(item.title(), title_size as u16).style(text_secondary_color());
 
                     let item_row = if item == NavItem::Wallets && wallet_count > 0 {
                         let badge = container(
@@ -138,18 +147,18 @@ impl Sidebar {
 
                     button(item_row)
                         .on_press(SidebarMessage::Navigate(item))
-                        .padding(12)
+                        .padding(item_padding)
                         .width(Length::Fill)
                         .style(style)
                         .into()
                 })
                 .collect::<Vec<_>>(),
         )
-        .spacing(8)
-        .padding(Padding::from(16))
+        .spacing(item_spacing)
+        .padding(Padding::from(if compact { 12 } else { 16 }))
         .into();
 
-        let content = column![logo_container, Space::with_height(20), nav_items,];
+        let content = column![logo_container, Space::with_height(if compact { 12 } else { 20 }), nav_items,];
 
         container(content)
             .width(220)

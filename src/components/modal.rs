@@ -51,11 +51,13 @@ fn close_button_style() -> impl Fn(&iced::Theme, button::Status) -> button::Styl
 /// * `title` - Tiêu đề popup
 /// * `content` - Nội dung bên trong popup
 /// * `on_close` - Message gửi đi khi đóng popup (bấm X hoặc click nền)
+/// * `compact` - Chế độ gọn (giảm padding/spacing)
 pub fn modal<'a, Message: 'a + Clone>(
     base: Element<'a, Message>,
     title: &'a str,
     content: Element<'a, Message>,
     on_close: Message,
+    compact: bool,
 ) -> Element<'a, Message> {
     // 1. Overlay nền tối
     let overlay = container(
@@ -68,12 +70,16 @@ pub fn modal<'a, Message: 'a + Clone>(
     .width(Length::Fill)
     .height(Length::Fill);
 
+    let spacing = if compact { 8 } else { 16 };
+    let padding = if compact { 16 } else { 24 };
+    let title_size = if compact { 16 } else { 18 };
+
     // 2. Header với nút đóng X
     let header = row![
-        text(title).size(18).style(text_primary_color()),
+        text(title).size(title_size).style(text_primary_color()),
         Space::with_width(Length::Fill),
         button(
-            text(Bootstrap::X.to_string()).size(16)
+            text(Bootstrap::X.to_string()).size(if compact { 14 } else { 16 })
                 .font(BOOTSTRAP_FONT)
                 .style(text_secondary_color())
         )
@@ -87,15 +93,15 @@ pub fn modal<'a, Message: 'a + Clone>(
     let popup_card = container(
         column![
             header,
-            Space::with_height(16),
+            Space::with_height(spacing),
             content
         ]
         .spacing(0)
         .width(Length::Fill),
     )
     .style(popup_dialog_style())
-    .padding(24)
-    .width(Length::Fixed(450.0));
+    .padding(padding)
+    .width(Length::Fixed(if compact { 400.0 } else { 450.0 }));
 
     // 4. Wrapper căn giữa: Space -> Card -> Space (tỉ lệ 1:0:3 => cách top 25%)
     let centered_wrapper = row![

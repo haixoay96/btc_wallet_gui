@@ -229,10 +229,14 @@ impl HistoryView {
         wallets: &'a [Wallet],
         selected_wallet: usize,
         is_refreshing: bool,
+        compact: bool,
     ) -> Element<'a, HistoryMessage> {
         let wallet_options = wallet_choices(wallets);
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
         let wallet = wallets.get(selected_wallet);
+        
+        let content_padding = if compact { 16 } else { 32 };
+        let content_spacing = if compact { 12 } else { 20 };
 
         let title = text_scaled(t("Lịch sử giao dịch", "Transaction History"), 32)
             .style(text_primary_color());
@@ -252,7 +256,7 @@ impl HistoryView {
         ]
         .spacing(4);
 
-        let mut content = column![title, wallet_selector].spacing(16).padding(32);
+        let mut content = column![title, wallet_selector].spacing(content_spacing).padding(content_padding);
 
         // Filter buttons
         let refresh_label = if is_refreshing {
@@ -682,7 +686,7 @@ impl HistoryView {
             if let Some(wallet) = wallet {
                 if let Some(tx) = wallet.history.get(idx) {
                     let (modal_title, modal_content) = self.render_tx_detail_modal(tx, Some(wallet.network));
-                    return modal(main_content, modal_title, modal_content, HistoryMessage::CloseTransactionDetail).into();
+                    return modal(main_content, modal_title, modal_content, HistoryMessage::CloseTransactionDetail, compact).into();
                 }
             }
         }

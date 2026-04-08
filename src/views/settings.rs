@@ -329,14 +329,19 @@ impl SettingsView {
         }
     }
 
-    pub fn view(&self, current_theme: AppTheme, _font_scale: f64, _high_contrast: bool) -> Element<'_, SettingsMessage> {
+    pub fn view(&self, current_theme: AppTheme, _font_scale: f64, _high_contrast: bool, compact_mode: bool) -> Element<'_, SettingsMessage> {
         // CRITICAL: Use self.font_scale instead of parameter for real-time slider updates
         // The parameter is from App which is updated AFTER event handling
         // self.font_scale is updated IMMEDIATELY in update() for real-time feedback
         let scale = self.font_scale;
         let s = |size: u16| -> u16 { (size as f64 * scale).round() as u16 };
         let title = text(t("Cài đặt", "Settings")).size(s(32)).style(text_primary_color());
-        let mut content = column![title].spacing((20.0 * scale) as f32).padding(s(32));
+
+        // Apply compact mode to main container padding and spacing
+        let main_padding = if compact_mode { 16 } else { 32 };
+        let main_spacing = if compact_mode { 12 } else { 20 };
+        
+        let mut content = column![title].spacing((main_spacing as f64 * scale) as f32).padding(s(main_padding));
 
         // Appearance / Theme Section
         let theme_options: Vec<AppTheme> = vec![AppTheme::Dark, AppTheme::Light, AppTheme::System];
@@ -345,15 +350,15 @@ impl SettingsView {
                 text(t("Giao diện", "Appearance")).size(s(18)).style(text_primary_color()),
                 Space::with_height(8),
                 pick_list(theme_options, Some(current_theme), SettingsMessage::ThemeSelected)
-                    .padding(10).style(pick_list_style()),
-            ]).style(card_style()).padding(16).width(Length::Fill),
+                    .padding(main_padding / 2).style(pick_list_style()),
+            ]).style(card_style()).padding(main_padding / 2).width(Length::Fill),
         );
 
         // Data Storage Section
         content = content.push(
             container(column![
                 text(t("Dữ liệu", "Data Storage")).size(s(18)).style(text_primary_color()),
-                Space::with_height(12),
+                Space::with_height(main_spacing / 2),
                 row![
                     text(t("Thư mục:", "Folder:")).size(s(12)).style(text_secondary_color()),
                     Space::with_width(8),
@@ -365,11 +370,11 @@ impl SettingsView {
                     Space::with_width(8),
                     text(&self.data_folder_size).size(s(12)).style(text_color(Colors::ACCENT_TEAL)),
                 ].align_y(Alignment::Center),
-                Space::with_height(8),
+                Space::with_height(4),
                 button(text(t("Đổi thư mục...", "Change Folder...")).size(s(12)))
                     .on_press(SettingsMessage::ChangeDataFolder)
-                    .padding([6, 12]).style(secondary_button_style()),
-            ]).style(card_style()).padding(16).width(Length::Fill),
+                    .padding([main_padding / 4, main_padding / 2]).style(secondary_button_style()),
+            ]).style(card_style()).padding(main_padding / 2).width(Length::Fill),
         );
 
         // Export/Import Settings Section
@@ -629,7 +634,7 @@ impl SettingsView {
                     button(text(t("Xóa toàn bộ ngay", "Delete Everything")).size(s(14))).on_press(SettingsMessage::ConfirmClearData).padding(10).style(danger_button_style()),
                 ].spacing(8)).width(Length::Fill).align_x(Alignment::Center),
             ].padding(0).spacing(0);
-            return modal(base.into(), t("Xác nhận xóa toàn bộ", "Confirm Full Data Deletion"), clear_content.into(), SettingsMessage::CancelClearData);
+            return modal(base.into(), t("Xác nhận xóa toàn bộ", "Confirm Full Data Deletion"), clear_content.into(), SettingsMessage::CancelClearData, compact_mode);
         }
         base
     }

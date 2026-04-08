@@ -1,9 +1,9 @@
 use crate::i18n::t;
 use crate::components::skeleton_wallet_cards;
-use crate::theme::{text_scaled,
-    card_style, notice_style, primary_button_style, secondary_button_style, 
-    text_primary_color, text_secondary_color, text_muted_color,
-    Colors, NoticeTone,
+use crate::theme::{
+    card_style, notice_style, primary_button_style, secondary_button_style, text_color, Colors,
+    text_scaled, text_primary_color, text_secondary_color, text_muted_color,
+    NoticeTone,
 };
 use crate::views::sidebar::NavItem;
 use iced::{
@@ -57,26 +57,35 @@ impl DashboardView {
         self.last_synced_label = label;
     }
 
-    pub fn view(&self, is_refreshing: bool, show_satoshis: bool) -> Element<'_, DashboardMessage> {
+    pub fn view(&self, is_refreshing: bool, show_satoshis: bool, compact: bool) -> Element<'_, DashboardMessage> {
         let title = text_scaled(t("Tổng quan", "Dashboard"), 32)
             .style(text_primary_color());
 
         let total_btc = self.total_balance as f64 / 100_000_000.0;
         let confirmed_btc = self.confirmed_balance as f64 / 100_000_000.0;
         let pending_btc = self.pending_balance as f64 / 100_000_000.0;
+        
+        // Compact mode adjustments
+        let card_padding = if compact { 12 } else { 24 };
+        let content_padding = if compact { 16 } else { 32 };
+        let spacing = if compact { 8 } else { 16 };
 
         let balance_card = container(
             column![
                 text_scaled(t("Tổng số dư", "Total Balance"), 14)
                     .style(text_secondary_color()),
-                Space::with_height(8),
-                text_scaled(format!("{:.8} BTC", total_btc), 36)
-                    .style(text_primary_color()),
                 Space::with_height(4),
-                text_scaled(format!("{} sat", self.total_balance), 14)
-                    .style(text_muted_color()),
+                text_scaled(format!("{:.8} BTC", total_btc), 32)
+                    .style(text_primary_color()),
+                Space::with_height(2),
+                if show_satoshis {
+                    text_scaled(format!("{} sat", self.total_balance), 14)
+                        .style(text_muted_color())
+                } else {
+                    text_scaled("", 10).height(0)
+                }
             ]
-            .padding(24),
+            .padding(card_padding),
         )
         .style(card_style())
         .width(Length::Fill);
@@ -85,14 +94,18 @@ impl DashboardView {
             column![
                 text_scaled(t("Số dư đã xác nhận", "Confirmed Balance"), 14)
                     .style(text_secondary_color()),
-                Space::with_height(8),
-                text_scaled(format!("{:.8} BTC", confirmed_btc), 24)
-                    .style(text_primary_color()),
                 Space::with_height(4),
-                text_scaled(format!("{} sat", self.confirmed_balance), 14)
-                    .style(text_muted_color()),
+                text_scaled(format!("{:.8} BTC", confirmed_btc), 24)
+                    .style(text_color(Colors::SUCCESS)),
+                Space::with_height(2),
+                if show_satoshis {
+                    text_scaled(format!("{} sat", self.confirmed_balance), 14)
+                        .style(text_muted_color())
+                } else {
+                    text_scaled("", 10).height(0)
+                }
             ]
-            .padding(24),
+            .padding(card_padding),
         )
         .style(card_style())
         .width(Length::Fill);
@@ -101,14 +114,18 @@ impl DashboardView {
             column![
                 text_scaled(t("Số dư chờ xác nhận", "Pending Balance"), 14)
                     .style(text_secondary_color()),
-                Space::with_height(8),
-                text_scaled(format!("{:.8} BTC", pending_btc), 24)
-                    .style(text_primary_color()),
                 Space::with_height(4),
-                text_scaled(format!("{} sat", self.pending_balance), 14)
-                    .style(text_muted_color()),
+                text_scaled(format!("{:.8} BTC", pending_btc), 24)
+                    .style(text_color(Colors::WARNING)),
+                Space::with_height(2),
+                if show_satoshis {
+                    text_scaled(format!("{} sat", self.pending_balance), 14)
+                        .style(text_muted_color())
+                } else {
+                    text_scaled("", 10).height(0)
+                }
             ]
-            .padding(24),
+            .padding(card_padding),
         )
         .style(card_style())
         .width(Length::Fill);
@@ -117,11 +134,11 @@ impl DashboardView {
             column![
                 text_scaled(t("Tổng số ví", "Total Wallets"), 14)
                     .style(text_secondary_color()),
-                Space::with_height(8),
+                Space::with_height(4),
                 text_scaled(format!("{}", self.wallet_count), 36)
-                    .style(text_primary_color()),
+                    .style(text_color(Colors::ACCENT_PURPLE)),
             ]
-            .padding(24),
+            .padding(card_padding),
         )
         .style(card_style())
         .width(Length::Fill);
@@ -130,14 +147,14 @@ impl DashboardView {
             column![
                 text_scaled(t("Ví cần backup", "Wallets Needing Backup"), 14)
                     .style(text_secondary_color()),
-                Space::with_height(8),
+                Space::with_height(4),
                 text_scaled(format!("{}", self.backup_needed_wallets), 28)
                     .style(if self.backup_needed_wallets == 0 {
                         text_primary_color()
                     } else {
-                        text_secondary_color()
+                        text_color(Colors::WARNING)
                     }),
-                Space::with_height(4),
+                Space::with_height(2),
                 text_scaled(if self.backup_needed_wallets == 0 {
                     t(
                         "Tất cả ví đã xác minh backup",
@@ -151,7 +168,7 @@ impl DashboardView {
                 }, 12)
                 .style(text_muted_color()),
             ]
-            .padding(24),
+            .padding(card_padding),
         )
         .style(card_style())
         .width(Length::Fill);
@@ -189,20 +206,19 @@ impl DashboardView {
             row![title, Space::with_width(Length::Fill), refresh_button].align_y(Alignment::Center),
             Space::with_height(12),
             quick_actions,
-            Space::with_height(24),
+            Space::with_height(spacing),
         ]
-        .padding(32)
+        .padding(content_padding)
         .spacing(0);
 
         if let Some(last_synced) = &self.last_synced_label {
             content = content.push(
                 container(
-                    text(format!(
+                    text_scaled(format!(
                         "{}: {}",
                         t("Đồng bộ gần nhất", "Last synced"),
                         last_synced
-                    ))
-                    .size(12)
+                    ), 12)
                     .style(text_primary_color()),
                 )
                 .style(notice_style(NoticeTone::Info))
@@ -242,10 +258,10 @@ impl DashboardView {
         } else {
             content = content
                 .push(balance_card)
-                .push(Space::with_height(16))
-                .push(row![confirmed_card, Space::with_width(16), pending_card].width(Length::Fill))
-                .push(Space::with_height(16))
-                .push(row![wallets_card, Space::with_width(16), backup_card].width(Length::Fill));
+                .push(Space::with_height(spacing))
+                .push(row![confirmed_card, Space::with_width(spacing), pending_card].width(Length::Fill))
+                .push(Space::with_height(spacing))
+                .push(row![wallets_card, Space::with_width(spacing), backup_card].width(Length::Fill));
         }
 
         container(content)

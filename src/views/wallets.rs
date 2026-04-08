@@ -140,6 +140,7 @@ pub struct WalletsView {
     copied_address: Option<String>,
     info: Option<String>,
     error: Option<String>,
+    pub compact_mode: bool,
 }
 
 impl WalletsView {
@@ -173,6 +174,7 @@ impl WalletsView {
             copied_address: None,
             info: None,
             error: None,
+            compact_mode: false,
         }
     }
 
@@ -775,9 +777,17 @@ impl WalletsView {
         wallets: &'a [Wallet],
         selected: usize,
         revealed_mnemonic: Option<&'a str>,
+        compact_mode: bool,
     ) -> Element<'a, WalletsMessage> {
         let title = text_scaled(t("Ví", "Wallets"), 32)
             .style(text_primary_color());
+
+        // Apply compact mode
+        let spacing = if compact_mode { 8 } else { 16 };
+        let btn_spacing = if compact_mode { 6 } else { 10 };
+        let btn_padding = if compact_mode { 8 } else { 10 };
+        let card_padding = if compact_mode { 12 } else { 16 };
+        let main_padding = if compact_mode { 16 } else { 32 };
 
         let create_toggle_btn = button(
             text_scaled(if self.show_create_form {
@@ -787,7 +797,7 @@ impl WalletsView {
             }, 14),
         )
         .on_press(WalletsMessage::ToggleCreateForm)
-        .padding(10)
+        .padding(btn_padding)
         .style(if self.show_create_form {
             secondary_button_style()
         } else {
@@ -802,7 +812,7 @@ impl WalletsView {
             }, 14),
         )
         .on_press(WalletsMessage::ToggleImportMnemonicForm)
-        .padding(10)
+        .padding(btn_padding)
         .style(if self.show_import_mnemonic_form {
             secondary_button_style()
         } else {
@@ -811,12 +821,12 @@ impl WalletsView {
 
         let mut content = column![
             title,
-            Space::with_height(16),
-            row![create_toggle_btn, Space::with_width(10), import_toggle_btn]
+            Space::with_height(spacing),
+            row![create_toggle_btn, Space::with_width(btn_spacing), import_toggle_btn]
                 .align_y(Alignment::Center)
         ]
-        .spacing(16)
-        .padding(32);
+        .spacing(spacing)
+        .padding(main_padding);
 
         if let Some(info) = &self.info {
             content = content.push(
@@ -1345,6 +1355,7 @@ impl WalletsView {
                 t("Xác nhận xóa", "Confirm Delete"),
                 delete_content.into(),
                 WalletsMessage::CancelDelete,
+                compact_mode,
             );
         }
 

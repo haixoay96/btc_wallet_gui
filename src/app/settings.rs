@@ -158,6 +158,7 @@ impl App {
                     }
                 }
                 SettingsEvent::CompactModeToggled(enabled) => {
+                    self.compact_mode = enabled;
                     if let Ok(storage) = Storage::new() {
                         let _ = storage.save_compact_mode(enabled);
                     }

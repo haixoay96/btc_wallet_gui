@@ -52,6 +52,8 @@ pub struct App {
     pub theme: AppTheme,
     pub high_contrast: bool,
     pub font_scale: f64,
+    pub show_satoshis: bool,
+    pub compact_mode: bool,
     pub user_nickname: Option<String>,
     pub wallets: Vec<Wallet>,
     pub wallet_vault: WalletSecretsVault,
@@ -96,7 +98,6 @@ pub struct App {
     pub show_onboarding: bool,
     pub onboarding_view: OnboardingView,
     pub onboarding_delay_timer: bool,
-    pub show_satoshis: bool,
 
     // Address Book / Contact Book
     pub address_book: AddressBook,
@@ -160,7 +161,7 @@ pub struct SendExecutionResult {
 impl App {
     pub fn new() -> (Self, Task<AppMessage>) {
         let fallback_language = AppLanguage::English;
-        let (initial_language, has_existing_state, initial_theme, initial_high_contrast, initial_font_scale, onboarding_completed, initial_show_satoshis) = match Storage::new() {
+        let (initial_language, has_existing_state, initial_theme, initial_high_contrast, initial_font_scale, onboarding_completed, initial_show_satoshis, initial_compact_mode) = match Storage::new() {
             Ok(storage) => {
                 let language = storage
                     .load_language_preference()
@@ -170,12 +171,13 @@ impl App {
                 let font_scale = storage.load_font_scale().unwrap_or(1.0);
                 let onboarding = storage.load_onboarding_completed().unwrap_or(false);
                 let show_satoshis = storage.load_show_satoshis().unwrap_or(false);
+                let compact_mode = storage.load_compact_mode().unwrap_or(false);
                 // Set global states
                 crate::theme::set_high_contrast(high_contrast);
                 crate::theme::set_font_scale(font_scale);
-                (language, storage.has_existing_state(), theme, high_contrast, font_scale, onboarding, show_satoshis)
+                (language, storage.has_existing_state(), theme, high_contrast, font_scale, onboarding, show_satoshis, compact_mode)
             }
-            Err(_) => (fallback_language, false, AppTheme::Dark, false, 1.0, false, false),
+            Err(_) => (fallback_language, false, AppTheme::Dark, false, 1.0, false, false, false),
         };
         set_current_language(initial_language);
 
@@ -193,6 +195,8 @@ impl App {
                 theme: initial_theme,
                 high_contrast: initial_high_contrast,
                 font_scale: initial_font_scale,
+                show_satoshis: initial_show_satoshis,
+                compact_mode: initial_compact_mode,
                 user_nickname: None,
                 wallets: Vec::new(),
                 wallet_vault: WalletSecretsVault::new(),
@@ -223,7 +227,6 @@ impl App {
                 show_onboarding: false, // Start hidden, show after delay
                 onboarding_view: OnboardingView::new(),
                 onboarding_delay_timer: true, // Always check onboarding on fresh start
-                show_satoshis: initial_show_satoshis,
                 address_book: AddressBook::load().unwrap_or_default(),
             },
             // Start toast cleanup task + onboarding delay if needed
@@ -646,13 +649,13 @@ impl App {
                 .height(Length::Fill)
                 .into(),
             AppState::Main => {
-                let sidebar = self.sidebar.view(self.wallets.len()).map(AppMessage::SidebarMessage);
+                let sidebar = self.sidebar.view(self.wallets.len(), self.compact_mode).map(AppMessage::SidebarMessage);
                 let _selected_wallet = self.wallets.get(self.selected_wallet);
 
                 let main_content = match self.current_page {
                     NavItem::Dashboard => self
                         .dashboard
-                        .view(self.is_refreshing, self.show_satoshis)
+                        .view(self.is_refreshing, self.show_satoshis, self.compact_mode)
                         .map(AppMessage::DashboardMessage),
                     NavItem::Wallets => self
                         .wallets_view
@@ -660,6 +663,7 @@ impl App {
                             &self.wallets,
                             self.selected_wallet,
                             self.selected_wallet_revealed_mnemonic(),
+                            self.compact_mode,
                         )
                         .map(AppMessage::WalletsMessage),
                     NavItem::Send => self
@@ -671,21 +675,23 @@ impl App {
                             self.is_calculating_max,
                             self.is_sending,
                             &self.address_book,
+                            self.compact_mode,
                         )
                         .map(AppMessage::SendMessage),
                     NavItem::Receive => self
                         .receive_view
-                        .view(&self.wallets, self.selected_wallet)
+                        .view(&self.wallets, self.selected_wallet, self.compact_mode)
                         .map(AppMessage::ReceiveMessage),
                     NavItem::History => self
                         .history_view
-                        .view(&self.wallets, self.selected_wallet, self.is_refreshing)
+                        .view(&self.wallets, self.selected_wallet, self.is_refreshing, self.compact_mode)
                         .map(AppMessage::HistoryMessage),
                     NavItem::Settings => {
                         self.settings_view.view(
                             self.theme,
                             self.font_scale,
-                            self.high_contrast
+                            self.high_contrast,
+                            self.compact_mode
                         ).map(AppMessage::SettingsMessage)
                     }
                 };
@@ -748,6 +754,7 @@ impl App {
                         t("Phím tắt", "Keyboard Shortcuts"),
                         shortcuts_help_popup().map(|_| AppMessage::ToggleShortcutsHelp),
                         AppMessage::ToggleShortcutsHelp,
+                        self.compact_mode,
                     );
                 }
 
