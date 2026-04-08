@@ -5,7 +5,7 @@ use crate::theme::{text_scaled,
     Colors,
 };
 use iced::{
-    widget::{button, column, container, row, text, Space},
+    widget::{button, column, container, row, Space},
     Alignment, Element, Length, Padding,
 };
 use iced_fonts::BOOTSTRAP_FONT;

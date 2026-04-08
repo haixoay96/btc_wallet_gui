@@ -5,25 +5,21 @@ use iced::{
     Alignment, Color, Element, Length,
 };
 
-use crate::theme::{text_scaled,popup_dialog_style, text_color, text_primary_color, Colors};
+use crate::theme::{popup_dialog_style, text_color, text_primary_color, Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
 /// Toast notification types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ToastType {
     Success,
-    Error,
     Info,
-    Warning,
 }
 
 impl ToastType {
     pub fn icon_char(&self) -> String {
         match self {
             Self::Success => Bootstrap::CheckCircle,
-            Self::Error => Bootstrap::XCircle,
             Self::Info => Bootstrap::InfoCircle,
-            Self::Warning => Bootstrap::ExclamationTriangle,
         }
         .to_string()
     }
@@ -31,9 +27,7 @@ impl ToastType {
     pub fn color(&self) -> Color {
         match self {
             Self::Success => Colors::SUCCESS,
-            Self::Error => Colors::ERROR,
             Self::Info => Colors::ACCENT_BLUE,
-            Self::Warning => Colors::WARNING,
         }
     }
 }
@@ -61,25 +55,12 @@ impl Toast {
         Self::new(ToastType::Success, message, 3)
     }
 
-    pub fn error(message: String) -> Self {
-        Self::new(ToastType::Error, message, 5)
-    }
-
     pub fn info(message: String) -> Self {
         Self::new(ToastType::Info, message, 3)
     }
 
-    pub fn warning(message: String) -> Self {
-        Self::new(ToastType::Warning, message, 4)
-    }
-
     pub fn is_expired(&self) -> bool {
         self.created_at.elapsed() >= self.duration
-    }
-
-    pub fn remaining_secs(&self) -> u64 {
-        let remaining = self.duration.saturating_sub(self.created_at.elapsed());
-        remaining.as_secs()
     }
 }
 

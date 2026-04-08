@@ -1,11 +1,11 @@
 use crate::i18n::t;
 use iced::{
-    widget::{button, column, container, row, scrollable, text, Space},
+    widget::{column, container, row, scrollable, Space},
     Color, Element, Length,
 };
 
-use crate::theme::{text_scaled,popup_dialog_style, text_color,
-    text_primary_color, text_secondary_color,
+use crate::theme::{text_scaled, text_color,
+    text_secondary_color,
     Colors};
 
 /// Platform-aware key modifier display (Cmd on macOS, Ctrl elsewhere)

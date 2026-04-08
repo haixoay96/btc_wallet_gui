@@ -36,9 +36,6 @@ impl AppError {
     pub fn validation(field: &str, message: &str) -> Self {
         Self::Validation { field: field.to_string(), message: message.to_string() }
     }
-    pub fn api(endpoint: &str, message: &str) -> Self {
-        Self::Api { endpoint: endpoint.to_string(), status_code: None, message: message.to_string() }
-    }
     pub fn api_with_status(endpoint: &str, status: u16, message: &str) -> Self {
         Self::Api { endpoint: endpoint.to_string(), status_code: Some(status), message: message.to_string() }
     }
@@ -128,20 +125,6 @@ impl AppError {
             self,
             Self::Api { .. } | Self::Storage { .. }
         )
-    }
-
-    /// Convert from anyhow error string to AppError
-    pub fn from_anyhow(message: &str, context: &str) -> Self {
-        let lower = message.to_lowercase();
-        if lower.contains("connection") || lower.contains("timeout") || lower.contains("dns") {
-            Self::api(context, &format!("{}: {}", t("Không thể kết nối", "Cannot connect"), message))
-        } else if lower.contains("permission") || lower.contains("denied") {
-            Self::storage(context, &format!("{}: {}", t("Không có quyền truy cập", "Permission denied"), message))
-        } else if lower.contains("passphrase") || lower.contains("decrypt") || lower.contains("cipher") {
-            Self::crypto(context, &format!("{}: {}", t("Lỗi mã hóa", "Crypto error"), message))
-        } else {
-            Self::unknown(&format!("{}: {}", context, message))
-        }
     }
 }
 

@@ -12,21 +12,11 @@ mod text_styles;
 // Export từ structure
 pub use structure::{
     NoticeTone,
-    color_with_alpha,
     Colors,
-    ButtonStyleFn,
-    ContainerStyleFn,
-    MenuStyleFn,
-    PickListStyleFn,
-    TextInputStyleFn,
-    TextStyleFn,
 };
 
-// Export từ colors
-pub use colors::{DarkColors, LightColors, HighContrastColors};
-
 // Export từ palette
-pub use palette::{ThemeColorPalette, get_theme_colors, set_high_contrast, is_high_contrast, set_font_scale, get_font_scale};
+pub use palette::{get_theme_colors, set_high_contrast, set_font_scale};
 
 // Export button styles
 pub use button_styles::{
@@ -48,8 +38,6 @@ pub use container_styles::{
     popup_dialog_style,
     notice_style,
     sidebar_style,
-    bg_primary_style,
-    bg_secondary_style,
 };
 
 // Export input styles

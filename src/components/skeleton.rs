@@ -1,15 +1,13 @@
 use iced::{
     widget::{column, container, Space},
-    Color, Element, Length, Theme,
+    Color, Element, Theme,
 };
 
-use crate::theme::{text_scaled,card_style, get_theme_colors};
+use crate::theme::{card_style, get_theme_colors};
 
 /// Skeleton loader types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SkeletonType {
-    Circle,
-    Rectangle,
     Text,
     Card,
 }
@@ -33,31 +31,6 @@ fn skeleton_bg_style() -> impl Fn(&Theme) -> iced::widget::container::Style {
 /// Create a placeholder
 pub fn skeleton(skeleton_type: SkeletonType, size: (f32, f32)) -> Element<'static, ()> {
     match skeleton_type {
-        SkeletonType::Circle => {
-            let (width, height) = size;
-            let radius = (width.min(height)) / 2.0;
-            container(Space::with_width(width).height(height))
-                .style(move |theme| {
-                    let colors = get_theme_colors(theme);
-                    iced::widget::container::Style {
-                        background: Some(iced::Background::Color(Color::from_rgba(
-                            colors.text_muted.r,
-                            colors.text_muted.g,
-                            colors.text_muted.b,
-                            0.20,
-                        ))),
-                        border: iced::border::rounded(radius),
-                        ..Default::default()
-                    }
-                })
-                .into()
-        }
-        SkeletonType::Rectangle => {
-            let (width, height) = size;
-            container(Space::with_width(width).height(height))
-                .style(skeleton_bg_style())
-                .into()
-        }
         SkeletonType::Text => {
             let (width, height) = size;
             container(Space::with_width(width).height(height))

@@ -382,35 +382,6 @@ impl Storage {
         self.save_preferences(&prefs)
     }
 
-    pub fn load_show_btc_price(&self) -> Result<bool> {
-        let prefs = self.load_preferences()?;
-        Ok(prefs.show_btc_price)
-    }
-
-    pub fn save_show_btc_price(&self, enabled: bool) -> Result<()> {
-        let current_prefs = self.load_preferences()?;
-        let prefs = AppPreferences {
-            show_btc_price: enabled,
-            ..current_prefs
-        };
-        self.save_preferences(&prefs)
-    }
-
-    pub fn load_wallet_sort(&self) -> Result<(WalletSortField, bool)> {
-        let prefs = self.load_preferences()?;
-        Ok((prefs.wallet_sort_field, prefs.wallet_sort_ascending))
-    }
-
-    pub fn save_wallet_sort(&self, field: WalletSortField, ascending: bool) -> Result<()> {
-        let current_prefs = self.load_preferences()?;
-        let prefs = AppPreferences {
-            wallet_sort_field: field,
-            wallet_sort_ascending: ascending,
-            ..current_prefs
-        };
-        self.save_preferences(&prefs)
-    }
-
     pub fn reset_preferences(&self) -> Result<()> {
         let prefs = AppPreferences::default();
         self.save_preferences(&prefs)

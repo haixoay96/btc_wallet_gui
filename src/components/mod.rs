@@ -7,30 +7,19 @@ mod keyboard;
 mod modal;
 mod error;
 pub mod help_content;
-mod help_dismissals;
 pub mod contact_book;
 
 // Re-export all component types
-pub use toast::{Toast, ToastManager, ToastType};
-pub use strength::{PassphraseStrength, calculate_strength, strength_bar, requirements_checklist};
-pub use unit::{BtcUnit, format_amount_with_unit};
-pub use skeleton::{skeleton, skeleton_list, skeleton_wallet_cards, skeleton_transactions, SkeletonType};
+pub use toast::{Toast, ToastManager};
+pub use strength::{calculate_strength, strength_bar};
+pub use unit::BtcUnit;
+pub use skeleton::{skeleton_wallet_cards, skeleton_transactions};
 pub use tooltip::{
-    info_box, warning_box, tooltip_bubble, help_topic_panel, help_button,
-    TooltipContent, HelpTopic,
+    info_box, warning_box, help_topic_panel,
 };
-pub use keyboard::{KeyboardShortcut, shortcuts_help_popup};
+pub use keyboard::shortcuts_help_popup;
 pub use modal::modal;
 pub use error::error_card;
-
-// Help system exports
-pub use help_content::{
-    send_screen_topics, wallets_screen_topics, history_screen_topics,
-    settings_screen_topics, get_topic_by_id,
-};
-pub use help_dismissals::{
-    HelpDismissals, help_hint_banner, show_help_reset_button,
-};
 
 // Contact Book components
 pub use contact_book::{contact_picker_view, contact_form_view};

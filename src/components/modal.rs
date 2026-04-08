@@ -3,7 +3,7 @@ use iced::{
     Alignment, Element, Length,
 };
 
-use crate::theme::{text_scaled,popup_dialog_style, popup_overlay_style, text_primary_color, text_secondary_color, get_theme_colors};
+use crate::theme::{popup_dialog_style, popup_overlay_style, text_primary_color, text_secondary_color, get_theme_colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
 /// Subtle close button style for modals

@@ -13,15 +13,15 @@ use iced::{
 };
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal, error_card, HelpDismissals};
+use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal, error_card};
 use crate::error::AppError;
 use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::storage::{AppTheme, PersistedState, RuntimeState, Storage, UserProfile, AddressBook};
 use crate::theme::{
-    notice_style, screen_background_style, secondary_button_style, text_color, Colors, NoticeTone,
+    screen_background_style, text_color, Colors,
     get_theme_colors,
 };
-use crate::utils::{normalize_nickname, wallet_count_text, resolve_user_path};
+use crate::utils::{normalize_nickname, wallet_count_text};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::{HistoryEvent, HistoryMessage, HistoryView},
@@ -89,9 +89,6 @@ pub struct App {
     // Keyboard focus tracking
     pub focus_search_history: bool,
     pub focus_paste_send: bool,
-    
-    // Help system
-    pub help_dismissals: HelpDismissals,
 
     // Onboarding
     pub show_onboarding: bool,
@@ -112,9 +109,6 @@ pub enum AppMessage {
     HistoryMessage(HistoryMessage),
     SettingsMessage(SettingsMessage),
     LanguageChanged(AppLanguage),
-    ThemeChanged(AppTheme),
-    HighContrastToggled(bool),
-    FontScaleChanged(f64),
     RefreshWalletsFinished(Result<RefreshWalletsResult, String>),
     EstimateSendFeeFinished(Result<u64, String>),
     MaxAmountFinished(Result<(u64, u64), String>),
@@ -122,8 +116,6 @@ pub enum AppMessage {
     RevealedMnemonicExpired(u64),
     ToastCleanup,
     ToggleShortcutsHelp,
-    PickExportCsvPath,
-    PickExportPdfPath,
     ExportFinished(Result<(), String>),
     GlobalEscKey,
     DismissStatus,
@@ -133,7 +125,6 @@ pub enum AppMessage {
     KeyboardSubmitForm,
     KeyboardSaveState,
     KeyboardFocusSearch,
-    ResetHelpDismissals,
     AutoRefreshConfirmations,
     OnboardingMessage(OnboardingMessage),
 }
@@ -219,7 +210,6 @@ impl App {
                 show_shortcuts_help: false,
                 focus_search_history: false,
                 focus_paste_send: false,
-                help_dismissals: HelpDismissals::new(),
                 show_onboarding: !has_existing_state && !onboarding_completed,
                 onboarding_view: OnboardingView::new(),
                 address_book: AddressBook::load().unwrap_or_default(),
@@ -442,9 +432,6 @@ impl App {
             AppMessage::SettingsMessage(msg) => self.handle_settings_message(msg),
 
             AppMessage::LanguageChanged(language) => self.handle_change_language(language),
-            AppMessage::ThemeChanged(theme) => self.handle_change_theme(theme),
-            AppMessage::HighContrastToggled(enabled) => self.handle_toggle_high_contrast(enabled),
-            AppMessage::FontScaleChanged(scale) => self.handle_font_scale_changed(scale),
             AppMessage::RefreshWalletsFinished(result) => {
                 self.handle_refresh_wallets_finished(result)
             }
@@ -498,10 +485,6 @@ impl App {
                         self.error = Some(AppError::storage("export", &format!("{}: {}", t("Lỗi export", "Export error"), e)));
                     }
                 }
-                Task::none()
-            }
-            AppMessage::PickExportCsvPath | AppMessage::PickExportPdfPath => {
-                // These are handled in the async task
                 Task::none()
             }
             AppMessage::DismissStatus => {
@@ -572,13 +555,7 @@ impl App {
                 }
                 Task::none()
             }
-            
-            AppMessage::ResetHelpDismissals => {
-                self.help_dismissals.clear_all();
-                self.add_success_toast(t("Đã khôi phục tất cả gợi ý", "Restored all help hints").to_string());
-                Task::none()
-            }
-            
+
             AppMessage::AutoRefreshConfirmations => {
                 // Only auto-refresh if auto_refresh is enabled AND we have pending transactions
                 if let Ok(storage) = Storage::new() {
@@ -604,19 +581,6 @@ impl App {
                         }
                     }
                 }
-                Task::none()
-            }
-            AppMessage::SettingsMessage(SettingsMessage::ResetAllSettings) => {
-                // Reset all settings to default values
-                self.theme = AppTheme::Dark;
-                self.font_scale = 1.0;
-                self.high_contrast = false;
-                self.show_satoshis = false;
-                if let Ok(storage) = Storage::new() {
-                    let _ = storage.reset_preferences();
-                }
-                self.settings_view = crate::views::settings::SettingsView::new();
-                self.add_success_toast(t("Đã đặt lại cài đặt!", "Settings reset!").to_string());
                 Task::none()
             }
         }
@@ -1060,24 +1024,12 @@ impl App {
         self.storage_passphrase.as_ref()
     }
 
-    pub fn add_toast(&mut self, toast: Toast) {
-        self.toast_manager.add_toast(toast);
-    }
-
     pub fn add_success_toast(&mut self, message: String) {
         self.toast_manager.add_toast(Toast::success(message));
     }
 
-    pub fn add_error_toast(&mut self, message: String) {
-        self.toast_manager.add_toast(Toast::error(message));
-    }
-
     pub fn add_info_toast(&mut self, message: String) {
         self.toast_manager.add_toast(Toast::info(message));
-    }
-
-    pub fn add_warning_toast(&mut self, message: String) {
-        self.toast_manager.add_toast(Toast::warning(message));
     }
 
     pub fn track_copy(&mut self, address: String) {

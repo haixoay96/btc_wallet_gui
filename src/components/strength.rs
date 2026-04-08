@@ -1,10 +1,10 @@
 use iced::{
-    widget::{column, container, row, text, Space},
+    widget::{column, container, row, Space},
     Color, Element, Length,
 };
 
 use crate::i18n::t;
-use crate::theme::{text_scaled,card_style, text_color, Colors};
+use crate::theme::{text_scaled, text_color, Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
 /// Passphrase strength levels
@@ -155,57 +155,6 @@ pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'
     }
 
     container(content)
-        .width(Length::Fill)
-        .into()
-}
-
-/// Render strength requirements checklist
-pub fn requirements_checklist(passphrase: &str) -> Element<'static, ()> {
-    let len = passphrase.len();
-    let has_upper = passphrase.chars().any(|c| c.is_uppercase());
-    let has_lower = passphrase.chars().any(|c| c.is_lowercase());
-    let has_digit = passphrase.chars().any(|c| c.is_ascii_digit());
-    let has_special = passphrase.chars().any(|c| !c.is_alphanumeric());
-
-    let requirements = vec![
-        (len >= 8, "Ít nhất 8 ký tự"),
-        (len >= 12, "Nên có 12+ ký tự"),
-        (has_upper, "Có chữ in hoa"),
-        (has_lower, "Có chữ thường"),
-        (has_digit, "Có số"),
-        (has_special, "Có ký tự đặc biệt (!@#$...)"),
-    ];
-
-    let mut items = column![];
-    for (met, label) in requirements {
-        let icon = if met {
-            Bootstrap::CheckCircle.to_string()
-        } else {
-            Bootstrap::XCircle.to_string()
-        };
-
-        let icon_color = if met { Colors::SUCCESS } else { Colors::TEXT_MUTED };
-
-        let item = row![
-            text_scaled(icon, 11)
-                .font(BOOTSTRAP_FONT)
-                .style(text_color(icon_color)),
-            Space::with_width(6),
-            text_scaled(label, 11).style(text_color(if met {
-                Colors::SUCCESS
-            } else {
-                Colors::TEXT_MUTED
-            })),
-        ]
-        .spacing(4)
-        .align_y(iced::Alignment::Center);
-
-        items = items.push(item);
-    }
-
-    container(items)
-        .style(card_style())
-        .padding(10)
         .width(Length::Fill)
         .into()
 }

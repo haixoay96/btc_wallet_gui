@@ -88,29 +88,3 @@ pub fn sidebar_style() -> Box<ContainerStyleFn> {
         }
     })
 }
-
-/// Background primary style
-pub fn bg_primary_style() -> Box<ContainerStyleFn> {
-    Box::new(|theme: &Theme| {
-        let colors = get_theme_colors(theme);
-        container::Style {
-            background: Some(Background::Color(colors.bg_primary)),
-            border: Border::default(),
-            shadow: Shadow::default(),
-            text_color: Some(colors.text_primary),
-        }
-    })
-}
-
-/// Background secondary style
-pub fn bg_secondary_style() -> Box<ContainerStyleFn> {
-    Box::new(|theme: &Theme| {
-        let colors = get_theme_colors(theme);
-        container::Style {
-            background: Some(Background::Color(colors.bg_secondary)),
-            border: Border::default(),
-            shadow: Shadow::default(),
-            text_color: Some(colors.text_primary),
-        }
-    })
-}

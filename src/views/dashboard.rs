@@ -7,7 +7,7 @@ use crate::theme::{
 };
 use crate::views::sidebar::NavItem;
 use iced::{
-    widget::{button, column, container, row, text, Space},
+    widget::{button, column, container, row, Space},
     Alignment, Element, Length,
 };
 

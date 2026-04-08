@@ -819,5 +819,3 @@ mod tests {
         fs::remove_file(path).expect("temporary export file should be removable");
     }
 }
-
-pub mod export;

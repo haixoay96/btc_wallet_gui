@@ -3,7 +3,7 @@ use iced::{
     Color, Element, Length,
 };
 
-use crate::theme::{text_scaled,text_color,
+use crate::theme::{text_color,
     text_primary_color, text_secondary_color, text_muted_color,
     Colors};
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
@@ -72,78 +72,6 @@ pub fn warning_box(title: impl Into<String>, description: impl Into<String>) -> 
     .into()
 }
 
-/// Tooltip content with multi-language support
-pub struct TooltipContent {
-    pub title_vi: &'static str,
-    pub title_en: &'static str,
-    pub description_vi: &'static str,
-    pub description_en: &'static str,
-}
-
-impl TooltipContent {
-    pub fn new(
-        title_vi: &'static str,
-        title_en: &'static str,
-        description_vi: &'static str,
-        description_en: &'static str,
-    ) -> Self {
-        Self {
-            title_vi,
-            title_en,
-            description_vi,
-            description_en,
-        }
-    }
-}
-
-/// Hover tooltip that appears after delay
-/// Returns a widget wrapped with mouse_area for hover detection
-pub fn hover_tooltip_with_trigger<'a, Message: Clone + 'a>(
-    content: TooltipContent,
-    on_hover_start: Message,
-    on_hover_end: Message,
-) -> impl Fn(Element<'a, Message>) -> Element<'a, Message> {
-    move |child: Element<'a, Message>| {
-        let tooltip_view = tooltip_bubble(&content);
-        
-        // For now, return child without tooltip overlay
-        // Full hover implementation requires state management in parent view
-        // This provides the tooltip content for use in parent's view
-        child
-    }
-}
-
-/// Tooltip bubble widget - the actual tooltip display
-pub fn tooltip_bubble(content: &TooltipContent) -> Element<'static, ()> {
-    container(
-        column![
-            row![
-                text(Bootstrap::InfoCircle.to_string()).size(12)
-                    .font(BOOTSTRAP_FONT)
-                    .style(text_color(Colors::ACCENT_BLUE)),
-                Space::with_width(4),
-                text(crate::i18n::t(content.title_vi, content.title_en)).size(12)
-                    .style(text_primary_color()),
-            ]
-            .align_y(iced::Alignment::Center),
-            Space::with_height(4),
-            text(crate::i18n::t(content.description_vi, content.description_en)).size(10)
-                .style(text_secondary_color())
-                .width(Length::Shrink),
-        ]
-        .spacing(0)
-        .width(Length::Shrink),
-    )
-    .style(|_| iced::widget::container::Style {
-        background: Some(iced::Background::Color(Color::from_rgba(0.1, 0.1, 0.15, 0.95))),
-        border: iced::border::rounded(6),
-        ..Default::default()
-    })
-    .padding(8)
-    .width(Length::Shrink)
-    .into()
-}
-
 /// Help topic definition for contextual help system
 #[derive(Clone)]
 pub struct HelpTopic {
@@ -187,29 +115,11 @@ impl HelpTopic {
         self.detail_en = Some(detail_en);
         self
     }
-
-    /// Get title based on current language
-    pub fn title(&self) -> &str {
-        crate::i18n::t(self.title_vi, self.title_en)
-    }
-
-    /// Get description based on current language
-    pub fn description(&self) -> &str {
-        crate::i18n::t(self.description_vi, self.description_en)
-    }
-
-    /// Get detail based on current language
-    pub fn detail(&self) -> Option<&str> {
-        match crate::i18n::current_language() {
-            crate::i18n::AppLanguage::Vietnamese => self.detail_vi,
-            crate::i18n::AppLanguage::English => self.detail_en,
-        }
-    }
 }
 
 /// Render a help topic as an inline expandable panel
 pub fn help_topic_panel<'a, Message: Clone + 'a>(
-    topic_id: &'a str,
+    _topic_id: &'a str,
     icon: Bootstrap,
     title: &'a str,
     description: &'a str,
@@ -295,15 +205,4 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
         })
         .width(Length::Fill)
         .into()
-}
-
-/// Help button icon - can be placed next to form fields
-pub fn help_button<'a, Message: Clone + 'a>(on_press: Message) -> Element<'a, Message> {
-    container(
-        text(Bootstrap::QuestionCircle.to_string()).size(14)
-            .font(BOOTSTRAP_FONT)
-            .style(text_secondary_color()),
-    )
-    .padding(4)
-    .into()
 }

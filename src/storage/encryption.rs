@@ -28,10 +28,10 @@ pub fn encrypt_blob(plaintext: &[u8], passphrase: &str) -> Result<EncryptedEnvel
     let passphrase = normalize_passphrase(passphrase)?;
 
     let mut salt = [0u8; SALT_LEN];
-    fill(&mut salt).context("Không tạo được salt ngẫu nhiên")?;
+    fill(&mut salt).map_err(|e| anyhow!("Không tạo được salt ngẫu nhiên: {}", e))?;
 
     let mut nonce = [0u8; NONCE_LEN];
-    fill(&mut nonce).context("Không tạo được nonce ngẫu nhiên")?;
+    fill(&mut nonce).map_err(|e| anyhow!("Không tạo được nonce ngẫu nhiên: {}", e))?;
 
     let key_bytes = derive_key(passphrase, &salt)?;
     let cipher = ChaCha20Poly1305::new(Key::from_slice(&key_bytes));

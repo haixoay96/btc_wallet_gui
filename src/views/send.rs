@@ -8,7 +8,7 @@ use iced::{
 use crate::i18n::t;
 use crate::components::{BtcUnit, info_box, modal, help_topic_panel, contact_picker_view, contact_form_view};
 use crate::components::help_content::send_screen_topics;
-use crate::storage::address_book::{AddressBook, ContactEntry};
+use crate::storage::address_book::AddressBook;
 use crate::theme::{text_scaled,
     card_style, input_style, notice_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, selected_button_style, text_color,
@@ -157,8 +157,7 @@ pub struct SendView {
     pub contact_form_note: String,
     pub contact_form_address_error: Option<String>,
     pub editing_contact_id: Option<String>,
-    pub contact_wallet_network: crate::wallet::WalletNetwork,
-    
+
     // Matched contact label display
     pub matched_contact_name: Option<String>,
 }
@@ -194,7 +193,6 @@ impl SendView {
             contact_form_note: String::new(),
             contact_form_address_error: None,
             editing_contact_id: None,
-            contact_wallet_network: crate::wallet::WalletNetwork::Mainnet,
             matched_contact_name: None,
         }
     }
@@ -537,7 +535,7 @@ impl SendView {
                 self.show_contact_picker = false;
                 None
             }
-            SendMessage::DeleteContact(id) => {
+            SendMessage::DeleteContact(_id) => {
                 // Will be handled by App
                 None
             }
@@ -577,8 +575,8 @@ impl SendView {
 
         // Apply compact mode
         let content_padding = if compact { 16 } else { 32 };
-        let spacing = if compact { 8 } else { 16 };
-        let card_padding = if compact { 12 } else { 16 };
+        let _spacing = if compact { 8 } else { 16 };
+        let _card_padding = if compact { 12 } else { 16 };
 
         let title = text_scaled(t("Gửi BTC", "Send BTC"), 32)
             .style(text_primary_color());

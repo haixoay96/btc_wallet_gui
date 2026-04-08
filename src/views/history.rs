@@ -1,7 +1,7 @@
 use crate::i18n::t;
 use crate::components::{skeleton_transactions, modal};
 use crate::theme::{text_scaled,
-    card_style, input_style, pick_list_menu_style, pick_list_style, secondary_button_style,
+    input_style, pick_list_menu_style, pick_list_style, secondary_button_style,
     selected_button_style, text_color,
     text_primary_color, text_secondary_color, text_muted_color,
     Colors, primary_button_style,
@@ -513,7 +513,7 @@ impl HistoryView {
 
                     let mut tx_list = column![];
                     
-                    for (idx, tx) in page_txs.iter().enumerate() {
+                    for (_idx, tx) in page_txs.iter().enumerate() {
                         // Find original index in wallet history for modal
                         let original_idx = wallet.history.iter().position(|t| t.txid == tx.txid).unwrap_or(0);
 
@@ -534,7 +534,7 @@ impl HistoryView {
                         };
                         let txid_short = format!("{}...", &tx.txid[..16.min(tx.txid.len())]);
 
-                        let explorer_url = match wallet.network {
+                        let _explorer_url = match wallet.network {
                             WalletNetwork::Mainnet => format!("https://blockstream.info/tx/{}", tx.txid),
                             WalletNetwork::Testnet => format!("https://blockstream.info/testnet/tx/{}", tx.txid),
                         };
@@ -629,7 +629,7 @@ impl HistoryView {
 
                         // Page Numbers (Simplified)
                         let mut start_p = current_page.saturating_sub(2);
-                        let mut end_p = std::cmp::min(start_p + 5, total_pages);
+                        let end_p = std::cmp::min(start_p + 5, total_pages);
                         if end_p - start_p < 5 && start_p > 0 {
                             start_p = std::cmp::max(0, end_p as isize - 5) as usize;
                         }
@@ -757,13 +757,6 @@ impl HistoryView {
         .into();
 
         (direction_text, modal_content)
-    }
-
-    /// Get the currently selected transaction ID for copying
-    pub fn get_selected_txid(&self) -> Option<&String> {
-        // Return None if no transaction is selected in modal
-        // This is used by keyboard shortcut to copy last viewed tx
-        None // For now, return None - keyboard copy will use history list context
     }
 }
 

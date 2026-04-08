@@ -1,6 +1,6 @@
 use iced::{
     widget::{button, column, container, mouse_area, row, scrollable, text, text_input, Space},
-    Alignment, Element, Length, Padding, Background,
+    Alignment, Element, Length, Background,
 };
 
 use crate::components::modal;
@@ -786,7 +786,7 @@ impl WalletsView {
         let spacing = if compact_mode { 8 } else { 16 };
         let btn_spacing = if compact_mode { 6 } else { 10 };
         let btn_padding = if compact_mode { 8 } else { 10 };
-        let card_padding = if compact_mode { 12 } else { 16 };
+        let _card_padding = if compact_mode { 12 } else { 16 };
         let main_padding = if compact_mode { 16 } else { 32 };
 
         let create_toggle_btn = button(

@@ -35,41 +35,4 @@ impl BtcUnit {
             Self::MilliBtc => "mBTC",
         }
     }
-
-    pub fn sat_to_display(&self, sat: u64) -> String {
-        match self {
-            Self::Btc => {
-                let btc = sat as f64 / 100_000_000.0;
-                format!("{:.8}", btc)
-            }
-            Self::Satoshi => sat.to_string(),
-            Self::MilliBtc => {
-                let mbtc = sat as f64 / 100_000.0;
-                format!("{:.5}", mbtc)
-            }
-        }
-    }
-
-    pub fn display_to_sat(&self, display: &str) -> Option<u64> {
-        match self {
-            Self::Btc => {
-                let btc: f64 = display.parse().ok()?;
-                Some((btc * 100_000_000.0).round() as u64)
-            }
-            Self::Satoshi => {
-                let sat: u64 = display.parse().ok()?;
-                Some(sat)
-            }
-            Self::MilliBtc => {
-                let mbtc: f64 = display.parse().ok()?;
-                Some((mbtc * 100_000.0).round() as u64)
-            }
-        }
-    }
-}
-
-/// Format amount with unit label
-pub fn format_amount_with_unit(sat: u64, unit: BtcUnit) -> String {
-    let display = unit.sat_to_display(sat);
-    format!("{} {}", display, unit.symbol())
 }

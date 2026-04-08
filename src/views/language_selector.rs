@@ -1,5 +1,5 @@
 use crate::i18n::{current_language, AppLanguage};
-use crate::theme::{text_scaled,pick_list_menu_style, pick_list_style};
+use crate::theme::{pick_list_menu_style, pick_list_style};
 use iced::{widget::pick_list, Element, Length};
 
 const APP_LANGUAGES: [AppLanguage; 2] = AppLanguage::ALL;

@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::i18n::t;
-
 /// Contact entry in the address book
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContactEntry {
@@ -100,33 +98,6 @@ impl AddressBook {
         results.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
         results
     }
-
-    /// Get contact count
-    pub fn count(&self) -> usize {
-        self.contacts.len()
-    }
-
-    /// Export contacts to JSON string
-    pub fn export_json(&self) -> Result<String, String> {
-        serde_json::to_string_pretty(&self.contacts)
-            .map_err(|e| format!("Failed to export contacts: {}", e))
-    }
-
-    /// Import contacts from JSON string (merges with existing)
-    pub fn import_json(&mut self, json: &str) -> Result<usize, String> {
-        let imported: HashMap<String, ContactEntry> = serde_json::from_str(json)
-            .map_err(|e| format!("Failed to import contacts: {}", e))?;
-        
-        let count = imported.len();
-        self.contacts.extend(imported);
-        Ok(count)
-    }
-
-    /// Clear all contacts
-    pub fn clear_all(&mut self) {
-        self.contacts.clear();
-        self.next_id = 1;
-    }
 }
 
 /// Address Book file persistence
@@ -177,16 +148,6 @@ impl AddressBook {
 
         Ok(book)
     }
-
-    /// Delete address book file
-    pub fn delete() -> Result<(), String> {
-        let path = Self::file_path();
-        if path.exists() {
-            std::fs::remove_file(&path)
-                .map_err(|e| format!("Failed to delete address book file: {}", e))?;
-        }
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -198,7 +159,7 @@ mod tests {
         let mut book = AddressBook::new();
         let id = book.add_contact("Alice", "bc1qabc", "Friend");
         assert!(book.get_contact(&id).is_some());
-        assert_eq!(book.count(), 1);
+        assert_eq!(book.get_all_contacts().len(), 1);
     }
 
     #[test]
@@ -216,7 +177,7 @@ mod tests {
         let mut book = AddressBook::new();
         let id = book.add_contact("Bob", "bc1qbob", "");
         book.delete_contact(&id);
-        assert_eq!(book.count(), 0);
+        assert_eq!(book.get_all_contacts().len(), 0);
     }
 
     #[test]
@@ -234,11 +195,11 @@ mod tests {
     fn test_export_import() {
         let mut book = AddressBook::new();
         book.add_contact("Test", "bc1qtest", "Note");
-        
-        let json = book.export_json().unwrap();
+        let contact = book.get_all_contacts()[0];
+
         let mut new_book = AddressBook::new();
-        new_book.import_json(&json).unwrap();
-        
-        assert_eq!(new_book.count(), 1);
+        new_book.contacts.insert(contact.id.clone(), contact.clone());
+
+        assert_eq!(new_book.get_all_contacts().len(), 1);
     }
 }

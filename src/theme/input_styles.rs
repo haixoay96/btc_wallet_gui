@@ -9,7 +9,7 @@ use super::structure::color_with_alpha;
 pub fn input_style() -> Box<TextInputStyleFn> {
     Box::new(|theme: &Theme, status: text_input::Status| {
         let colors = get_theme_colors(theme);
-        let (border_color, border_width, shadow) = match status {
+        let (border_color, border_width, _shadow) = match status {
             text_input::Status::Focused => (
                 colors.border_focused,
                 2.0,

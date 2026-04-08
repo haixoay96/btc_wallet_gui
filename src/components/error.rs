@@ -1,6 +1,6 @@
 use iced::{
     widget::{button, column, container, row, text, Space},
-    Color, Element, Length,
+    Element, Length,
 };
 
 use crate::i18n::t;
