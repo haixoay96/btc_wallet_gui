@@ -11,7 +11,7 @@ use crate::theme::{
     secondary_button_style, text_color, warning_style,
     text_primary_color, text_secondary_color, text_muted_color,
     Colors, NoticeTone,
-    pick_list_style,
+    pick_list_style, pick_list_menu_style,
 };
 
 #[derive(Debug, Clone)]
@@ -306,7 +306,9 @@ impl SettingsView {
                 text(t("Giao diện", "Appearance")).size(s(18)).style(text_primary_color()),
                 Space::with_height(8),
                 pick_list(theme_options, Some(current_theme), SettingsMessage::ThemeSelected)
-                    .padding(main_padding / 2).style(pick_list_style()),
+                    .padding(main_padding / 2)
+                    .style(pick_list_style())
+                    .menu_style(pick_list_menu_style()),
             ]).style(card_style()).padding(main_padding / 2).width(Length::Fill),
         );
 
