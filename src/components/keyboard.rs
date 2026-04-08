@@ -28,7 +28,7 @@ impl KeyboardShortcut {
     pub fn all() -> Vec<Self> {
         let ctrl = ctrl_label();
         vec![
-            // Navigation shortcuts
+            // Navigation shortcuts (Direct access)
             Self {
                 keys: vec![ctrl, "1"],
                 description_vi: "Màn hình Tổng quan",
@@ -59,49 +59,48 @@ impl KeyboardShortcut {
                 description_vi: "Màn hình Cài đặt",
                 description_en: "Settings screen",
             },
+            // Sidebar Navigation (Sequential)
+            Self {
+                keys: vec!["Up", "Down"],
+                description_vi: "Chuyển mục trong Sidebar",
+                description_en: "Navigate Sidebar items",
+            },
+            // Form actions
+            Self {
+                keys: vec!["Enter", "Space"],
+                description_vi: "Xác nhận / Gửi form",
+                description_en: "Confirm / Submit form",
+            },
+            Self {
+                keys: vec!["Esc"],
+                description_vi: "Đóng popup / Hủy bỏ",
+                description_en: "Close popup / Cancel",
+            },
             // Clipboard shortcuts
             Self {
                 keys: vec![ctrl, "C"],
-                description_vi: "Sao chép địa chỉ / TxID đã chọn",
-                description_en: "Copy selected address / TxID",
+                description_vi: "Sao chép địa chỉ / TxID",
+                description_en: "Copy address / TxID",
             },
             Self {
                 keys: vec![ctrl, "V"],
-                description_vi: "Dán địa chỉ vào ô nhận (màn Gửi)",
-                description_en: "Paste address into Receive field (Send screen)",
+                description_vi: "Dán địa chỉ vào ô nhập",
+                description_en: "Paste address into input",
             },
-            // Form shortcuts
+            // Search & Help
             Self {
-                keys: vec![ctrl, "Enter"],
-                description_vi: "Gửi form (Đăng nhập / Gửi BTC)",
-                description_en: "Submit form (Login / Send BTC)",
+                keys: vec![ctrl, "F"],
+                description_vi: "Focus vào ô tìm kiếm",
+                description_en: "Focus search box",
             },
             Self {
                 keys: vec![ctrl, "S"],
-                description_vi: "Lưu trạng thái ví thủ công",
-                description_en: "Save wallet state manually",
-            },
-            // Search shortcut
-            Self {
-                keys: vec![ctrl, "F"],
-                description_vi: "Focus vào ô tìm kiếm (Lịch sử)",
-                description_en: "Focus search box (History)",
-            },
-            // Modal/Popup shortcuts
-            Self {
-                keys: vec!["Esc"],
-                description_vi: "Đóng popup / modal / thông báo",
-                description_en: "Close popup / modal / notification",
-            },
-            // Help shortcuts
-            Self {
-                keys: vec![ctrl, "/"],
-                description_vi: "Hiển thị trợ giúp phím tắt",
-                description_en: "Show keyboard shortcuts help",
+                description_vi: "Lưu trạng thái ví",
+                description_en: "Save wallet state",
             },
             Self {
                 keys: vec!["F1"],
-                description_vi: "Hiển thị trợ giúp phím tắt",
+                description_vi: "Xem trợ giúp phím tắt",
                 description_en: "Show keyboard shortcuts help",
             },
         ]
@@ -144,39 +143,30 @@ pub fn shortcuts_help_popup() -> Element<'static, ()> {
 
     let mut content = column![].spacing(0).width(Length::Fill);
 
-    // Navigation section
+    // Navigation section (Items 0-6)
     content = content.push(shortcut_section_header(
-        "Điều hướng",
+        "Điều hướng (Navigation)",
         "Navigation",
     ));
-    for shortcut in shortcuts.iter().take(6) {
+    for shortcut in shortcuts.iter().take(7) {
         content = content.push(shortcut_row(shortcut));
     }
 
-    // Clipboard section
+    // Actions section (Items 7-10)
     content = content.push(shortcut_section_header(
-        "Sao chép & Dán",
-        "Clipboard",
+        "Thao tác (Actions)",
+        "Actions",
     ));
-    for shortcut in shortcuts.iter().skip(6).take(2) {
+    for shortcut in shortcuts.iter().skip(7).take(4) {
         content = content.push(shortcut_row(shortcut));
     }
 
-    // Form & Actions section
-    content = content.push(shortcut_section_header(
-        "Form & Thao tác",
-        "Forms & Actions",
-    ));
-    for shortcut in shortcuts.iter().skip(8).take(2) {
-        content = content.push(shortcut_row(shortcut));
-    }
-
-    // Search & Help section
+    // Search & Help section (Items 11-13)
     content = content.push(shortcut_section_header(
         "Tìm kiếm & Trợ giúp",
         "Search & Help",
     ));
-    for shortcut in shortcuts.iter().skip(10) {
+    for shortcut in shortcuts.iter().skip(11) {
         content = content.push(shortcut_row(shortcut));
     }
 

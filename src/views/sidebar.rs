@@ -59,6 +59,8 @@ impl NavItem {
 #[derive(Debug, Clone)]
 pub enum SidebarMessage {
     Navigate(NavItem),
+    NavigatePrevious,
+    NavigateNext,
 }
 
 #[derive(Debug, Clone)]
@@ -68,24 +70,48 @@ pub enum SidebarEvent {
 
 pub struct Sidebar {
     active: NavItem,
+    focused: Option<usize>,
 }
 
 impl Sidebar {
     pub fn new() -> Self {
         Self {
             active: NavItem::Dashboard,
+            focused: None,
         }
     }
 
     pub fn set_active(&mut self, item: NavItem) {
         self.active = item;
+        if let Some(idx) = NavItem::all().iter().position(|&i| i == item) {
+            self.focused = Some(idx);
+        }
     }
 
     pub fn update(&mut self, message: SidebarMessage) -> SidebarEvent {
         match message {
             SidebarMessage::Navigate(item) => {
                 self.active = item;
+                if let Some(idx) = NavItem::all().iter().position(|&i| i == item) {
+                    self.focused = Some(idx);
+                }
                 SidebarEvent::Navigate(item)
+            }
+            SidebarMessage::NavigatePrevious => {
+                let items = NavItem::all();
+                let current_idx = self.focused.unwrap_or(0);
+                let new_idx = if current_idx == 0 { items.len() - 1 } else { current_idx - 1 };
+                self.focused = Some(new_idx);
+                self.active = items[new_idx];
+                SidebarEvent::Navigate(items[new_idx])
+            }
+            SidebarMessage::NavigateNext => {
+                let items = NavItem::all();
+                let current_idx = self.focused.unwrap_or(0);
+                let new_idx = if current_idx >= items.len() - 1 { 0 } else { current_idx + 1 };
+                self.focused = Some(new_idx);
+                self.active = items[new_idx];
+                SidebarEvent::Navigate(items[new_idx])
             }
         }
     }

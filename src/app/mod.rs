@@ -1202,7 +1202,30 @@ impl App {
                 return Some(AppMessage::GlobalEscKey);
             }
 
-            // Priority 3: Form and action shortcuts (when not in modal)
+            // Priority 3: Navigation keys (without Ctrl/Cmd)
+            if !modifiers.control() && !modifiers.command() {
+                match key_code {
+                    keyboard::Key::Named(keyboard::key::Named::Tab) => {
+                        // Tab navigation
+                        return None;
+                    }
+                    keyboard::Key::Named(keyboard::key::Named::Enter) |
+                    keyboard::Key::Named(keyboard::key::Named::Space) => {
+                        // Activate focused element
+                        return Some(AppMessage::KeyboardSubmitForm);
+                    }
+                    // Arrow keys for sidebar navigation
+                    keyboard::Key::Named(keyboard::key::Named::ArrowUp) => {
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::NavigatePrevious));
+                    }
+                    keyboard::Key::Named(keyboard::key::Named::ArrowDown) => {
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::NavigateNext));
+                    }
+                    _ => {}
+                }
+            }
+
+            // Priority 4: Form and action shortcuts (with Ctrl/Cmd)
             if modifiers.control() || modifiers.command() {
                 match key_code {
                     // Navigation shortcuts (Ctrl+1-6)
@@ -1231,10 +1254,6 @@ impl App {
                     // Paste shortcut (Ctrl+V)
                     keyboard::Key::Character(c) if c == "v" || c == "V" => {
                         return Some(AppMessage::KeyboardPaste);
-                    }
-                    // Submit form (Ctrl+Enter)
-                    keyboard::Key::Named(keyboard::key::Named::Enter) => {
-                        return Some(AppMessage::KeyboardSubmitForm);
                     }
                     // Save state (Ctrl+S)
                     keyboard::Key::Character(c) if c == "s" || c == "S" => {
