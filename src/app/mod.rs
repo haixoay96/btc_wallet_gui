@@ -21,7 +21,7 @@ use crate::theme::{
     notice_style, screen_background_style, secondary_button_style, text_color, Colors, NoticeTone,
     get_theme_colors,
 };
-use crate::utils::{normalize_nickname, wallet_count_text, export::{export_history_csv, export_history_pdf}};
+use crate::utils::{normalize_nickname, wallet_count_text, resolve_user_path};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::{HistoryEvent, HistoryMessage, HistoryView},
@@ -35,7 +35,6 @@ use crate::views::{
     wallets::{WalletsMessage, WalletsView},
 };
 use crate::wallet::{Wallet, WalletSecretsRef, WalletSecretsVault};
-use std::path::PathBuf;
 
 const REVEALED_MNEMONIC_TTL_SECS: u64 = 60;
 
