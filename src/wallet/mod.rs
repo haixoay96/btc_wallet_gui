@@ -14,13 +14,11 @@ pub use secrets::{
 pub mod esplora;
 pub mod api_types;
 
-// Constants
-pub const DEFAULT_GAP_LIMIT: u32 = 5;
-pub const DUST_LIMIT_SAT: u64 = 546;
-pub const DEFAULT_AUTO_FEE_RATE_SAT_VB: f64 = 2.0;
-pub const ESTIMATE_OVERHEAD_VB: u64 = 10;
-pub const ESTIMATE_P2WPKH_INPUT_VB: u64 = 68;
-pub const ESTIMATE_P2WPKH_OUTPUT_VB: u64 = 31;
+// Re-export constants từ shared/
+pub use crate::shared::constants::{
+    DEFAULT_GAP_LIMIT, DUST_LIMIT_SAT, DEFAULT_AUTO_FEE_RATE_SAT_VB,
+    ESTIMATE_OVERHEAD_VB, ESTIMATE_P2WPKH_INPUT_VB, ESTIMATE_P2WPKH_OUTPUT_VB,
+};
 
 // Re-export api_types, esplora cho internal use
 pub use api_types::*;
