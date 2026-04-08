@@ -1,8 +1,10 @@
-// Placeholder - sẽ được implement đầy đủ ở Phase 3
-// Re-export từ storage/ hiện tại
-pub use crate::storage::encryption::EncryptedEnvelope;
-pub use crate::storage::paths::StoragePaths;
-pub use crate::storage::{
-    decrypt_blob, encrypt_blob, AppPreferences, AppTheme, PersistedState, RuntimeState, Storage,
-    UserProfile, WalletSortField,
+mod structure;
+mod preferences;
+mod operations;
+mod encryption;
+
+pub use structure::{
+    AppPreferences, AppTheme, PersistedState, RuntimeState, Storage, UserProfile, WalletSortField,
 };
+pub use encryption::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
+pub use operations::remove_file_if_exists;
