@@ -5,7 +5,7 @@ use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use super::structure::Wallet;
+use crate::core::wallet::structure::Wallet;
 
 pub type WalletSecretsRef = Arc<WalletSecrets>;
 pub type WalletSecretsVault = HashMap<String, WalletSecretsRef>;

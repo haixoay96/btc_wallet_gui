@@ -4,9 +4,9 @@ use std::fmt;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-mod encryption;
-mod paths;
 pub mod address_book;
+pub mod encryption;
+pub mod paths;
 
 pub use self::encryption::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
 pub use self::address_book::AddressBook;
@@ -66,7 +66,7 @@ pub struct Storage {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct AppPreferences {
+pub struct AppPreferences {
     #[serde(default)]
     language: AppLanguage,
     #[serde(default)]
