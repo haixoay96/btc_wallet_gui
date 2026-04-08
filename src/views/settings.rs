@@ -38,16 +38,6 @@ pub enum SettingsMessage {
     AutoRefreshToggled(bool),
     ShowSatoshisToggled(bool),
     CompactModeToggled(bool),
-    // Export/Import
-    ToggleExportSettings,
-    ExportSettings,
-    ImportSettings,
-    ToggleExportLanguage(bool),
-    ToggleExportTheme(bool),
-    ToggleExportFontScale(bool),
-    ToggleExportHighContrast(bool),
-    ToggleExportNetwork(bool),
-    ToggleExportAdvanced(bool),
     ResetAllSettings,
     TestConnectionSuccess(String),
     TestConnectionFailed(String),
@@ -69,8 +59,6 @@ pub enum SettingsEvent {
     AutoRefreshToggled(bool),
     ShowSatoshisToggled(bool),
     CompactModeToggled(bool),
-    ExportSettings,
-    ImportSettings,
     ResetAllSettings,
 }
 
@@ -96,13 +84,6 @@ pub struct SettingsView {
     pub compact_mode: bool,
     pub data_folder_path: String,
     pub data_folder_size: String,
-    pub show_export_settings: bool,
-    pub export_language: bool,
-    pub export_theme: bool,
-    pub export_font_scale: bool,
-    pub export_high_contrast: bool,
-    pub export_network: bool,
-    pub export_advanced: bool,
     pub connection_test_result: Option<String>,
 }
 
@@ -130,13 +111,6 @@ impl SettingsView {
             compact_mode: false,
             data_folder_path: String::new(),
             data_folder_size: String::new(),
-            show_export_settings: false,
-            export_language: true,
-            export_theme: true,
-            export_font_scale: true,
-            export_high_contrast: true,
-            export_network: true,
-            export_advanced: true,
         }
     }
 
@@ -297,16 +271,6 @@ impl SettingsView {
                 self.compact_mode = enabled;
                 Some(SettingsEvent::CompactModeToggled(enabled))
             }
-            SettingsMessage::ToggleExportSettings => {
-                self.show_export_settings = !self.show_export_settings;
-                None
-            }
-            SettingsMessage::ExportSettings => {
-                Some(SettingsEvent::ExportSettings)
-            }
-            SettingsMessage::ImportSettings => {
-                Some(SettingsEvent::ImportSettings)
-            }
             SettingsMessage::TestConnectionSuccess(result) => {
                 self.testing_connection = false;
                 self.connection_test_result = Some(result);
@@ -317,12 +281,6 @@ impl SettingsView {
                 self.connection_test_result = Some(error);
                 None
             }
-            SettingsMessage::ToggleExportLanguage(v) => { self.export_language = v; None }
-            SettingsMessage::ToggleExportTheme(v) => { self.export_theme = v; None }
-            SettingsMessage::ToggleExportFontScale(v) => { self.export_font_scale = v; None }
-            SettingsMessage::ToggleExportHighContrast(v) => { self.export_high_contrast = v; None }
-            SettingsMessage::ToggleExportNetwork(v) => { self.export_network = v; None }
-            SettingsMessage::ToggleExportAdvanced(v) => { self.export_advanced = v; None }
             SettingsMessage::ResetAllSettings => Some(SettingsEvent::ResetAllSettings),
         }
     }
@@ -369,46 +327,6 @@ impl SettingsView {
                     text(&self.data_folder_size).size(s(12)).style(text_color(Colors::ACCENT_TEAL)),
                 ].align_y(Alignment::Center),
             ]).style(card_style()).padding(main_padding / 2).width(Length::Fill),
-        );
-
-        // Export/Import Settings Section
-        let export_import_btns = if self.show_export_settings {
-            column![
-                row![
-                    button(text(t("Xuất cài đặt", "Export Settings")).size(s(12)))
-                        .on_press(SettingsMessage::ExportSettings).padding([6, 12]).style(primary_button_style()),
-                    Space::with_width(8),
-                    button(text(t("Nhập cài đặt", "Import Settings")).size(s(12)))
-                        .on_press(SettingsMessage::ImportSettings).padding([6, 12]).style(secondary_button_style()),
-                ].align_y(Alignment::Center),
-                Space::with_height(8),
-                text(t("Chọn nội dung xuất:", "Select what to export:")).size(s(11)).style(text_secondary_color()),
-                row![
-                    column![
-                        checkbox(t("Ngôn ngữ", "Language"), self.export_language).on_toggle(SettingsMessage::ToggleExportLanguage),
-                        checkbox(t("Giao diện", "Theme"), self.export_theme).on_toggle(SettingsMessage::ToggleExportTheme),
-                        checkbox(t("Cỡ chữ", "Font Size"), self.export_font_scale).on_toggle(SettingsMessage::ToggleExportFontScale),
-                    ].spacing(4),
-                    Space::with_width(16),
-                    column![
-                        checkbox(t("Tương phản cao", "High Contrast"), self.export_high_contrast).on_toggle(SettingsMessage::ToggleExportHighContrast),
-                        checkbox(t("Mạng lưới", "Network"), self.export_network).on_toggle(SettingsMessage::ToggleExportNetwork),
-                        checkbox(t("Nâng cao", "Advanced"), self.export_advanced).on_toggle(SettingsMessage::ToggleExportAdvanced),
-                    ].spacing(4),
-                ].spacing(16),
-            ].spacing(8)
-        } else {
-            column![
-                button(text(t("Xuất/Nhập cài đặt", "Export/Import Settings")).size(s(12)))
-                    .on_press(SettingsMessage::ToggleExportSettings).padding([6, 12]).style(secondary_button_style()),
-            ]
-        };
-        content = content.push(
-            container(column![
-                text(t("Cài đặt", "Settings")).size(s(18)).style(text_primary_color()),
-                Space::with_height(12),
-                export_import_btns,
-            ]).style(card_style()).padding(16).width(Length::Fill),
         );
 
         // Accessibility Section
