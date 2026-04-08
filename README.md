@@ -4,6 +4,25 @@
 
 ## 0. Cập nhật gần đây
 
+### Giao diện & Trải nghiệm (UI/UX)
+- **Light/Dark Theme:** Hỗ trợ 3 chế độ giao diện (Tối / Sáng / Theo hệ thống)
+- **Chế độ thu gọn (Compact Mode):** Giảm khoảng cách và padding để hiển thị nhiều nội dung hơn
+- **Hiển thị Satoshi:** Tùy chọn hiển thị số dư satoshi bên cạnh BTC
+- **Điều hướng bằng phím:** Dùng phím Mũi tên (↑/↓) để chuyển qua lại giữa các mục trong Sidebar
+- **Menu trợ giúp phím tắt:** Bấm `F1` hoặc `Ctrl + /` để xem danh sách phím tắt
+- **Phím tắt điều hướng:** `Ctrl + 1 đến 6` để nhảy nhanh đến Dashboard, Ví, Gửi, Nhận, Lịch sử, Cài đặt
+
+### Onboarding Tour
+- Hướng dẫn 5 bước cho người dùng mới làm quen với ứng dụng
+- Hiển thị tự động ngay khi tạo ví lần đầu
+- Có thể xem lại bất cứ lúc nào qua menu Cài đặt
+
+### Cài đặt (Settings) mới
+- **Trợ năng (Accessibility):** Thanh trượt cỡ chữ (80% - 150%), nút bật/tắt Tương phản cao
+- **Mạng lưới (Network):** Nhập Esplora endpoint tùy chọn, chọn Timeout, nút Test kết nối
+- **Nâng cao (Advanced):** Bật/tắt Debug logging, Tự động refresh
+- **Đặt lại cài đặt:** Nút khôi phục toàn bộ cài đặt về mặc định
+
 ### Tính năng mới (Send & History)
 - **Nhập số lượng theo BTC:** Nhập số lượng trực tiếp bằng BTC (ví dụ: 0.001), tự động chuyển đổi sang satoshi
 - **Nút MAX:** Tự động tính và điền số lượng tối đa có thể gửi (sau khi trừ phí ước tính)
@@ -38,6 +57,7 @@
 - Import ví từ SLIP-0039 shares
 - Xóa ví
 - Xem danh sách tất cả ví
+- **Gán nhãn & Màu sắc:** Phân loại ví (đang phát triển)
 
 ### Gửi BTC (Send)
 - Chọn ví gửi
@@ -70,10 +90,12 @@
 - Export shares thành nhiều file PDF
 
 ### Cài đặt (Settings)
-- Đổi passphrase
-- Chọn ngôn ngữ ứng dụng
-- Export backup mã hóa toàn app
-- Clear toàn bộ dữ liệu (yêu cầu passphrase hiện tại)
+- **Bảo mật:** Đổi passphrase, Xóa toàn bộ dữ liệu
+- **Giao diện (Appearance):** Chế độ Light/Dark, Cỡ chữ (80-150%), Tương phản cao
+- **Mạng lưới (Network):** Endpoint Esplora tùy chọn, Timeout, Test kết nối
+- **Nâng cao (Advanced):** Debug logging, Tự động refresh, Compact mode, Hiển thị satoshi
+- **Dữ liệu:** Xem đường dẫn lưu trữ, dung lượng, Export/Import Settings, Reset cài đặt
+- **Hỗ trợ:** Backup mã hóa toàn app, Onboarding Tour cho người mới
 
 ## 2. Hướng dẫn sử dụng theo màn hình
 
@@ -126,6 +148,13 @@
 - Xuất backup: Lưu file backup mã hóa
 - Thông tin: Giới thiệu ứng dụng
 - Vùng nguy hiểm: Xóa toàn bộ dữ liệu
+
+### Phím tắt (Keyboard Shortcuts)
+- **Điều hướng nhanh:** `Ctrl + 1` (Dashboard), `Ctrl + 2` (Ví), ... `Ctrl + 6` (Cài đặt)
+- **Điều hướng tuần tự:** Phím `Mũi tên lên` / `Mũi tên xuống` (chuyển mục trong Sidebar)
+- **Thao tác:** `Enter` hoặc `Space` (Xác nhận/Gửi form), `Esc` (Đóng popup/Hủy)
+- **Clipboard:** `Ctrl + C` (Sao chép địa chỉ/TxID), `Ctrl + V` (Dán địa chỉ)
+- **Tiện ích:** `Ctrl + S` (Lưu trạng thái), `Ctrl + F` (Tìm kiếm), `F1` (Trợ giúp phím tắt)
 
 ## 3. Đa ngôn ngữ
 
@@ -265,15 +294,17 @@ Sau khi build xong, download artifacts:
 2. Chọn version mới nhất
 3. Download file theo nền tảng
 
-## 8. Công nghệ sử dụng
+## 9. Công nghệ sử dụng
 
-- **UI Framework:** iced
+- **UI Framework:** `iced`
 - **Mã hóa:** ChaCha20-Poly1305 + Argon2id
-- **Bitcoin:** bdk và các thành phần liên quan
-- **File picker:** rfd (native)
-- **PDF export:** printpdf
+- **Bitcoin:** `bitcoin` crate v0.32
+- **Mnemonic:** `bip39`, `sssmc39` (cho SLIP-0039)
+- **File picker:** `rfd` (native)
+- **PDF export:** `printpdf`
+- **Networking:** `reqwest` (giao tiếp Esplora API)
 
-## 9. Cấu trúc project
+## 10. Cấu trúc project
 
 ```
 src/
@@ -282,11 +313,12 @@ src/
 ├── storage/       # Lưu trữ và mã hóa
 ├── wallet/        # Logic ví Bitcoin
 ├── utils/         # Tiện ích hỗ trợ
-├── theme.rs       # Màu sắc và style
+├── theme/         # Theme & Style (Light/Dark, Colors)
+├── components/    # Các component tái sử dụng
 ├── i18n.rs        # Đa ngôn ngữ
 └── main.rs        # Điểm khởi chạy
 ```
 
-## 10. License
+## 11. License
 
 MIT License
