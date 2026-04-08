@@ -163,19 +163,6 @@ impl App {
                         let _ = storage.save_compact_mode(enabled);
                     }
                 }
-                // Data storage events
-                SettingsEvent::ChangeDataFolder => {
-                    if let Some(path) = rfd::FileDialog::new()
-                        .set_title(t("Chọn thư mục dữ liệu", "Select data folder"))
-                        .pick_folder()
-                    {
-                        self.add_info_toast(format!(
-                            "{}: {}",
-                            t("Đã chọn thư mục", "Selected folder"),
-                            path.display()
-                        ));
-                    }
-                }
                 // Export/Import events
                 SettingsEvent::ExportSettings => {
                     if let Some(path) = rfd::FileDialog::new()

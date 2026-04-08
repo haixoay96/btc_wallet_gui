@@ -97,7 +97,6 @@ pub struct App {
     // Onboarding
     pub show_onboarding: bool,
     pub onboarding_view: OnboardingView,
-    pub onboarding_delay_timer: bool,
 
     // Address Book / Contact Book
     pub address_book: AddressBook,
@@ -138,8 +137,6 @@ pub enum AppMessage {
     ResetHelpDismissals,
     AutoRefreshConfirmations,
     OnboardingMessage(OnboardingMessage),
-    StartOnboardingDelay,
-    ShowOnboarding,
 }
 
 #[derive(Debug, Clone)]
@@ -224,28 +221,17 @@ impl App {
                 focus_search_history: false,
                 focus_paste_send: false,
                 help_dismissals: HelpDismissals::new(),
-                show_onboarding: false, // Start hidden, show after delay
+                show_onboarding: !has_existing_state && !onboarding_completed,
                 onboarding_view: OnboardingView::new(),
-                onboarding_delay_timer: true, // Always check onboarding on fresh start
                 address_book: AddressBook::load().unwrap_or_default(),
             },
-            // Start toast cleanup task + onboarding delay if needed
-            {
-                let mut tasks = vec![Task::perform(
-                    async move {
-                        tokio::time::sleep(Duration::from_secs(2)).await;
-                    },
-                    |_| AppMessage::ToastCleanup,
-                )];
-                // Always show onboarding delay on fresh app start
-                tasks.push(Task::perform(
-                    async move {
-                        tokio::time::sleep(Duration::from_millis(1200)).await;
-                    },
-                    |_| AppMessage::ShowOnboarding,
-                ));
-                Task::batch(tasks)
-            },
+            // Start toast cleanup task
+            Task::perform(
+                async move {
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                },
+                |_| AppMessage::ToastCleanup,
+            ),
         )
     }
 
@@ -621,11 +607,6 @@ impl App {
                 }
                 Task::none()
             }
-            AppMessage::ShowOnboarding => {
-                self.show_onboarding = true;
-                Task::none()
-            }
-            AppMessage::StartOnboardingDelay => Task::none(),
             AppMessage::SettingsMessage(SettingsMessage::ResetAllSettings) => {
                 // Reset all settings to default values
                 self.theme = AppTheme::Dark;

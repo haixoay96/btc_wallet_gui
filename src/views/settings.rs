@@ -38,7 +38,7 @@ pub enum SettingsMessage {
     AutoRefreshToggled(bool),
     ShowSatoshisToggled(bool),
     CompactModeToggled(bool),
-    ChangeDataFolder,
+    // Export/Import
     ToggleExportSettings,
     ExportSettings,
     ImportSettings,
@@ -69,7 +69,6 @@ pub enum SettingsEvent {
     AutoRefreshToggled(bool),
     ShowSatoshisToggled(bool),
     CompactModeToggled(bool),
-    ChangeDataFolder,
     ExportSettings,
     ImportSettings,
     ResetAllSettings,
@@ -298,7 +297,6 @@ impl SettingsView {
                 self.compact_mode = enabled;
                 Some(SettingsEvent::CompactModeToggled(enabled))
             }
-            SettingsMessage::ChangeDataFolder => Some(SettingsEvent::ChangeDataFolder),
             SettingsMessage::ToggleExportSettings => {
                 self.show_export_settings = !self.show_export_settings;
                 None
@@ -358,7 +356,7 @@ impl SettingsView {
         content = content.push(
             container(column![
                 text(t("Dữ liệu", "Data Storage")).size(s(18)).style(text_primary_color()),
-                Space::with_height(main_spacing / 2),
+                Space::with_height(4),
                 row![
                     text(t("Thư mục:", "Folder:")).size(s(12)).style(text_secondary_color()),
                     Space::with_width(8),
@@ -370,10 +368,6 @@ impl SettingsView {
                     Space::with_width(8),
                     text(&self.data_folder_size).size(s(12)).style(text_color(Colors::ACCENT_TEAL)),
                 ].align_y(Alignment::Center),
-                Space::with_height(4),
-                button(text(t("Đổi thư mục...", "Change Folder...")).size(s(12)))
-                    .on_press(SettingsMessage::ChangeDataFolder)
-                    .padding([main_padding / 4, main_padding / 2]).style(secondary_button_style()),
             ]).style(card_style()).padding(main_padding / 2).width(Length::Fill),
         );
 
