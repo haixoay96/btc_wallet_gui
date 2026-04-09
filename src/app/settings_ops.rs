@@ -2,8 +2,8 @@ use crate::ui::views::login::LoginMode;
 use iced::Task;
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::infra::storage::{AppTheme, Storage};
+use crate::ui::i18n::{set_current_language, t, AppLanguage};
 use crate::ui::views::settings::{SettingsEvent, SettingsMessage};
 use crate::utils::{pick_export_backup_path, resolve_user_path};
 

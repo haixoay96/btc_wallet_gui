@@ -1,6 +1,8 @@
 use zeroize::Zeroize;
 
 #[derive(Debug, PartialEq, Eq)]
+/// Decrypted secret export
+#[allow(dead_code)]
 pub enum DecryptedSecretExport {
     Mnemonic {
         wallet_name: String,
@@ -35,6 +37,8 @@ impl Drop for DecryptedSecretExport {
     }
 }
 
+/// SLIP39 PDF export
+#[allow(dead_code)]
 pub struct Slip39PdfExport<'a> {
     pub wallet_name: &'a str,
     pub network: &'a str,

@@ -3,10 +3,10 @@ use iced::Task;
 use secrecy::ExposeSecret;
 
 use crate::app::structure::{App, AppMessage, RefreshWalletsResult};
+use crate::core::error::AppError;
 use crate::core::wallet::{Wallet, WalletSecretsRef};
-use crate::error::AppError;
-use crate::i18n::t;
 use crate::ui::components::Toast;
+use crate::ui::i18n::t;
 
 impl App {
     pub fn display_name(&self) -> &str {

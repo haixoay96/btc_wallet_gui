@@ -38,7 +38,7 @@ pub fn load_encrypted_secret_export(
     let encoded = std::fs::read(path).map_err(|err| {
         format!(
             "{} {}: {err}",
-            crate::i18n::t(
+            crate::ui::i18n::t(
                 "Không đọc được file backup mã hóa",
                 "Could not read encrypted backup file"
             ),

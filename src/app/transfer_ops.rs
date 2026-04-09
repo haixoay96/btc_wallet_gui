@@ -1,8 +1,8 @@
-use crate::error::AppError;
+use crate::core::error::AppError;
 use iced::Task;
 
 use crate::core::wallet::{validate_address_for_network, TxBuildOptions};
-use crate::i18n::t;
+use crate::ui::i18n::t;
 use crate::ui::views::send::{SendEvent, SendMessage};
 use crate::utils::short_txid;
 

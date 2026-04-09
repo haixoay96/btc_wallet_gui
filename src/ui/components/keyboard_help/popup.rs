@@ -1,6 +1,6 @@
 use super::structure::KeyboardShortcut;
 
-use crate::i18n::t;
+use crate::ui::i18n::t;
 use iced::{
     widget::{column, container, row, scrollable, Space},
     Color, Element, Length,

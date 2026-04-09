@@ -3,7 +3,7 @@ use iced::{
     Element, Length,
 };
 
-use crate::i18n::t;
+use crate::ui::i18n::t;
 
 use crate::ui::theme::text_color;
 use crate::ui::theme::text_primary_color;

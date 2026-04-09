@@ -5,12 +5,12 @@ use iced::{
 
 use crate::core::contact::AddressBook;
 use crate::core::wallet::{validate_bitcoin_address, ChangeStrategy, InputSource, Wallet};
-use crate::i18n::t;
 use crate::ui::components::help_content::send_screen_topics;
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::ui::components::{
     contact_form_view, contact_picker_view, help_topic_panel, info_box, modal, BtcUnit,
 };
+use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, input_style, notice_style, pick_list_menu_style, pick_list_style,
     primary_button_style, secondary_button_style, selected_button_style, text_color,
@@ -928,20 +928,20 @@ impl SendView {
 
         // Add help topics
         let help_topics = send_screen_topics();
-        let lang = crate::i18n::current_language();
+        let lang = crate::ui::i18n::current_language();
         for topic in help_topics {
             let is_expanded = self.expanded_help_topics.contains(&topic.id);
             let title = match lang {
-                crate::i18n::AppLanguage::Vietnamese => topic.title_vi,
-                crate::i18n::AppLanguage::English => topic.title_en,
+                crate::ui::i18n::AppLanguage::Vietnamese => topic.title_vi,
+                crate::ui::i18n::AppLanguage::English => topic.title_en,
             };
             let desc = match lang {
-                crate::i18n::AppLanguage::Vietnamese => topic.description_vi,
-                crate::i18n::AppLanguage::English => topic.description_en,
+                crate::ui::i18n::AppLanguage::Vietnamese => topic.description_vi,
+                crate::ui::i18n::AppLanguage::English => topic.description_en,
             };
             let detail: Option<&'static str> = match lang {
-                crate::i18n::AppLanguage::Vietnamese => topic.detail_vi,
-                crate::i18n::AppLanguage::English => topic.detail_en,
+                crate::ui::i18n::AppLanguage::Vietnamese => topic.detail_vi,
+                crate::ui::i18n::AppLanguage::English => topic.detail_en,
             };
             let panel: Element<'_, SendMessage> = help_topic_panel(
                 &topic.id,

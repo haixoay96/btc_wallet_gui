@@ -16,7 +16,7 @@ pub fn write_encrypted_export<T: Serialize>(
     payload: &T,
     encryption_passphrase: &str,
 ) -> Result<(), String> {
-    use crate::i18n::t;
+    use crate::ui::i18n::t;
 
     let mut plaintext = serde_json::to_vec(payload).map_err(|err| {
         format!(
@@ -89,7 +89,7 @@ pub fn decode_encrypted_secret_export(
     encoded: &[u8],
     decryption_passphrase: &str,
 ) -> Result<DecryptedSecretExport, String> {
-    use crate::i18n::t;
+    use crate::ui::i18n::t;
 
     let export: StoredEncryptedSecretExport = serde_json::from_slice(encoded).map_err(|err| {
         format!(

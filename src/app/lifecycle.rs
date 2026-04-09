@@ -4,14 +4,14 @@ use iced::Task;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::app::structure::{App, AppMessage, AppState};
+use crate::core::error::AppError;
 use crate::core::wallet::WalletSecretsVault;
-use crate::error::AppError;
-use crate::i18n::{set_current_language, t, AppLanguage};
 use crate::infra::storage::{
     AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile,
 };
 use crate::ui::components::language_selector::LanguageSelector;
 use crate::ui::components::ToastManager;
+use crate::ui::i18n::{set_current_language, t, AppLanguage};
 use crate::ui::views::{
     dashboard::DashboardView,
     history::HistoryView,

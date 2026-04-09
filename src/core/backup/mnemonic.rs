@@ -2,6 +2,8 @@ use anyhow::{anyhow, Context, Result};
 use bip39::{Language, Mnemonic};
 use sssmc39::{combine_mnemonics, generate_mnemonics};
 
+/// Split mnemonic to SLIP39 shares
+#[allow(dead_code)]
 pub fn split_mnemonic_to_slip39_shares(
     mnemonic_phrase: &str,
     threshold: u8,
@@ -40,6 +42,8 @@ pub fn split_mnemonic_to_slip39_shares(
         .collect()
 }
 
+/// Combine SLIP39 shares
+#[allow(dead_code)]
 pub fn combine_slip39_shares(share_phrases: &[String], slip39_passphrase: &str) -> Result<String> {
     if share_phrases.is_empty() {
         return Err(anyhow!("Vui lòng nhập ít nhất một SLIP-0039 share"));
@@ -55,6 +59,8 @@ pub fn combine_slip39_shares(share_phrases: &[String], slip39_passphrase: &str) 
     Ok(mnemonic.to_string())
 }
 
+/// Parse SLIP39 shares
+#[allow(dead_code)]
 fn parse_slip39_shares(share_phrases: &[String]) -> Result<Vec<Vec<String>>> {
     let mut shares = Vec::with_capacity(share_phrases.len());
     for (index, phrase) in share_phrases.iter().enumerate() {

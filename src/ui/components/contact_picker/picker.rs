@@ -3,7 +3,7 @@ use iced::{
     Element, Length,
 };
 
-use crate::i18n::t;
+use crate::ui::i18n::t;
 
 use crate::core::contact::{AddressBook, ContactEntry};
 use crate::ui::theme::{

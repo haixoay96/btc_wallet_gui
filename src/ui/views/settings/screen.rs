@@ -5,9 +5,9 @@ use iced::{
     Alignment, Element, Length,
 };
 
-use crate::i18n::t;
 use crate::infra::storage::AppTheme;
 use crate::ui::components::modal;
+use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, danger_button_style, info_style, input_style, notice_style, pick_list_menu_style,
     pick_list_style, primary_button_style, secondary_button_style, text_color, text_muted_color,

@@ -3,9 +3,9 @@ use iced::{
     Alignment, Element, Length, Padding,
 };
 
-use crate::i18n::t;
 use crate::ui::components::language_selector::LanguageSelector;
 use crate::ui::components::{calculate_strength, strength_bar};
+use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, gradient_button_style, input_style, muted_button_style, notice_style,
     screen_background_style, secondary_button_style, selected_button_style, text_color,

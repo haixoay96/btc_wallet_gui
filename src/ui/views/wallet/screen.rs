@@ -4,9 +4,9 @@ use iced::{
 };
 
 use crate::core::wallet::{AddressChain, Wallet, WalletNetwork};
-use crate::i18n::t;
 use crate::ui::components::info_box;
 use crate::ui::components::modal;
+use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, danger_button_style, get_theme_colors, input_style, notice_style,
     primary_button_style, secondary_button_style, selected_button_style, text_color,

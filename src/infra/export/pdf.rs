@@ -16,7 +16,7 @@ pub fn export_mnemonic_to_pdf(
     network: &str,
     mnemonic: &str,
 ) -> Result<(), String> {
-    use crate::i18n::t;
+    use crate::ui::i18n::t;
 
     let (doc, page, layer) =
         PdfDocument::new("Mnemonic Backup", Mm(210.0), Mm(297.0), "Mnemonic Layer");
@@ -107,7 +107,7 @@ pub fn export_slip39_shares_to_pdf_directory(
     export: &Slip39PdfExport<'_>,
     shares: &[String],
 ) -> Result<PathBuf, String> {
-    use crate::i18n::t;
+    use crate::ui::i18n::t;
 
     if shares.is_empty() {
         return Err(t(
@@ -134,7 +134,7 @@ fn create_unique_export_directory(
     base_directory: &Path,
     directory_name: &str,
 ) -> Result<PathBuf, String> {
-    use crate::i18n::t;
+    use crate::ui::i18n::t;
 
     if !base_directory.exists() {
         return Err(format!(
@@ -183,7 +183,7 @@ fn export_slip39_share_to_pdf(
     share_total: usize,
     share_phrase: &str,
 ) -> Result<(), String> {
-    use crate::i18n::t;
+    use crate::ui::i18n::t;
 
     let (doc, page, layer) = PdfDocument::new(
         "SLIP-0039 Share Backup",

@@ -6,8 +6,8 @@ use crate::core::wallet::{
     runtime_wallets_from_stored, stored_wallets_from_runtime, StoredWallet, Wallet,
     WalletSecretsVault,
 };
-use crate::i18n::AppLanguage;
 use crate::infra::paths::StoragePaths;
+use crate::ui::i18n::AppLanguage;
 
 // ─── State structs ───────────────────────────────────────────────────────
 

@@ -4,8 +4,8 @@ use iced::{
 };
 
 use crate::app::structure::*;
-use crate::i18n::t;
 use crate::ui::components::{error_card, modal, shortcuts_help_popup};
+use crate::ui::i18n::t;
 use crate::ui::theme::{get_theme_colors, screen_background_style, text_color, Colors};
 use crate::ui::views::sidebar::NavItem;
 

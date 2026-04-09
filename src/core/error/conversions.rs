@@ -1,4 +1,4 @@
-use crate::error::structure::AppError;
+use crate::core::error::structure::AppError;
 
 impl From<String> for AppError {
     fn from(message: String) -> Self {

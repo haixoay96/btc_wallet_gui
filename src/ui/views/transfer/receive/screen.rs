@@ -5,9 +5,9 @@ use iced::{
 use qrcode::{types::Color as QrColor, QrCode};
 
 use crate::core::wallet::{AddressChain, Wallet};
-use crate::i18n::t;
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::ui::components::{modal, warning_box};
+use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, selected_button_style, text_color, text_muted_color,

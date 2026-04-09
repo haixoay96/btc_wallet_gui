@@ -35,12 +35,12 @@ impl NavItem {
 
     pub fn title(self) -> &'static str {
         match self {
-            Self::Dashboard => crate::i18n::t("Bảng điều khiển", "Dashboard"),
-            Self::Wallets => crate::i18n::t("Ví", "Wallets"),
-            Self::Send => crate::i18n::t("Gửi", "Send"),
-            Self::Receive => crate::i18n::t("Nhận", "Receive"),
-            Self::History => crate::i18n::t("Lịch sử", "History"),
-            Self::Settings => crate::i18n::t("Cài đặt", "Settings"),
+            Self::Dashboard => crate::ui::i18n::t("Bảng điều khiển", "Dashboard"),
+            Self::Wallets => crate::ui::i18n::t("Ví", "Wallets"),
+            Self::Send => crate::ui::i18n::t("Gửi", "Send"),
+            Self::Receive => crate::ui::i18n::t("Nhận", "Receive"),
+            Self::History => crate::ui::i18n::t("Lịch sử", "History"),
+            Self::Settings => crate::ui::i18n::t("Cài đặt", "Settings"),
         }
     }
 }

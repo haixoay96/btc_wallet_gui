@@ -1,7 +1,7 @@
 use iced::Task;
 
 use crate::app::structure::*;
-use crate::i18n::t;
+use crate::ui::i18n::t;
 
 impl App {
     pub fn update_dashboard(&mut self) {

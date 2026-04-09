@@ -1,11 +1,11 @@
-use crate::error::AppError;
+use crate::core::error::AppError;
 use anyhow::anyhow;
 use iced::{clipboard, Task};
 use secrecy::{ExposeSecret, SecretString};
 use zeroize::Zeroize;
 
 use crate::core::wallet::{Wallet, WalletNetwork, WalletSecretsRef};
-use crate::i18n::t;
+use crate::ui::i18n::t;
 use crate::ui::views::receive::{ReceiveEvent, ReceiveMessage};
 use crate::ui::views::wallets::{WalletsEvent, WalletsMessage, WalletsView};
 use crate::utils::{

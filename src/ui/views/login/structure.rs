@@ -1,5 +1,5 @@
-use crate::i18n::AppLanguage;
 use crate::ui::components::language_selector::LanguageSelector;
+use crate::ui::i18n::AppLanguage;
 
 #[derive(Debug, Clone)]
 pub enum LoginMessage {

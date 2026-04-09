@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use crate::i18n::t;
 use crate::shared::text::resolve_user_path;
+use crate::ui::i18n::t;
 
 /// Pick file dialog for importing backup
 pub fn pick_import_backup_path() -> Option<PathBuf> {

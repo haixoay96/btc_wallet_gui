@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::i18n::t;
+use crate::ui::i18n::t;
 
 /// Format a short transaction ID
 /// Get short transaction ID

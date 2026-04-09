@@ -1,5 +1,5 @@
-use crate::error::structure::AppError;
-use crate::i18n::t;
+use crate::core::error::structure::AppError;
+use crate::ui::i18n::t;
 
 impl AppError {
     /// Convenience constructors

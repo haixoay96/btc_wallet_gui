@@ -1,7 +1,7 @@
 use crate::core::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
-use crate::i18n::t;
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::ui::components::{modal, skeleton_transactions};
+use crate::ui::i18n::t;
 use crate::ui::theme::{
     input_style, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, selected_button_style, text_color, text_muted_color,

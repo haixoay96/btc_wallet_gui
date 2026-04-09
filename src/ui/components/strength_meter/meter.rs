@@ -5,7 +5,7 @@ use iced::{
     Color, Element, Length,
 };
 
-use crate::i18n::t;
+use crate::ui::i18n::t;
 use crate::ui::theme::{text_color, text_scaled, Colors};
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 

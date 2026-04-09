@@ -1,5 +1,5 @@
-use crate::i18n::t;
 use crate::ui::components::skeleton_wallet_cards;
+use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, notice_style, primary_button_style, secondary_button_style, text_color,
     text_muted_color, text_primary_color, text_scaled, text_secondary_color, Colors, NoticeTone,

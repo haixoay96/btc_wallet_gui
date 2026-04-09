@@ -3,9 +3,9 @@ use std::time::Duration;
 use iced::{clipboard, Task};
 
 use crate::app::structure::*;
-use crate::error::AppError;
-use crate::i18n::t;
+use crate::core::error::AppError;
 use crate::infra::storage::Storage;
+use crate::ui::i18n::t;
 use crate::ui::views::{
     dashboard::DashboardMessage,
     history::{HistoryEvent, HistoryMessage},

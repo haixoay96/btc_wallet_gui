@@ -2,8 +2,6 @@
 
 mod app;
 mod core;
-mod error;
-mod i18n;
 mod infra;
 mod shared;
 mod ui;

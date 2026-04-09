@@ -3,7 +3,7 @@ use iced::{
     Alignment, Element, Length,
 };
 
-use crate::i18n::t;
+use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, get_theme_colors, primary_button_style, secondary_button_style, text_color,
     text_muted_color, text_primary_color, text_scaled, text_secondary_color, Colors,

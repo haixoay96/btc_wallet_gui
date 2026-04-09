@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 use std::fs;
 
-use crate::i18n::AppLanguage;
 use crate::infra::storage::structure::Storage;
 use crate::infra::storage::structure::{AppPreferences, AppTheme};
+use crate::ui::i18n::AppLanguage;
 
 // ─── Preference Load/Save ────────────────────────────────────────────────
 

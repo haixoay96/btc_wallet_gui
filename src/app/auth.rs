@@ -1,9 +1,9 @@
-use crate::error::AppError;
+use crate::core::error::AppError;
 use iced::Task;
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::i18n::{set_current_language, t};
 use crate::infra::storage::Storage;
+use crate::ui::i18n::{set_current_language, t};
 use crate::ui::views::login::{LoginEvent, LoginMessage};
 use crate::utils::{
     normalize_nickname, pick_import_backup_path, resolve_user_path, wallet_count_text,
