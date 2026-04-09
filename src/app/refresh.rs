@@ -2,6 +2,7 @@ use iced::Task;
 
 use crate::app::structure::*;
 use crate::ui::i18n::t;
+use crate::ui::views::dashboard::RecentTxItem;
 
 impl App {
     pub fn update_dashboard(&mut self) {
@@ -20,12 +21,16 @@ impl App {
             .filter(|wallet| wallet.has_mnemonic && !wallet.mnemonic_backed_up)
             .count();
 
+        // Aggregate recent transactions from all wallets
+        let recent_transactions = collect_recent_transactions(&self.wallets);
+
         self.dashboard.update_balances(
             total,
             confirmed,
             pending,
             self.wallets.len(),
             backup_needed,
+            recent_transactions,
         );
     }
 
@@ -85,4 +90,32 @@ impl App {
             AppMessage::RefreshWalletsFinished,
         )
     }
+}
+
+/// Collect and sort recent transactions across all wallets
+fn collect_recent_transactions(wallets: &[crate::core::wallet::Wallet]) -> Vec<RecentTxItem> {
+    let mut all_txs: Vec<RecentTxItem> = Vec::new();
+
+    for wallet in wallets {
+        for tx in &wallet.history {
+            all_txs.push(RecentTxItem {
+                txid: tx.txid.clone(),
+                amount_sat: tx.amount_sat,
+                confirmed: tx.confirmed,
+                block_time: tx.block_time,
+                wallet_name: wallet.name.clone(),
+            });
+        }
+    }
+
+    // Sort by block_time descending (newest first), unconfirmed txs at top
+    all_txs.sort_by(|a, b| {
+        let a_time = a.block_time.unwrap_or(u64::MAX);
+        let b_time = b.block_time.unwrap_or(u64::MAX);
+        b_time.cmp(&a_time)
+    });
+
+    // Keep only the 10 most recent
+    all_txs.truncate(10);
+    all_txs
 }

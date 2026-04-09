@@ -536,10 +536,15 @@ impl HistoryView {
                             .position(|t| t.txid == tx.txid)
                             .unwrap_or(0);
 
-                        let direction_text = match tx.direction {
+                        let _direction_text = match tx.direction {
                             TxDirection::Incoming => t("NHẬN", "IN"),
                             TxDirection::Outgoing => t("GỬI", "OUT"),
                             TxDirection::SelfTransfer => t("TỰ", "SELF"),
+                        };
+                        let direction_icon = match tx.direction {
+                            TxDirection::Incoming => Bootstrap::ArrowDownRight.to_string(),
+                            TxDirection::Outgoing => Bootstrap::ArrowUpRight.to_string(),
+                            TxDirection::SelfTransfer => Bootstrap::ArrowLeftRight.to_string(),
                         };
                         let amount_color = match tx.direction {
                             TxDirection::Incoming => Colors::SUCCESS,
@@ -566,7 +571,10 @@ impl HistoryView {
                         let tx_row = container(
                             column![
                                 row![
-                                    text_scaled(direction_text, 14).style(text_color(amount_color)),
+                                    text(direction_icon.clone())
+                                        .size(14)
+                                        .font(BOOTSTRAP_FONT)
+                                        .style(text_color(amount_color)),
                                     Space::with_width(12),
                                     text_scaled(txid_short, 14).style(text_primary_color()),
                                     Space::with_width(Length::Fill),

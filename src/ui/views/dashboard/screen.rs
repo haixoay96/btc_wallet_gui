@@ -7,11 +7,12 @@ use crate::ui::theme::{
 };
 use crate::ui::views::sidebar::NavItem;
 use iced::{
-    widget::{button, column, container, row, Space},
+    widget::{button, column, container, row, text, Space},
     Alignment, Element, Length,
 };
+use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
-use super::structure::*;
+use super::structure::{RecentTxItem, *};
 
 impl DashboardView {
     pub fn new() -> Self {
@@ -23,6 +24,7 @@ impl DashboardView {
             backup_needed_wallets: 0,
             last_synced_label: None,
             network_status: NetworkStatus::Checking,
+            recent_transactions: Vec::new(),
         }
     }
 
@@ -33,12 +35,14 @@ impl DashboardView {
         pending: i64,
         wallets: usize,
         backup_needed_wallets: usize,
+        recent_transactions: Vec<RecentTxItem>,
     ) {
         self.total_balance = total;
         self.confirmed_balance = confirmed;
         self.pending_balance = pending;
         self.wallet_count = wallets;
         self.backup_needed_wallets = backup_needed_wallets;
+        self.recent_transactions = recent_transactions;
     }
 
     pub fn set_last_synced_label(&mut self, label: Option<String>) {
@@ -261,6 +265,12 @@ impl DashboardView {
             // Show skeleton loading state
             content = content.push(skeleton_wallet_cards(3).map(|_| DashboardMessage::Refresh));
         } else {
+            // Recent Transactions Preview
+            if !self.recent_transactions.is_empty() {
+                content = content.push(render_recent_transactions(&self.recent_transactions));
+                content = content.push(Space::with_height(spacing));
+            }
+
             content = content
                 .push(balance_card)
                 .push(Space::with_height(spacing))
@@ -279,4 +289,87 @@ impl DashboardView {
             .height(Length::Fill)
             .into()
     }
+}
+
+/// Render recent transactions preview card
+fn render_recent_transactions(
+    transactions: &[super::structure::RecentTxItem],
+) -> Element<'static, DashboardMessage> {
+    let max_preview = 5;
+    let preview: &[super::structure::RecentTxItem] = if transactions.len() > max_preview {
+        &transactions[..max_preview]
+    } else {
+        transactions
+    };
+
+    let header = row![
+        text_scaled(t("Giao dịch gần đây", "Recent Transactions"), 14)
+            .style(text_secondary_color()),
+        Space::with_width(Length::Fill),
+        if transactions.len() > max_preview {
+            button(text_scaled(t("Xem tất cả", "View All"), 12))
+                .on_press(DashboardMessage::Navigate(NavItem::History))
+                .padding([4, 8])
+                .style(secondary_button_style())
+        } else {
+            button(text_scaled(t("Xem tất cả", "View All"), 12))
+                .on_press(DashboardMessage::Navigate(NavItem::History))
+                .padding([4, 8])
+                .style(secondary_button_style())
+        },
+    ]
+    .align_y(Alignment::Center)
+    .width(Length::Fill);
+
+    let mut tx_rows: Vec<Element<'static, DashboardMessage>> = vec![header.into()];
+    tx_rows.push(Space::with_height(8).into());
+
+    for tx in preview {
+        let icon = if tx.is_incoming() {
+            text(Bootstrap::ArrowDownRight.to_string())
+                .size(14)
+                .font(BOOTSTRAP_FONT)
+                .style(text_color(Colors::SUCCESS))
+        } else {
+            text(Bootstrap::ArrowUpRight.to_string())
+                .size(14)
+                .font(BOOTSTRAP_FONT)
+                .style(text_color(Colors::ERROR))
+        };
+
+        let txid_short = crate::shared::text::short_txid(&tx.txid);
+
+        let left = row![
+            icon,
+            Space::with_width(8),
+            column![
+                text_scaled(&txid_short, 13).style(text_primary_color()),
+                text_scaled(&tx.wallet_name, 11).style(text_muted_color()),
+            ]
+        ]
+        .spacing(4)
+        .align_y(Alignment::Center);
+
+        let right = column![
+            text_scaled(&tx.formatted_amount(), 13).style(text_color(if tx.is_incoming() {
+                Colors::SUCCESS
+            } else {
+                Colors::ERROR
+            })),
+            text_scaled(&tx.time_ago(), 11).style(text_muted_color()),
+        ]
+        .align_x(Alignment::End);
+
+        tx_rows.push(
+            row![left, Space::with_width(Length::Fill), right]
+                .align_y(Alignment::Center)
+                .width(Length::Fill)
+                .into(),
+        );
+    }
+
+    container(column(tx_rows).padding(16))
+        .style(card_style())
+        .width(Length::Fill)
+        .into()
 }
