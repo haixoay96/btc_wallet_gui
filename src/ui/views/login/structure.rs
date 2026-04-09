@@ -1,4 +1,4 @@
-use crate::i18n::{t, AppLanguage};
+use crate::i18n::AppLanguage;
 use crate::ui::components::language_selector::LanguageSelector;
 
 #[derive(Debug, Clone)]

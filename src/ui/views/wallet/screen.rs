@@ -1234,7 +1234,7 @@ impl WalletsView {
             .spacing(0);
 
             return modal(
-                base_content.into(),
+                base_content,
                 t("Xác nhận xóa", "Confirm Delete"),
                 delete_content.into(),
                 WalletsMessage::CancelDelete,
@@ -1242,7 +1242,7 @@ impl WalletsView {
             );
         }
 
-        base_content.into()
+        base_content
     }
 
     fn backup_panel<'a>(

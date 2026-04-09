@@ -1,4 +1,6 @@
 /// Format number with space separators
+/// Format number with spaces
+#[allow(dead_code)]
 pub fn format_number_with_spaces(amount: u64, group_size: usize) -> String {
     let s = amount.to_string();
     let len = s.len();
@@ -23,6 +25,8 @@ pub fn format_number_with_spaces(amount: u64, group_size: usize) -> String {
 }
 
 /// Format a short transaction ID
+/// Get short transaction ID
+#[allow(dead_code)]
 pub fn short_txid(txid: &str) -> String {
     let prefix = txid.get(..12).unwrap_or(txid);
     format!("{prefix}...")

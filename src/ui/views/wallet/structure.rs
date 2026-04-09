@@ -123,5 +123,7 @@ pub struct WalletsView {
     pub copied_address: Option<String>,
     pub info: Option<String>,
     pub error: Option<String>,
+    /// Compact mode flag
+    #[allow(dead_code)]
     pub compact_mode: bool,
 }

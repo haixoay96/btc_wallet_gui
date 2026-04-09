@@ -1,13 +1,12 @@
-use crate::i18n::t;
 use crate::ui::theme::{
     secondary_button_style, selected_button_style, sidebar_style, text_color, text_primary_color,
     text_scaled, text_secondary_color, Colors,
 };
 use iced::{
-    widget::{button, column, container, row, text, Space},
+    widget::{button, column, container, row, Space},
     Alignment, Element, Length, Padding,
 };
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::BOOTSTRAP_FONT;
 
 use super::structure::{NavItem, Sidebar, SidebarEvent, SidebarMessage};
 

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::core::contact::structure::{AddressBook, ContactEntry};
 
 // ─── CRUD Operations ─────────────────────────────────────────────────────

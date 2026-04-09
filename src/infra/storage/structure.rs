@@ -1,8 +1,7 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use crate::core::contact::AddressBook;
 use crate::core::wallet::{
     runtime_wallets_from_stored, stored_wallets_from_runtime, StoredWallet, Wallet,
     WalletSecretsVault,

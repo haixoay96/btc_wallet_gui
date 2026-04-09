@@ -798,7 +798,7 @@ impl SettingsView {
             .padding(0)
             .spacing(0);
             return modal(
-                base.into(),
+                base,
                 t("Xác nhận xóa toàn bộ", "Confirm Full Data Deletion"),
                 clear_content.into(),
                 SettingsMessage::CancelClearData,

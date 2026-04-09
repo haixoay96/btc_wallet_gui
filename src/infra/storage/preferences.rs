@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use std::fs;
-use std::path::Path;
 
 use crate::i18n::AppLanguage;
 use crate::infra::storage::structure::Storage;

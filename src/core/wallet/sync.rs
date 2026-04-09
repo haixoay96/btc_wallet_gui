@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use super::network::AddressChain;
 use super::structure::{AddressEntry, TxDirection, TxRecord, Wallet};

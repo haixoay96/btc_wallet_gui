@@ -12,10 +12,7 @@ pub use secrets::{
     runtime_wallets_from_stored, stored_wallets_from_runtime, StoredWallet, WalletSecretsRef,
     WalletSecretsVault,
 };
-pub use structure::{
-    AddressEntry, BuildTxResult, ChangeStrategy, InputSource, SpendableUtxo, TxBuildOptions,
-    TxDirection, TxRecord, Wallet,
-};
+pub use structure::{ChangeStrategy, InputSource, TxBuildOptions, TxDirection, TxRecord, Wallet};
 pub use validation::{validate_address_for_network, validate_bitcoin_address};
 
 // Re-export constants from shared
@@ -25,4 +22,3 @@ pub use crate::shared::constants::{
 };
 
 // Re-export EsploraClient from infra/network for backward compatibility
-pub use crate::infra::network::EsploraClient;

@@ -1,20 +1,8 @@
-use std::collections::{HashMap, HashSet};
-
-use anyhow::{anyhow, Context, Result};
-use bitcoin::{
-    absolute, consensus, key::Secp256k1, sighash::*, transaction::Version, Address, Amount,
-    CompressedPublicKey, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid, Witness,
-};
+use bitcoin::{Address, Txid};
 use serde::{Deserialize, Serialize};
 
 use super::network::{AddressChain, WalletNetwork};
-use crate::core::wallet::secrets::{WalletBundle, WalletSecrets};
-use crate::core::wallet::{
-    DEFAULT_AUTO_FEE_RATE_SAT_VB, DEFAULT_GAP_LIMIT, DUST_LIMIT_SAT, ESTIMATE_OVERHEAD_VB,
-    ESTIMATE_P2WPKH_INPUT_VB, ESTIMATE_P2WPKH_OUTPUT_VB,
-};
-use crate::infra::network::ApiTx;
-use crate::infra::network::EsploraClient;
+use crate::core::wallet::secrets::WalletSecrets;
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 

@@ -1115,14 +1115,14 @@ impl SendView {
             .spacing(8);
 
             modal(
-                base_content.into(),
+                base_content,
                 t("Xác nhận giao dịch", "Confirm Transaction"),
                 confirm_content.into(),
                 SendMessage::CancelSend,
                 compact,
             )
         } else {
-            base_content.into()
+            base_content
         }
     }
 }

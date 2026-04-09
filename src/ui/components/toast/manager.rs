@@ -1,6 +1,5 @@
 use super::structure::{Toast, ToastManager, ToastType};
 
-use super::structure::*;
 use std::time::{Duration, Instant};
 
 use iced::{

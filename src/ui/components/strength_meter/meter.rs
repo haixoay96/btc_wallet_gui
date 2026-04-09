@@ -1,6 +1,5 @@
 use super::structure::PassphraseStrength;
 
-use super::structure::*;
 use iced::{
     widget::{column, container, row, Space},
     Color, Element, Length,
@@ -133,7 +132,7 @@ pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'
         if progress < 4 {
             empty_bar
         } else {
-            container(Space::with_width(0)).into()
+            container(Space::with_width(0))
         }
     ]
     .spacing(2)];

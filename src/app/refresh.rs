@@ -1,13 +1,7 @@
-use std::time::Duration;
-
 use iced::Task;
 
 use crate::app::structure::*;
-use crate::core::wallet::{Wallet, WalletSecretsRef};
-use crate::error::AppError;
 use crate::i18n::t;
-use crate::ui::components::Toast;
-use crate::utils::wallet_count_text;
 
 impl App {
     pub fn update_dashboard(&mut self) {

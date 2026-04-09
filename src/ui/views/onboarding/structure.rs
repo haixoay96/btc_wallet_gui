@@ -1,5 +1,3 @@
-use crate::i18n::t;
-
 #[derive(Debug, Clone)]
 pub enum OnboardingMessage {
     Next,

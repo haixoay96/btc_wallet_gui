@@ -340,7 +340,7 @@ impl ReceiveView {
             .spacing(6);
 
             return modal(
-                base.into(),
+                base,
                 t("QR Code nhận BTC", "BTC Receive QR Code"),
                 qr_content.into(),
                 ReceiveMessage::CloseQrPopup,

@@ -3,7 +3,6 @@ use std::time::Duration;
 use iced::{keyboard, Subscription};
 
 use crate::app::structure::{App, AppMessage};
-use crate::infra::storage::Storage;
 use crate::ui::views::sidebar::{NavItem, SidebarMessage};
 
 impl App {

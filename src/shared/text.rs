@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use crate::i18n::t;
 
 /// Format a short transaction ID
+/// Get short transaction ID
+#[allow(dead_code)]
 pub fn short_txid(txid: &str) -> String {
     let prefix = txid.get(..12).unwrap_or(txid);
     format!("{prefix}...")
@@ -19,6 +21,8 @@ pub fn address_count_text(count: usize) -> String {
 }
 
 /// Format BTC amount with space separators
+/// Format BTC with spaces
+#[allow(dead_code)]
 pub fn format_btc_with_spaces(amount_sat: u64) -> String {
     let amount_btc = amount_sat as f64 / 100_000_000.0;
     let formatted = format!("{:.8}", amount_btc);
@@ -41,6 +45,8 @@ pub fn format_btc_with_spaces(amount_sat: u64) -> String {
 }
 
 /// Format number with space separators
+/// Format number with spaces
+#[allow(dead_code)]
 pub fn format_number_with_spaces(amount: u64, group_size: usize) -> String {
     let s = amount.to_string();
     let len = s.len();

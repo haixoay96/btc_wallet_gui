@@ -471,7 +471,7 @@ impl HistoryView {
                 let total_pages = if self.items_per_page == 0 {
                     1
                 } else {
-                    (total_items + self.items_per_page - 1) / self.items_per_page
+                    total_items.div_ceil(self.items_per_page)
                 };
 
                 let current_page = if self.current_page >= total_pages && total_pages > 0 {
@@ -528,7 +528,7 @@ impl HistoryView {
 
                     let mut tx_list = column![];
 
-                    for (_idx, tx) in page_txs.iter().enumerate() {
+                    for tx in page_txs.iter() {
                         // Find original index in wallet history for modal
                         let original_idx = wallet
                             .history
@@ -746,13 +746,12 @@ impl HistoryView {
                         modal_content,
                         HistoryMessage::CloseTransactionDetail,
                         compact,
-                    )
-                    .into();
+                    );
                 }
             }
         }
 
-        main_content.into()
+        main_content
     }
 
     fn render_tx_detail_modal<'a>(

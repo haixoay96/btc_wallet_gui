@@ -3,22 +3,17 @@ use std::time::Duration;
 use iced::{clipboard, Task};
 
 use crate::app::structure::*;
-use crate::core::wallet::{Wallet, WalletSecretsRef, WalletSecretsVault};
 use crate::error::AppError;
 use crate::i18n::t;
 use crate::infra::storage::Storage;
-use crate::ui::components::language_selector::LanguageSelector;
-use crate::ui::components::{Toast, ToastManager};
 use crate::ui::views::{
-    dashboard::{DashboardMessage, DashboardView},
-    history::{HistoryEvent, HistoryMessage, HistoryView},
-    login::{LoginMessage, LoginView},
-    onboarding::{OnboardingMessage, OnboardingView},
-    receive::{ReceiveMessage, ReceiveView},
-    send::{SendMessage, SendView},
-    settings::{SettingsMessage, SettingsView},
-    sidebar::{NavItem, Sidebar, SidebarEvent, SidebarMessage},
-    wallets::{WalletsMessage, WalletsView},
+    dashboard::DashboardMessage,
+    history::{HistoryEvent, HistoryMessage},
+    receive::ReceiveMessage,
+    send::SendMessage,
+    settings::SettingsMessage,
+    sidebar::{NavItem, SidebarEvent},
+    wallets::WalletsMessage,
 };
 
 impl App {
@@ -124,7 +119,7 @@ impl App {
                                             .unwrap_or(None)
                                             .and_then(|path| {
                                                 let mut wtr = String::new();
-                                                wtr.push_str("\u{FEFF}");
+                                                wtr.push('\u{FEFF}');
                                                 wtr.push_str("Date,Time,Type,Amount BTC,Amount Sat,Confirmations,TxID\n");
                                                 for tx in &wallet_clone.history {
                                                     let date_str = if let Some(ts) = tx.block_time {

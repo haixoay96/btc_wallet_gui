@@ -1,6 +1,5 @@
 use super::structure::HelpTopic;
 
-use super::structure::*;
 use iced::{
     widget::{column, container, mouse_area, row, text, Space},
     Color, Element, Length,

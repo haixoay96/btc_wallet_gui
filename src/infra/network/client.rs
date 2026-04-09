@@ -7,6 +7,8 @@ use reqwest::blocking::Client;
 use super::structure::{ApiAddressUtxo, ApiTx};
 use crate::core::wallet::WalletNetwork;
 
+/// Default Esplora API endpoint
+#[allow(dead_code)]
 const DEFAULT_ESPLORA_ENDPOINT: &str = "https://blockstream.info/api";
 const DEFAULT_HTTP_TIMEOUT_SECS: u64 = 15;
 const ESPLORA_CONFIRMED_PAGE_SIZE: usize = 25;

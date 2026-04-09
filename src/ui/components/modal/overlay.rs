@@ -8,7 +8,6 @@ use crate::ui::theme::{
     text_secondary_color,
 };
 
-use super::structure::*;
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 /// Subtle close button style for modals

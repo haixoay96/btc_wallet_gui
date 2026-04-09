@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use crate::infra::storage::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
+use crate::infra::storage::EncryptedEnvelope;
 
 const ENCRYPTED_SECRET_EXPORT_FORMAT: &str = "btc_wallet_gui_encrypted_export";
 const ENCRYPTED_SECRET_EXPORT_VERSION: u8 = 1;
@@ -79,6 +79,8 @@ pub(crate) struct StoredEncryptedSecretExport {
 }
 
 #[derive(Serialize)]
+/// Mnemonic encrypted export payload
+#[allow(dead_code)]
 pub(crate) struct MnemonicEncryptedPayload<'a> {
     pub(crate) wallet_name: &'a str,
     pub(crate) network: &'a str,

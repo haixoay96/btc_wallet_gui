@@ -87,7 +87,7 @@ impl App {
                 self.send_view.show_contact_picker = false;
 
                 // Update matched contact label
-                if let Some(contact) = self.address_book.find_by_address(&address) {
+                if let Some(contact) = self.address_book.find_by_address(address) {
                     self.send_view.matched_contact_name = Some(contact.name.clone());
                 } else {
                     self.send_view.matched_contact_name = None;
@@ -95,7 +95,7 @@ impl App {
 
                 // Validate address and show error if invalid
                 if let Some(wallet) = self.wallets.get(self.selected_wallet) {
-                    match validate_address_for_network(&address, wallet.network) {
+                    match validate_address_for_network(address, wallet.network) {
                         Ok(_) => {
                             self.send_view.to_address_error = None;
                         }
@@ -106,7 +106,7 @@ impl App {
                 } else {
                     // No wallet selected, validate as mainnet
                     match validate_address_for_network(
-                        &address,
+                        address,
                         crate::core::wallet::WalletNetwork::Mainnet,
                     ) {
                         Ok(_) => {
@@ -120,11 +120,11 @@ impl App {
                 return Task::none();
             }
             SendMessage::DeleteContact(id) => {
-                self.address_book.delete_contact(&id);
+                self.address_book.delete_contact(id);
                 let _ = self.address_book.save();
 
                 // If we were editing this contact, close the form
-                if self.send_view.editing_contact_id.as_deref() == Some(&id) {
+                if self.send_view.editing_contact_id.as_deref() == Some(id) {
                     self.send_view.show_contact_form = false;
                     self.send_view.editing_contact_id = None;
                 }
@@ -134,7 +134,7 @@ impl App {
             }
             SendMessage::EditContact(id) => {
                 // Load contact data into form
-                if let Some(contact) = self.address_book.get_contact(&id) {
+                if let Some(contact) = self.address_book.get_contact(id) {
                     self.send_view.editing_contact_id = Some(id.clone());
                     self.send_view.contact_form_name = contact.name.clone();
                     self.send_view.contact_form_address = contact.address.clone();

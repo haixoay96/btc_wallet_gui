@@ -1,4 +1,6 @@
 /// Format BTC amount with space separators
+/// Format BTC with spaces
+#[allow(dead_code)]
 pub fn format_btc_with_spaces(amount_sat: u64) -> String {
     let amount_btc = amount_sat as f64 / 100_000_000.0;
     let formatted = format!("{:.8}", amount_btc);

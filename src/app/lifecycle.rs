@@ -196,7 +196,7 @@ impl App {
                 } else {
                     // Also save wallet selection
                     let _ = storage
-                        .save_wallet_selection(self.selected_wallet, &self.current_page.title());
+                        .save_wallet_selection(self.selected_wallet, self.current_page.title());
                     true
                 }
             }

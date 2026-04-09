@@ -5,7 +5,6 @@ use iced::{
 
 use crate::i18n::t;
 
-use super::structure::*;
 use crate::core::contact::{AddressBook, ContactEntry};
 use crate::ui::theme::{
     get_theme_colors, input_style, primary_button_style, secondary_button_style, text_color,
@@ -249,21 +248,17 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
     };
 
     let delete_button = if is_editing {
-        if let Some(delete_msg) = on_delete {
-            Some(
-                button(
-                    text(Bootstrap::Trash.to_string())
-                        .size(12)
-                        .font(BOOTSTRAP_FONT)
-                        .style(text_color(Colors::ERROR)),
-                )
-                .on_press(delete_msg)
-                .padding([6, 10])
-                .style(secondary_button_style()),
+        on_delete.map(|delete_msg| {
+            button(
+                text(Bootstrap::Trash.to_string())
+                    .size(12)
+                    .font(BOOTSTRAP_FONT)
+                    .style(text_color(Colors::ERROR)),
             )
-        } else {
-            None
-        }
+            .on_press(delete_msg)
+            .padding([6, 10])
+            .style(secondary_button_style())
+        })
     } else {
         None
     };

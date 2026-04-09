@@ -1,6 +1,5 @@
 use super::structure::SkeletonType;
 
-use super::structure::*;
 use iced::{
     widget::{column, container, Space},
     Color, Element, Theme,

@@ -17,6 +17,8 @@ pub enum SettingsMessage {
     ShowOnboardingTour,
     FontScaleChanged(f64),
     HighContrastToggled(bool),
+    /// Esplora endpoint changed
+    #[allow(dead_code)]
     EsploraEndpointChanged(String),
     TimeoutSecsChanged(u64),
     TestConnection,
@@ -40,6 +42,8 @@ pub enum SettingsEvent {
     ShowOnboardingTour,
     FontScaleChanged(f64),
     HighContrastToggled(bool),
+    /// Esplora endpoint changed
+    #[allow(dead_code)]
     EsploraEndpointChanged(String),
     TimeoutSecsChanged(u64),
     TestConnection,

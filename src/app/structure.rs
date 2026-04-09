@@ -1,33 +1,25 @@
-use std::time::Duration;
+use secrecy::SecretString;
 
-use iced::{
-    widget::{column, container, row, text, Space},
-    Element, Length, Subscription, Task, Theme,
-};
-use secrecy::{ExposeSecret, SecretString};
-
-use crate::core::wallet::{Wallet, WalletSecretsRef, WalletSecretsVault};
+use crate::core::wallet::{Wallet, WalletSecretsVault};
 use crate::error::AppError;
-use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::infra::storage::{
-    AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile,
-};
+use crate::i18n::AppLanguage;
+use crate::infra::storage::{AddressBook, AppTheme};
 use crate::ui::components::language_selector::LanguageSelector;
-use crate::ui::components::{error_card, modal, shortcuts_help_popup, Toast, ToastManager};
-use crate::ui::theme::{get_theme_colors, screen_background_style, text_color, Colors};
+use crate::ui::components::ToastManager;
 use crate::ui::views::{
     dashboard::{DashboardMessage, DashboardView},
-    history::{HistoryEvent, HistoryMessage, HistoryView},
-    login::{LoginMessage, LoginMode, LoginView},
+    history::{HistoryMessage, HistoryView},
+    login::{LoginMessage, LoginView},
     onboarding::{OnboardingMessage, OnboardingView},
     receive::{ReceiveMessage, ReceiveView},
     send::{SendMessage, SendView},
     settings::{SettingsMessage, SettingsView},
-    sidebar::{NavItem, Sidebar, SidebarEvent, SidebarMessage},
+    sidebar::{NavItem, Sidebar, SidebarMessage},
     wallets::{WalletsMessage, WalletsView},
 };
-use crate::utils::{normalize_nickname, wallet_count_text};
 
+/// TTL for revealed mnemonic in seconds
+#[allow(dead_code)]
 const REVEALED_MNEMONIC_TTL_SECS: u64 = 60;
 
 pub enum AppState {

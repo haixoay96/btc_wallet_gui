@@ -15,17 +15,15 @@ pub mod wallet_picker;
 pub use error_card::error_card;
 pub use keyboard_help::shortcuts_help_popup;
 pub use modal::modal;
-pub use skeleton::{skeleton_transactions, skeleton_wallet_cards, SkeletonType};
-pub use strength_meter::{calculate_strength, strength_bar, PassphraseStrength};
-pub use toast::{Toast, ToastManager, ToastType};
-pub use tooltip::{help_topic_panel, info_box, warning_box, HelpTopic};
+pub use skeleton::{skeleton_transactions, skeleton_wallet_cards};
+pub use strength_meter::{calculate_strength, strength_bar};
+pub use toast::{Toast, ToastManager};
+pub use tooltip::{help_topic_panel, info_box, warning_box};
 pub use unit_selector::BtcUnit;
 
 // Contact Book components
 pub use contact_picker::{contact_form_view, contact_picker_view};
 
 // Language selector
-pub use language_selector::LanguageSelector;
 
 // Wallet picker
-pub use wallet_picker::{selected_wallet_choice, wallet_choices, WalletChoice};

@@ -1,6 +1,5 @@
 use super::structure::BtcUnit;
 
-use super::structure::*;
 use crate::i18n::t;
 
 /// BTC denomination units

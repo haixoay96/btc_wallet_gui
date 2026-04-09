@@ -1,8 +1,5 @@
 use super::structure::WalletChoice;
 
-use super::structure::*;
-use std::fmt;
-
 use crate::core::wallet::Wallet;
 
 pub fn wallet_choices(wallets: &[Wallet]) -> Vec<WalletChoice> {

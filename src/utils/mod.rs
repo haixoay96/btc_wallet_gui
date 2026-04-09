@@ -8,13 +8,17 @@ pub use dialogs::{
 };
 
 // Re-export format functions from ui/formatters
+// Re-export format functions
+#[allow(dead_code)]
 pub use crate::ui::formatters::{format_btc_with_spaces, format_number_with_spaces};
 
 // Re-export shared text utilities
+// Re-export text utilities
+#[allow(dead_code)]
 pub use crate::shared::text::{
     address_count_text, default_mnemonic_encrypted_filename, default_mnemonic_pdf_filename,
     default_slip39_directory_name, ensure_enc_extension, ensure_pdf_extension, normalize_nickname,
-    resolve_user_path, sanitize_filename, short_txid, wallet_count_text,
+    resolve_user_path, short_txid, wallet_count_text,
 };
 
 // Re-export export types and functions from infra/export

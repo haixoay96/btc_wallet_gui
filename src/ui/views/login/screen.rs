@@ -3,7 +3,7 @@ use iced::{
     Alignment, Element, Length, Padding,
 };
 
-use crate::i18n::{t, AppLanguage};
+use crate::i18n::t;
 use crate::ui::components::language_selector::LanguageSelector;
 use crate::ui::components::{calculate_strength, strength_bar};
 use crate::ui::theme::{

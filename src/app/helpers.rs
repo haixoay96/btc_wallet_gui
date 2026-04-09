@@ -1,14 +1,12 @@
 use chrono::Local;
-use iced::{clipboard, Task};
+use iced::Task;
 use secrecy::ExposeSecret;
 
 use crate::app::structure::{App, AppMessage, RefreshWalletsResult};
 use crate::core::wallet::{Wallet, WalletSecretsRef};
 use crate::error::AppError;
 use crate::i18n::t;
-use crate::ui::components::{Toast, ToastManager};
-use crate::ui::views::sidebar::NavItem;
-use crate::ui::views::wallets::WalletsView;
+use crate::ui::components::Toast;
 
 impl App {
     pub fn display_name(&self) -> &str {
