@@ -22,7 +22,8 @@ pub fn should_show_backup_reminder(
             let dismissed = chrono::DateTime::from_timestamp(ts, 0).unwrap_or_default();
             let now = chrono::Local::now();
             let elapsed = now.signed_duration_since(dismissed);
-            elapsed.num_days() < REMIND_AFTER_DAYS
+            // Show reminder again only if 7+ days have passed since dismissal
+            elapsed.num_days() >= REMIND_AFTER_DAYS
         }
         None => true,
     }

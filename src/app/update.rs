@@ -145,6 +145,8 @@ impl App {
                         tracing::info!(timestamp = ts, "Backup reminder dismissed for 7 days");
                     }
                 }
+                // Hide banner immediately
+                self.dashboard.show_backup_reminder = false;
                 Task::none()
             }
 

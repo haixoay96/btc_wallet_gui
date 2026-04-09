@@ -235,3 +235,17 @@ pub fn danger_button_style() -> Box<ButtonStyleFn> {
         }
     })
 }
+
+/// Flat icon button with no background or border
+pub fn flat_icon_button_style() -> Box<ButtonStyleFn> {
+    Box::new(|_theme: &Theme, _status: button::Status| button::Style {
+        background: Some(Background::Color(Color::TRANSPARENT)),
+        text_color: Color::TRANSPARENT, // icon color comes from text style
+        border: Border {
+            radius: 4.0.into(),
+            width: 0.0,
+            color: Color::TRANSPARENT,
+        },
+        shadow: Shadow::default(),
+    })
+}

@@ -1077,53 +1077,57 @@ impl WalletsView {
                         ]
                         .spacing(4),
                         Space::with_width(Length::Fill),
+                        // Selection checkmark
                         if is_selected {
                             text_scaled(iced_fonts::Bootstrap::Check.to_string(), 16)
                                 .font(iced_fonts::BOOTSTRAP_FONT)
                                 .style(text_color(Colors::SUCCESS))
                         } else {
-                            text("")
+                            text("").size(16).font(iced_fonts::BOOTSTRAP_FONT)
+                        },
+                        Space::with_width(4),
+                        // Backup status icon
+                        if needs_backup {
+                            button(
+                                text_scaled(iced_fonts::Bootstrap::Exclamation.to_string(), 16)
+                                    .font(iced_fonts::BOOTSTRAP_FONT)
+                                    .style(text_color(Colors::WARNING)),
+                            )
+                            .on_press(WalletsMessage::ShowBackupWarning(index))
+                            .padding(0)
+                            .style(crate::ui::theme::flat_icon_button_style())
+                        } else {
+                            button(
+                                text_scaled(iced_fonts::Bootstrap::ShieldCheck.to_string(), 16)
+                                    .font(iced_fonts::BOOTSTRAP_FONT)
+                                    .style(text_color(Colors::SUCCESS)),
+                            )
+                            .padding(0)
+                            .style(crate::ui::theme::flat_icon_button_style())
                         },
                     ]
                     .align_y(Alignment::Center),
                 )
                 .on_press(WalletsMessage::SelectWallet(index))
                 .padding(12)
-                .width(Length::Fill)
                 .style(if is_selected {
                     selected_button_style()
                 } else {
                     secondary_button_style()
                 });
 
-                let warning_button: Element<'_, WalletsMessage> = if needs_backup {
-                    button(text_scaled(t("Cần backup", "Backup needed"), 12))
-                        .on_press(WalletsMessage::ShowBackupWarning(index))
-                        .padding(8)
-                        .style(secondary_button_style())
-                        .into()
-                } else {
-                    Space::with_width(0).into()
-                };
-
                 let delete_btn = button(text_scaled(t("Xóa", "Delete"), 12))
                     .on_press(WalletsMessage::DeleteWallet(index))
-                    .padding(8)
+                    .padding([6, 10])
                     .style(danger_button_style());
 
                 wallet_list = wallet_list.push(
                     container(
-                        row![
-                            select_btn,
-                            Space::with_width(8),
-                            warning_button,
-                            Space::with_width(8),
-                            delete_btn
-                        ]
-                        .align_y(Alignment::Center),
+                        row![select_btn, Space::with_width(8), delete_btn]
+                            .align_y(Alignment::Center),
                     )
                     .style(card_style())
-                    .padding(8),
+                    .padding(12),
                 );
                 wallet_list = wallet_list.push(Space::with_height(8));
             }
