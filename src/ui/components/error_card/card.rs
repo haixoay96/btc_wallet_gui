@@ -4,6 +4,8 @@ use iced::{
 };
 
 use crate::i18n::t;
+
+use super::structure::*;
 use crate::ui::theme::text_primary_color;
 use crate::ui::theme::text_secondary_color;
 use crate::ui::theme::text_color;

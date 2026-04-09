@@ -4,6 +4,8 @@ use iced::{
 };
 
 use crate::ui::theme::{popup_dialog_style, popup_overlay_style, text_primary_color, text_secondary_color, get_theme_colors};
+
+use super::structure::*;
 use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
 
 /// Subtle close button style for modals

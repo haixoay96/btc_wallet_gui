@@ -1,4 +1,5 @@
 use std::time::{Duration, Instant};
+use iced::Color;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ToastType {

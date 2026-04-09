@@ -1,4 +1,6 @@
 use crate::ui::components::tooltip::HelpTopic;
+
+use super::structure::*;
 use iced_fonts::Bootstrap;
 
 /// Send Screen help topics

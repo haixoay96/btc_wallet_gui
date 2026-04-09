@@ -928,7 +928,7 @@ impl SendView {
         let help_topics = send_screen_topics();
         let lang = crate::i18n::current_language();
         for topic in help_topics {
-            let is_expanded = self.expanded_help_topics.contains(topic.id);
+            let is_expanded = self.expanded_help_topics.contains(&topic.id);
             let title = match lang {
                 crate::i18n::AppLanguage::Vietnamese => topic.title_vi,
                 crate::i18n::AppLanguage::English => topic.title_en,
@@ -942,7 +942,7 @@ impl SendView {
                 crate::i18n::AppLanguage::English => topic.detail_en,
             };
             let panel: Element<'_, SendMessage> = help_topic_panel(
-                topic.id,
+                &topic.id,
                 topic.icon,
                 title,
                 desc,

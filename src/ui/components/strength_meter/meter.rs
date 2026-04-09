@@ -1,4 +1,6 @@
 use super::structure::PassphraseStrength;
+
+use super::structure::*;
 use iced::{
     widget::{column, container, row, Space},
     Color, Element, Length,

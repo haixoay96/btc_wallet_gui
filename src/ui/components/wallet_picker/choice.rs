@@ -1,14 +1,11 @@
 use super::structure::WalletChoice;
+
+use super::structure::*;
 use std::fmt;
 
 use crate::wallet::Wallet;
 
 
-impl fmt::Display for WalletChoice {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.label)
-    }
-}
 
 pub fn wallet_choices(wallets: &[Wallet]) -> Vec<WalletChoice> {
     wallets

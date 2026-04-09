@@ -1,4 +1,6 @@
 use super::structure::HelpTopic;
+
+use super::structure::*;
 use iced::{
     widget::{column, container, mouse_area, row, text, Space},
     Color, Element, Length,
@@ -85,7 +87,7 @@ impl HelpTopic {
         description_en: &'static str,
     ) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             icon,
             title_vi,
             title_en,
