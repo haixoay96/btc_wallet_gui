@@ -3,8 +3,9 @@ use iced::{
     Alignment, Element, Length,
 };
 
+use crate::core::contact::AddressBook;
+use crate::core::wallet::{validate_bitcoin_address, ChangeStrategy, InputSource, Wallet};
 use crate::i18n::t;
-use crate::storage::address_book::AddressBook;
 use crate::ui::components::help_content::send_screen_topics;
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::ui::components::{
@@ -16,7 +17,6 @@ use crate::ui::theme::{
     text_muted_color, text_primary_color, text_scaled, text_secondary_color, Colors, NoticeTone,
 };
 use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
-use crate::wallet::{validate_bitcoin_address, ChangeStrategy, InputSource, Wallet};
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 use super::structure::*;
@@ -190,7 +190,7 @@ impl SendView {
                 Some(SendEvent::MaxAmount {
                     input_source: match parse_input_source(&self.from_address) {
                         Ok(value) => value,
-                        Err(_) => crate::wallet::InputSource::All,
+                        Err(_) => crate::core::wallet::InputSource::All,
                     },
                 })
             }
@@ -393,9 +393,9 @@ impl SendView {
                 self.to_address_error = None;
                 self.show_contact_picker = false;
                 // Trigger validation
-                let _ = crate::wallet::validate_address_for_network(
+                let _ = crate::core::wallet::validate_address_for_network(
                     &address,
-                    crate::wallet::WalletNetwork::Mainnet,
+                    crate::core::wallet::WalletNetwork::Mainnet,
                 );
                 Some(SendEvent::SelectWallet(0)) // Dummy event, actual wallet selection handled elsewhere
             }
@@ -1181,7 +1181,7 @@ fn parse_change_strategy(raw: &str) -> Result<ChangeStrategy, String> {
 #[cfg(test)]
 mod tests {
     use super::parse_input_source;
-    use crate::wallet::InputSource;
+    use crate::core::wallet::InputSource;
 
     #[test]
     fn parse_input_source_accepts_empty_and_csv_indexes() {

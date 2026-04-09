@@ -4,6 +4,7 @@ use iced::{
 };
 use qrcode::{types::Color as QrColor, QrCode};
 
+use crate::core::wallet::{AddressChain, Wallet};
 use crate::i18n::t;
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::ui::components::{modal, warning_box};
@@ -12,7 +13,6 @@ use crate::ui::theme::{
     secondary_button_style, selected_button_style, text_color, text_muted_color,
     text_primary_color, text_scaled, text_secondary_color, Colors,
 };
-use crate::wallet::{AddressChain, Wallet};
 
 use super::structure::*;
 

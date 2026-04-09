@@ -4,11 +4,11 @@ use iced::{
 };
 
 use crate::app::structure::*;
-use crate::components::{error_card, modal, shortcuts_help_popup};
 use crate::i18n::t;
-use crate::storage::AppTheme;
-use crate::theme::{get_theme_colors, screen_background_style, text_color, Colors};
-use crate::views::sidebar::NavItem;
+use crate::infra::storage::AppTheme;
+use crate::ui::components::{error_card, modal, shortcuts_help_popup};
+use crate::ui::theme::{get_theme_colors, screen_background_style, text_color, Colors};
+use crate::ui::views::sidebar::NavItem;
 
 impl App {
     pub fn view(&self) -> Element<'_, AppMessage> {

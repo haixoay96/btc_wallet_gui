@@ -1,13 +1,13 @@
 use crate::error::AppError;
 use iced::Task;
 
+use crate::core::wallet::{validate_address_for_network, TxBuildOptions};
 use crate::i18n::t;
+use crate::ui::views::send::{SendEvent, SendMessage};
 use crate::utils::short_txid;
-use crate::views::send::{SendEvent, SendMessage};
-use crate::wallet::{validate_address_for_network, TxBuildOptions};
 
 use super::{App, AppMessage, SendExecutionResult};
-use crate::views::send::SendRequest;
+use crate::ui::views::send::SendRequest;
 
 impl App {
     pub fn handle_send_message(&mut self, msg: SendMessage) -> Task<AppMessage> {
@@ -52,7 +52,7 @@ impl App {
                     // If no wallet selected, validate as mainnet
                     if let Err(e) = validate_address_for_network(
                         &address,
-                        crate::wallet::WalletNetwork::Mainnet,
+                        crate::core::wallet::WalletNetwork::Mainnet,
                     ) {
                         self.error = Some(AppError::validation(
                             "address",
@@ -107,7 +107,7 @@ impl App {
                     // No wallet selected, validate as mainnet
                     match validate_address_for_network(
                         &address,
-                        crate::wallet::WalletNetwork::Mainnet,
+                        crate::core::wallet::WalletNetwork::Mainnet,
                     ) {
                         Ok(_) => {
                             self.send_view.to_address_error = None;
@@ -181,7 +181,7 @@ impl App {
     pub fn handle_estimate_send_fee(
         &mut self,
         amount_sat: u64,
-        input_source: crate::wallet::InputSource,
+        input_source: crate::core::wallet::InputSource,
     ) -> Task<AppMessage> {
         if self.is_estimating_fee {
             return Task::none();
@@ -214,7 +214,7 @@ impl App {
 
     pub fn handle_max_amount(
         &mut self,
-        input_source: crate::wallet::InputSource,
+        input_source: crate::core::wallet::InputSource,
     ) -> Task<AppMessage> {
         if self.is_calculating_max {
             return Task::none();

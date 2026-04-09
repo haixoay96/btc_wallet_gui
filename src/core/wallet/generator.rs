@@ -8,8 +8,8 @@ use sssmc39::{combine_mnemonics, generate_mnemonics};
 
 use super::network::WalletNetwork;
 use super::structure::Wallet;
-use crate::wallet::secrets::{WalletBundle, WalletSecrets};
-use crate::wallet::DEFAULT_GAP_LIMIT;
+use crate::core::wallet::secrets::{WalletBundle, WalletSecrets};
+use crate::core::wallet::DEFAULT_GAP_LIMIT;
 
 // ─── Wallet generation / import ──────────────────────────────────────────
 

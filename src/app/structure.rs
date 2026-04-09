@@ -6,16 +6,18 @@ use iced::{
 };
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::components::{error_card, modal, shortcuts_help_popup, Toast, ToastManager};
+use crate::core::wallet::{Wallet, WalletSecretsRef, WalletSecretsVault};
 use crate::error::AppError;
 use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::storage::{AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile};
-use crate::theme::{get_theme_colors, screen_background_style, text_color, Colors};
-use crate::utils::{normalize_nickname, wallet_count_text};
-use crate::views::{
+use crate::infra::storage::{
+    AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile,
+};
+use crate::ui::components::language_selector::LanguageSelector;
+use crate::ui::components::{error_card, modal, shortcuts_help_popup, Toast, ToastManager};
+use crate::ui::theme::{get_theme_colors, screen_background_style, text_color, Colors};
+use crate::ui::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::{HistoryEvent, HistoryMessage, HistoryView},
-    language_selector::LanguageSelector,
     login::{LoginMessage, LoginMode, LoginView},
     onboarding::{OnboardingMessage, OnboardingView},
     receive::{ReceiveMessage, ReceiveView},
@@ -24,7 +26,7 @@ use crate::views::{
     sidebar::{NavItem, Sidebar, SidebarEvent, SidebarMessage},
     wallets::{WalletsMessage, WalletsView},
 };
-use crate::wallet::{Wallet, WalletSecretsRef, WalletSecretsVault};
+use crate::utils::{normalize_nickname, wallet_count_text};
 
 const REVEALED_MNEMONIC_TTL_SECS: u64 = 60;
 

@@ -1,11 +1,11 @@
-use crate::views::login::LoginMode;
+use crate::ui::views::login::LoginMode;
 use iced::Task;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::storage::{AppTheme, Storage};
+use crate::infra::storage::{AppTheme, Storage};
+use crate::ui::views::settings::{SettingsEvent, SettingsMessage};
 use crate::utils::{pick_export_backup_path, resolve_user_path};
-use crate::views::settings::{SettingsEvent, SettingsMessage};
 
 use super::*;
 
@@ -71,7 +71,7 @@ impl App {
                     return Task::perform(
                         async move {
                             tokio::task::spawn_blocking(move || {
-                                crate::wallet::esplora::EsploraClient::test_connection(
+                                crate::infra::network::EsploraClient::test_connection(
                                     &endpoint, timeout,
                                 )
                             })
@@ -153,7 +153,7 @@ impl App {
 
     pub fn handle_toggle_high_contrast(&mut self, enabled: bool) -> Task<AppMessage> {
         self.high_contrast = enabled;
-        crate::theme::set_high_contrast(enabled);
+        crate::ui::theme::set_high_contrast(enabled);
         if let Ok(storage) = Storage::new() {
             let _ = storage.save_high_contrast(enabled);
         }
@@ -162,7 +162,7 @@ impl App {
 
     pub fn handle_font_scale_changed(&mut self, scale: f64) -> Task<AppMessage> {
         self.font_scale = scale.clamp(0.8, 1.5);
-        crate::theme::set_font_scale(self.font_scale);
+        crate::ui::theme::set_font_scale(self.font_scale);
         if let Ok(storage) = Storage::new() {
             let _ = storage.save_font_scale(self.font_scale);
         }

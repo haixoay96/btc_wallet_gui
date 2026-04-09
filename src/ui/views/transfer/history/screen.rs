@@ -1,3 +1,4 @@
+use crate::core::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
 use crate::i18n::t;
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::ui::components::{modal, skeleton_transactions};
@@ -7,7 +8,6 @@ use crate::ui::theme::{
     text_primary_color, text_scaled, text_secondary_color, Colors,
 };
 use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
-use crate::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
 use chrono::DateTime;
 use iced::{
     widget::{button, column, container, pick_list, row, scrollable, text, text_input, Space},

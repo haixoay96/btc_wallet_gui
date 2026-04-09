@@ -3,14 +3,15 @@ use std::time::Duration;
 use iced::{clipboard, Task};
 
 use crate::app::structure::*;
-use crate::components::{Toast, ToastManager};
+use crate::core::wallet::{Wallet, WalletSecretsRef, WalletSecretsVault};
 use crate::error::AppError;
 use crate::i18n::t;
-use crate::storage::Storage;
-use crate::views::{
+use crate::infra::storage::Storage;
+use crate::ui::components::language_selector::LanguageSelector;
+use crate::ui::components::{Toast, ToastManager};
+use crate::ui::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::{HistoryEvent, HistoryMessage, HistoryView},
-    language_selector::LanguageSelector,
     login::{LoginMessage, LoginView},
     onboarding::{OnboardingMessage, OnboardingView},
     receive::{ReceiveMessage, ReceiveView},
@@ -19,7 +20,6 @@ use crate::views::{
     sidebar::{NavItem, Sidebar, SidebarEvent, SidebarMessage},
     wallets::{WalletsMessage, WalletsView},
 };
-use crate::wallet::{Wallet, WalletSecretsRef, WalletSecretsVault};
 
 impl App {
     pub fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
@@ -134,9 +134,9 @@ impl App {
                                                         "Pending,Pending".to_string()
                                                     };
                                                     let type_str = match tx.direction {
-                                                        crate::wallet::TxDirection::Incoming => "IN",
-                                                        crate::wallet::TxDirection::Outgoing => "OUT",
-                                                        crate::wallet::TxDirection::SelfTransfer => "SELF",
+                                                        crate::core::wallet::TxDirection::Incoming => "IN",
+                                                        crate::core::wallet::TxDirection::Outgoing => "OUT",
+                                                        crate::core::wallet::TxDirection::SelfTransfer => "SELF",
                                                     };
                                                     let amount_btc = tx.amount_sat as f64 / 100_000_000.0;
                                                     wtr.push_str(&format!("{},{},{:.8},{},{},{}\n",
@@ -208,18 +208,17 @@ impl App {
                                                         if y_pos < 15.0 {
                                                             break;
                                                         }
-                                                        let date_str = if let Some(ts) =
-                                                            tx.block_time
-                                                        {
-                                                            let dt =
+                                                        let date_str =
+                                                            if let Some(ts) = tx.block_time {
+                                                                let dt =
                                                                 chrono::DateTime::from_timestamp(
                                                                     ts as i64, 0,
                                                                 )
                                                                 .unwrap_or_default();
-                                                            dt.format("%d/%m/%Y").to_string()
-                                                        } else {
-                                                            "Pending".to_string()
-                                                        };
+                                                                dt.format("%d/%m/%Y").to_string()
+                                                            } else {
+                                                                "Pending".to_string()
+                                                            };
                                                         let amount_btc =
                                                             tx.amount_sat as f64 / 100_000_000.0;
                                                         current_layer.use_text(
@@ -423,7 +422,7 @@ impl App {
                 Task::none()
             }
             AppMessage::OnboardingMessage(msg) => {
-                use crate::views::onboarding::OnboardingEvent;
+                use crate::ui::views::onboarding::OnboardingEvent;
                 if let Some(event) = self.onboarding_view.update(msg) {
                     match event {
                         OnboardingEvent::Finished | OnboardingEvent::Skipped => {

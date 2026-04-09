@@ -4,19 +4,26 @@ use iced::Task;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::app::structure::{App, AppMessage, AppState};
-use crate::components::ToastManager;
+use crate::core::wallet::WalletSecretsVault;
 use crate::error::AppError;
 use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::storage::{AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile};
-use crate::utils::normalize_nickname;
-use crate::views::login::{LoginMode, LoginView};
-use crate::views::sidebar::NavItem;
-use crate::views::{
-    dashboard::DashboardView, history::HistoryView, language_selector::LanguageSelector,
-    onboarding::OnboardingView, receive::ReceiveView, send::SendView, settings::SettingsView,
-    sidebar::Sidebar, wallets::WalletsView,
+use crate::infra::storage::{
+    AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile,
 };
-use crate::wallet::WalletSecretsVault;
+use crate::ui::components::language_selector::LanguageSelector;
+use crate::ui::components::ToastManager;
+use crate::ui::views::{
+    dashboard::DashboardView,
+    history::HistoryView,
+    login::{LoginMode, LoginView},
+    onboarding::OnboardingView,
+    receive::ReceiveView,
+    send::SendView,
+    settings::SettingsView,
+    sidebar::{NavItem, Sidebar},
+    wallets::WalletsView,
+};
+use crate::utils::normalize_nickname;
 
 impl App {
     pub fn new() -> (Self, Task<AppMessage>) {
@@ -42,8 +49,8 @@ impl App {
                 let show_satoshis = storage.load_show_satoshis().unwrap_or(false);
                 let compact_mode = storage.load_compact_mode().unwrap_or(false);
                 // Set global states
-                crate::theme::set_high_contrast(high_contrast);
-                crate::theme::set_font_scale(font_scale);
+                crate::ui::theme::set_high_contrast(high_contrast);
+                crate::ui::theme::set_font_scale(font_scale);
                 (
                     language,
                     storage.has_existing_state(),

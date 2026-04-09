@@ -8,13 +8,13 @@ use bitcoin::{
 use serde::{Deserialize, Serialize};
 
 use super::network::{AddressChain, WalletNetwork};
-use crate::wallet::api_types::ApiTx;
-use crate::wallet::esplora::EsploraClient;
-use crate::wallet::secrets::{WalletBundle, WalletSecrets};
-use crate::wallet::{
+use crate::core::wallet::secrets::{WalletBundle, WalletSecrets};
+use crate::core::wallet::{
     DEFAULT_AUTO_FEE_RATE_SAT_VB, DEFAULT_GAP_LIMIT, DUST_LIMIT_SAT, ESTIMATE_OVERHEAD_VB,
     ESTIMATE_P2WPKH_INPUT_VB, ESTIMATE_P2WPKH_OUTPUT_VB,
 };
+use crate::infra::network::ApiTx;
+use crate::infra::network::EsploraClient;
 
 // ─── Enums ───────────────────────────────────────────────────────────────
 

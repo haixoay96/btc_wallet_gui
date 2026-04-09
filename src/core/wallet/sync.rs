@@ -4,10 +4,10 @@ use anyhow::{Context, Result};
 
 use super::network::AddressChain;
 use super::structure::{AddressEntry, TxDirection, TxRecord, Wallet};
-use crate::wallet::api_types::ApiTx;
-use crate::wallet::esplora::EsploraClient;
-use crate::wallet::secrets::WalletSecrets;
-use crate::wallet::DEFAULT_GAP_LIMIT;
+use crate::core::wallet::secrets::WalletSecrets;
+use crate::core::wallet::DEFAULT_GAP_LIMIT;
+use crate::infra::network::ApiTx;
+use crate::infra::network::EsploraClient;
 
 struct ChainSyncResult {
     entries: Vec<AddressEntry>,

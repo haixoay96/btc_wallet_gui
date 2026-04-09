@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use crate::storage::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
+use crate::infra::storage::{decrypt_blob, encrypt_blob, EncryptedEnvelope};
 
 const ENCRYPTED_SECRET_EXPORT_FORMAT: &str = "btc_wallet_gui_encrypted_export";
 const ENCRYPTED_SECRET_EXPORT_VERSION: u8 = 1;

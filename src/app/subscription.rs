@@ -3,8 +3,8 @@ use std::time::Duration;
 use iced::{keyboard, Subscription};
 
 use crate::app::structure::{App, AppMessage};
-use crate::storage::Storage;
-use crate::views::sidebar::{NavItem, SidebarMessage};
+use crate::infra::storage::Storage;
+use crate::ui::views::sidebar::{NavItem, SidebarMessage};
 
 impl App {
     pub fn subscription(&self) -> Subscription<AppMessage> {
@@ -103,7 +103,7 @@ impl App {
         });
 
         // Auto-refresh confirmations - interval based on setting
-        let refresh_interval_secs = if let Ok(storage) = crate::storage::Storage::new() {
+        let refresh_interval_secs = if let Ok(storage) = crate::infra::storage::Storage::new() {
             if storage.load_auto_refresh().unwrap_or(false) {
                 120 // 2 minutes
             } else {

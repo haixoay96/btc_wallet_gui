@@ -4,7 +4,10 @@ use iced::{clipboard, Task};
 use secrecy::{ExposeSecret, SecretString};
 use zeroize::Zeroize;
 
+use crate::core::wallet::{Wallet, WalletNetwork, WalletSecretsRef};
 use crate::i18n::t;
+use crate::ui::views::receive::{ReceiveEvent, ReceiveMessage};
+use crate::ui::views::wallets::{WalletsEvent, WalletsMessage, WalletsView};
 use crate::utils::{
     address_count_text, default_mnemonic_encrypted_filename, default_mnemonic_pdf_filename,
     default_slip39_directory_name, ensure_enc_extension, ensure_pdf_extension,
@@ -13,9 +16,6 @@ use crate::utils::{
     pick_encrypted_export_path, pick_encrypted_secret_import_path, pick_mnemonic_pdf_path,
     pick_slip39_export_directory, resolve_user_path, DecryptedSecretExport, Slip39PdfExport,
 };
-use crate::views::receive::{ReceiveEvent, ReceiveMessage};
-use crate::views::wallets::{WalletsEvent, WalletsMessage, WalletsView};
-use crate::wallet::{Wallet, WalletNetwork, WalletSecretsRef};
 
 use super::{App, AppMessage};
 
@@ -898,7 +898,7 @@ fn should_remove_wallet_secret(wallets: &[Wallet], wallet_id: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{should_remove_wallet_secret, wallet_id_exists};
-    use crate::wallet::{Wallet, WalletNetwork};
+    use crate::core::wallet::{Wallet, WalletNetwork};
 
     #[test]
     fn duplicate_wallet_ids_are_detected() {

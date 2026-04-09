@@ -1,11 +1,12 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use crate::core::wallet::structure::Wallet;
+use super::structure::Wallet;
 
 pub type WalletSecretsRef = Arc<WalletSecrets>;
 pub type WalletSecretsVault = HashMap<String, WalletSecretsRef>;

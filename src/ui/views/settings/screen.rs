@@ -6,7 +6,7 @@ use iced::{
 };
 
 use crate::i18n::t;
-use crate::storage::AppTheme;
+use crate::infra::storage::AppTheme;
 use crate::ui::components::modal;
 use crate::ui::theme::{
     card_style, danger_button_style, info_style, input_style, notice_style, pick_list_menu_style,
@@ -44,7 +44,7 @@ impl SettingsView {
     }
 
     pub fn load_data_folder_info(&mut self) {
-        if let Ok(storage) = crate::storage::Storage::new() {
+        if let Ok(storage) = crate::infra::storage::Storage::new() {
             let path = storage.file_path();
             self.data_folder_path = path
                 .parent()

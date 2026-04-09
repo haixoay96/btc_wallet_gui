@@ -1,4 +1,4 @@
-use crate::wallet::WalletNetwork;
+use crate::core::wallet::WalletNetwork;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImportMode {

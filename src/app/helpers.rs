@@ -3,12 +3,12 @@ use iced::{clipboard, Task};
 use secrecy::ExposeSecret;
 
 use crate::app::structure::{App, AppMessage, RefreshWalletsResult};
-use crate::components::{Toast, ToastManager};
+use crate::core::wallet::{Wallet, WalletSecretsRef};
 use crate::error::AppError;
 use crate::i18n::t;
-use crate::views::sidebar::NavItem;
-use crate::views::wallets::WalletsView;
-use crate::wallet::{Wallet, WalletSecretsRef};
+use crate::ui::components::{Toast, ToastManager};
+use crate::ui::views::sidebar::NavItem;
+use crate::ui::views::wallets::WalletsView;
 
 impl App {
     pub fn display_name(&self) -> &str {
@@ -158,9 +158,9 @@ impl App {
 
     pub fn current_theme(&self) -> iced::Theme {
         match self.theme {
-            crate::storage::AppTheme::Dark => iced::Theme::Dark,
-            crate::storage::AppTheme::Light => iced::Theme::Light,
-            crate::storage::AppTheme::System => iced::Theme::Dark,
+            crate::infra::storage::AppTheme::Dark => iced::Theme::Dark,
+            crate::infra::storage::AppTheme::Light => iced::Theme::Light,
+            crate::infra::storage::AppTheme::System => iced::Theme::Dark,
         }
     }
 }

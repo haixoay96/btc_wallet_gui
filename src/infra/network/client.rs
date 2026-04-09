@@ -5,7 +5,7 @@ use anyhow::{anyhow, Context, Result};
 use reqwest::blocking::Client;
 
 use super::structure::{ApiAddressUtxo, ApiTx};
-use crate::wallet::WalletNetwork;
+use crate::core::wallet::WalletNetwork;
 
 const DEFAULT_ESPLORA_ENDPOINT: &str = "https://blockstream.info/api";
 const DEFAULT_HTTP_TIMEOUT_SECS: u64 = 15;
@@ -26,7 +26,7 @@ impl EsploraClient {
         network: WalletNetwork,
     ) -> Result<Self> {
         // Load timeout from storage if available, otherwise use default
-        let timeout_secs = if let Ok(storage) = crate::storage::Storage::new() {
+        let timeout_secs = if let Ok(storage) = crate::infra::storage::Storage::new() {
             storage
                 .load_timeout_secs()
                 .unwrap_or(DEFAULT_HTTP_TIMEOUT_SECS)

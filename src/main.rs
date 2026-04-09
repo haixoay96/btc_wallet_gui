@@ -1,18 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app;
-mod components;
 mod core;
 mod error;
 mod i18n;
 mod infra;
 mod shared;
-mod storage;
-mod theme;
 mod ui;
 mod utils;
-mod views;
-mod wallet;
 
 use app::App;
 use iced::{window, Size};

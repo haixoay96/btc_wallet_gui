@@ -1,5 +1,5 @@
+use crate::core::wallet::{ChangeStrategy, InputSource};
 use crate::ui::components::BtcUnit;
-use crate::wallet::{ChangeStrategy, InputSource};
 
 #[derive(Debug, Clone)]
 pub enum SendMessage {

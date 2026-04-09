@@ -28,7 +28,7 @@ pub fn write_encrypted_export<T: Serialize>(
         )
     })?;
 
-    let envelope = crate::storage::encrypt_blob(&plaintext, encryption_passphrase)
+    let envelope = crate::infra::storage::encrypt_blob(&plaintext, encryption_passphrase)
         .map_err(|err| err.to_string());
     plaintext.zeroize();
     let envelope = envelope?;
@@ -120,8 +120,9 @@ pub fn decode_encrypted_secret_export(
         ));
     }
 
-    let mut plaintext = crate::storage::decrypt_blob(&export.envelope, decryption_passphrase)
-        .map_err(|err| err.to_string())?;
+    let mut plaintext =
+        crate::infra::storage::decrypt_blob(&export.envelope, decryption_passphrase)
+            .map_err(|err| err.to_string())?;
 
     let decoded = match export.kind.as_str() {
         "mnemonic_backup" => {

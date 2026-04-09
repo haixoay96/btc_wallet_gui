@@ -3,11 +3,11 @@ use std::time::Duration;
 use iced::Task;
 
 use crate::app::structure::*;
-use crate::components::Toast;
+use crate::core::wallet::{Wallet, WalletSecretsRef};
 use crate::error::AppError;
 use crate::i18n::t;
+use crate::ui::components::Toast;
 use crate::utils::wallet_count_text;
-use crate::wallet::{Wallet, WalletSecretsRef};
 
 impl App {
     pub fn update_dashboard(&mut self) {

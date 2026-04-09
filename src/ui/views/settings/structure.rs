@@ -1,4 +1,4 @@
-use crate::storage::AppTheme;
+use crate::infra::storage::AppTheme;
 
 #[derive(Debug, Clone)]
 pub enum SettingsMessage {

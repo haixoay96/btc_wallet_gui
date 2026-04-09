@@ -12,12 +12,12 @@ use super::structure::{
     BuildTxResult, ChangeStrategy, InputSource, SpendableUtxo, TxBuildOptions, TxDirection,
     TxRecord, Wallet,
 };
-use crate::wallet::esplora::EsploraClient;
-use crate::wallet::secrets::WalletSecrets;
-use crate::wallet::{
+use crate::core::wallet::secrets::WalletSecrets;
+use crate::core::wallet::{
     DEFAULT_AUTO_FEE_RATE_SAT_VB, DEFAULT_GAP_LIMIT, DUST_LIMIT_SAT, ESTIMATE_OVERHEAD_VB,
     ESTIMATE_P2WPKH_INPUT_VB, ESTIMATE_P2WPKH_OUTPUT_VB,
 };
+use crate::infra::network::EsploraClient;
 
 impl Wallet {
     pub fn create_transaction_with_options(
@@ -335,7 +335,7 @@ impl Wallet {
         let mut utxos = Vec::new();
 
         for addr in &self.addresses {
-            let rows: Vec<crate::wallet::api_types::ApiAddressUtxo> =
+            let rows: Vec<crate::infra::network::ApiAddressUtxo> =
                 esplora.fetch_address_utxos(&addr.address)?;
 
             let checked_address = Address::from_str(&addr.address)?

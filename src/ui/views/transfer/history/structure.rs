@@ -1,4 +1,4 @@
-use crate::wallet::{TxDirection, TxRecord};
+use crate::core::wallet::{TxDirection, TxRecord};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Filter {

@@ -5,7 +5,7 @@ use bitcoin::{Address, PrivateKey};
 
 use super::network::{AddressChain, WalletNetwork};
 use super::structure::{AddressEntry, Wallet};
-use crate::wallet::secrets::WalletSecrets;
+use crate::core::wallet::secrets::WalletSecrets;
 
 // ─── Address derivation ──────────────────────────────────────────────────
 

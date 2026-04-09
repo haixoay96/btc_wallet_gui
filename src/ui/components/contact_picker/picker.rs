@@ -6,7 +6,7 @@ use iced::{
 use crate::i18n::t;
 
 use super::structure::*;
-use crate::storage::address_book::{AddressBook, ContactEntry};
+use crate::core::contact::{AddressBook, ContactEntry};
 use crate::ui::theme::{
     get_theme_colors, input_style, primary_button_style, secondary_button_style, text_color,
     text_muted_color, text_primary_color, text_secondary_color, Colors,

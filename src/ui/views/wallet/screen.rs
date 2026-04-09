@@ -3,6 +3,7 @@ use iced::{
     Alignment, Background, Element, Length,
 };
 
+use crate::core::wallet::{AddressChain, Wallet, WalletNetwork};
 use crate::i18n::t;
 use crate::ui::components::info_box;
 use crate::ui::components::modal;
@@ -11,7 +12,6 @@ use crate::ui::theme::{
     primary_button_style, secondary_button_style, selected_button_style, text_color,
     text_muted_color, text_primary_color, text_scaled, text_secondary_color, Colors, NoticeTone,
 };
-use crate::wallet::{AddressChain, Wallet, WalletNetwork};
 
 use super::structure::*;
 
