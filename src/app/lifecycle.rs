@@ -10,10 +10,11 @@ use crate::infra::storage::{
     AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile,
 };
 use crate::ui::components::language_selector::LanguageSelector;
+use crate::ui::components::network_status::DashboardNetworkMessage;
 use crate::ui::components::ToastManager;
 use crate::ui::i18n::{set_current_language, t, AppLanguage};
 use crate::ui::views::{
-    dashboard::DashboardView,
+    dashboard::{DashboardMessage, DashboardView},
     history::HistoryView,
     login::{LoginMode, LoginView},
     onboarding::OnboardingView,
@@ -121,13 +122,18 @@ impl App {
                 onboarding_view: OnboardingView::new(),
                 address_book: AddressBook::load().unwrap_or_default(),
             },
-            // Start toast cleanup task
-            Task::perform(
-                async move {
-                    tokio::time::sleep(Duration::from_secs(2)).await;
-                },
-                |_| AppMessage::ToastCleanup,
-            ),
+            // Start toast cleanup + initial network check
+            Task::batch([
+                Task::perform(
+                    async move {
+                        tokio::time::sleep(Duration::from_secs(2)).await;
+                    },
+                    |_| AppMessage::ToastCleanup,
+                ),
+                Task::done(AppMessage::DashboardMessage(DashboardMessage::Network(
+                    DashboardNetworkMessage::CheckConnection,
+                ))),
+            ]),
         )
     }
 

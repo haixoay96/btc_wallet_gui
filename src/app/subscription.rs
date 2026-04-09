@@ -3,6 +3,8 @@ use std::time::Duration;
 use iced::{keyboard, Subscription};
 
 use crate::app::structure::{App, AppMessage};
+use crate::ui::components::network_status::DashboardNetworkMessage;
+use crate::ui::views::dashboard::DashboardMessage;
 use crate::ui::views::sidebar::{NavItem, SidebarMessage};
 
 impl App {
@@ -119,6 +121,13 @@ impl App {
             Subscription::none()
         };
 
-        Subscription::batch([keyboard_sub, refresh_sub])
+        // Network status check every 60 seconds
+        let network_check_sub = iced::time::every(Duration::from_secs(60)).map(|_| {
+            AppMessage::DashboardMessage(DashboardMessage::Network(
+                DashboardNetworkMessage::CheckConnection,
+            ))
+        });
+
+        Subscription::batch([keyboard_sub, refresh_sub, network_check_sub])
     }
 }

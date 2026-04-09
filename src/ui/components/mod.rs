@@ -4,6 +4,7 @@ pub mod help_content;
 pub mod keyboard_help;
 pub mod language_selector;
 pub mod modal;
+pub mod network_status;
 pub mod skeleton;
 pub mod strength_meter;
 pub mod toast;

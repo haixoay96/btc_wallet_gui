@@ -5,6 +5,7 @@ use iced::{clipboard, Task};
 use crate::app::structure::*;
 use crate::core::error::AppError;
 use crate::infra::storage::Storage;
+use crate::ui::components::network_status::{DashboardNetworkMessage, NetworkStatus};
 use crate::ui::i18n::t;
 use crate::ui::views::{
     dashboard::DashboardMessage,
@@ -27,6 +28,10 @@ impl App {
                     SidebarEvent::Navigate(page) => {
                         self.current_page = page;
                         self.sidebar.set_active(page);
+                        if page == NavItem::Dashboard {
+                            // Trigger initial network check when entering dashboard
+                            self.dashboard.network_status = NetworkStatus::Checking;
+                        }
                         if page == NavItem::Settings {
                             // Only sync once when navigating TO Settings
                             // Don't sync font_scale/high_contrast here to allow real-time slider updates
@@ -68,6 +73,57 @@ impl App {
             AppMessage::DashboardMessage(DashboardMessage::Navigate(page)) => {
                 self.current_page = page;
                 self.sidebar.set_active(page);
+                Task::none()
+            }
+            AppMessage::DashboardMessage(DashboardMessage::Network(
+                DashboardNetworkMessage::CheckConnection,
+            )) => {
+                self.dashboard.network_status = NetworkStatus::Checking;
+                let endpoint = if let Ok(storage) = Storage::new() {
+                    storage.load_esplora_endpoint().unwrap_or_default()
+                } else {
+                    "https://blockstream.info/api".to_string()
+                };
+                let timeout = if let Ok(storage) = Storage::new() {
+                    storage.load_timeout_secs().unwrap_or(15)
+                } else {
+                    15
+                };
+                Task::perform(
+                    async move {
+                        tokio::task::spawn_blocking(move || {
+                            crate::infra::network::EsploraClient::test_connection(
+                                &endpoint, timeout,
+                            )
+                            .and_then(|h| h.parse::<u32>().map_err(|e| anyhow::anyhow!(e)))
+                        })
+                        .await
+                        .unwrap_or(Err(anyhow::anyhow!("Task failed")))
+                    },
+                    |result| {
+                        AppMessage::DashboardMessage(DashboardMessage::Network(
+                            DashboardNetworkMessage::ConnectionCheckResult(
+                                result.map_err(|e| e.to_string()),
+                            ),
+                        ))
+                    },
+                )
+            }
+            AppMessage::DashboardMessage(DashboardMessage::Network(
+                DashboardNetworkMessage::ConnectionCheckResult(result),
+            )) => {
+                self.dashboard.network_status = match result {
+                    Ok(height) => {
+                        tracing::info!(block_height = height, "Network connection check succeeded");
+                        NetworkStatus::Connected {
+                            block_height: height,
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!(error = %e, "Network connection check failed");
+                        NetworkStatus::Disconnected
+                    }
+                };
                 Task::none()
             }
 

@@ -1,3 +1,4 @@
+use crate::ui::components::network_status::{network_status_indicator, NetworkStatus};
 use crate::ui::components::skeleton_wallet_cards;
 use crate::ui::i18n::t;
 use crate::ui::theme::{
@@ -21,6 +22,7 @@ impl DashboardView {
             wallet_count: 0,
             backup_needed_wallets: 0,
             last_synced_label: None,
+            network_status: NetworkStatus::Checking,
         }
     }
 
@@ -50,6 +52,10 @@ impl DashboardView {
         compact: bool,
     ) -> Element<'_, DashboardMessage> {
         let title = text_scaled(t("Tổng quan", "Dashboard"), 32).style(text_primary_color());
+
+        // Network status indicator
+        let network_indicator = network_status_indicator(self.network_status, !is_refreshing)
+            .map(DashboardMessage::Network);
 
         let total_btc = self.total_balance as f64 / 100_000_000.0;
         let confirmed_btc = self.confirmed_balance as f64 / 100_000_000.0;
@@ -193,7 +199,14 @@ impl DashboardView {
         .spacing(10);
 
         let mut content = column![
-            row![title, Space::with_width(Length::Fill), refresh_button].align_y(Alignment::Center),
+            row![
+                title,
+                Space::with_width(Length::Fill),
+                network_indicator,
+                Space::with_width(8),
+                refresh_button
+            ]
+            .align_y(Alignment::Center),
             Space::with_height(12),
             quick_actions,
             Space::with_height(spacing),
