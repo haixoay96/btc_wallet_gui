@@ -1,3 +1,4 @@
+pub mod backup_reminder;
 pub mod contact_picker;
 pub mod error_card;
 pub mod help_content;

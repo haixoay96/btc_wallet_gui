@@ -24,6 +24,18 @@ impl App {
         // Aggregate recent transactions from all wallets
         let recent_transactions = collect_recent_transactions(&self.wallets);
 
+        // Check if backup reminder should be shown
+        let last_dismissed = if let Ok(storage) = crate::infra::storage::Storage::new() {
+            storage.load_backup_reminder_dismissed().unwrap_or(None)
+        } else {
+            None
+        };
+        let show_backup_reminder =
+            crate::ui::components::backup_reminder::should_show_backup_reminder(
+                backup_needed,
+                last_dismissed,
+            );
+
         self.dashboard.update_balances(
             total,
             confirmed,
@@ -31,6 +43,7 @@ impl App {
             self.wallets.len(),
             backup_needed,
             recent_transactions,
+            show_backup_reminder,
         );
     }
 

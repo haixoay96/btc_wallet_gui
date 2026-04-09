@@ -119,6 +119,9 @@ pub struct AppPreferences {
     pub wallet_sort_field: WalletSortField,
     #[serde(default)]
     pub wallet_sort_ascending: bool,
+    /// Timestamp (unix epoch seconds) of last backup reminder dismissal
+    #[serde(default)]
+    pub last_backup_reminder_dismissed: Option<i64>,
 }
 
 impl Default for AppPreferences {
@@ -140,6 +143,7 @@ impl Default for AppPreferences {
             show_btc_price: false,
             wallet_sort_field: WalletSortField::Balance,
             wallet_sort_ascending: false,
+            last_backup_reminder_dismissed: None,
         }
     }
 }

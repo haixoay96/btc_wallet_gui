@@ -1,3 +1,4 @@
+use crate::ui::components::backup_reminder::backup_reminder_banner;
 use crate::ui::components::network_status::{network_status_indicator, NetworkStatus};
 use crate::ui::components::skeleton_wallet_cards;
 use crate::ui::i18n::t;
@@ -25,6 +26,7 @@ impl DashboardView {
             last_synced_label: None,
             network_status: NetworkStatus::Checking,
             recent_transactions: Vec::new(),
+            show_backup_reminder: false,
         }
     }
 
@@ -36,6 +38,7 @@ impl DashboardView {
         wallets: usize,
         backup_needed_wallets: usize,
         recent_transactions: Vec<RecentTxItem>,
+        show_backup_reminder: bool,
     ) {
         self.total_balance = total;
         self.confirmed_balance = confirmed;
@@ -43,6 +46,7 @@ impl DashboardView {
         self.wallet_count = wallets;
         self.backup_needed_wallets = backup_needed_wallets;
         self.recent_transactions = recent_transactions;
+        self.show_backup_reminder = show_backup_reminder;
     }
 
     pub fn set_last_synced_label(&mut self, label: Option<String>) {
@@ -232,6 +236,15 @@ impl DashboardView {
                 .width(Length::Fill),
             );
             content = content.push(Space::with_height(16));
+        }
+
+        // Backup reminder banner (before wallet cards)
+        if self.show_backup_reminder && !is_refreshing && self.wallet_count > 0 {
+            content = content.push(
+                backup_reminder_banner(self.backup_needed_wallets)
+                    .map(DashboardMessage::BackupReminder),
+            );
+            content = content.push(Space::with_height(spacing));
         }
 
         if self.wallet_count == 0 {

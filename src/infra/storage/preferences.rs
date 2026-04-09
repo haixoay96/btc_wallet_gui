@@ -148,6 +148,16 @@ impl Storage {
         self.save_preferences(&AppPreferences::default())
     }
 
+    pub fn load_backup_reminder_dismissed(&self) -> Result<Option<i64>> {
+        Ok(self.load_preferences()?.last_backup_reminder_dismissed)
+    }
+
+    pub fn save_backup_reminder_dismissed(&self, timestamp: i64) -> Result<()> {
+        let mut prefs = self.load_preferences()?;
+        prefs.last_backup_reminder_dismissed = Some(timestamp);
+        self.save_preferences(&prefs)
+    }
+
     // ─── Private helpers ─────────────────────────────────────────────
 
     fn save_preferences(&self, prefs: &AppPreferences) -> Result<()> {

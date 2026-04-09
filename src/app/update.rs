@@ -5,6 +5,7 @@ use iced::{clipboard, Task};
 use crate::app::structure::*;
 use crate::core::error::AppError;
 use crate::infra::storage::Storage;
+use crate::ui::components::backup_reminder::BackupReminderMessage;
 use crate::ui::components::network_status::{DashboardNetworkMessage, NetworkStatus};
 use crate::ui::i18n::t;
 use crate::ui::views::{
@@ -124,6 +125,26 @@ impl App {
                         NetworkStatus::Disconnected
                     }
                 };
+                Task::none()
+            }
+            AppMessage::DashboardMessage(DashboardMessage::BackupReminder(
+                BackupReminderMessage::NavigateToWallets,
+            )) => {
+                self.current_page = NavItem::Wallets;
+                self.sidebar.set_active(NavItem::Wallets);
+                Task::none()
+            }
+            AppMessage::DashboardMessage(DashboardMessage::BackupReminder(
+                BackupReminderMessage::DismissReminder,
+            )) => {
+                if let Ok(storage) = Storage::new() {
+                    let ts = crate::ui::components::backup_reminder::current_timestamp();
+                    if let Err(e) = storage.save_backup_reminder_dismissed(ts) {
+                        tracing::error!("Failed to save backup reminder dismissed: {}", e);
+                    } else {
+                        tracing::info!(timestamp = ts, "Backup reminder dismissed for 7 days");
+                    }
+                }
                 Task::none()
             }
 

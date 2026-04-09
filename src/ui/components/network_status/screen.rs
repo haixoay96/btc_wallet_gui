@@ -1,16 +1,9 @@
+use crate::ui::components::network_status::structure::{DashboardNetworkMessage, NetworkStatus};
 use crate::ui::i18n::t;
 use crate::ui::theme::{text_color, text_secondary_color, Colors};
 use iced::widget::{button, container, row, text, Space};
 use iced::{widget::tooltip, Alignment, Element};
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
-
-/// Network connection status
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NetworkStatus {
-    Connected { block_height: u32 },
-    Disconnected,
-    Checking,
-}
 
 impl NetworkStatus {
     pub fn icon_char(&self) -> String {
@@ -74,10 +67,4 @@ pub fn network_status_indicator(
     } else {
         container(content).into()
     }
-}
-
-#[derive(Debug, Clone)]
-pub enum DashboardNetworkMessage {
-    CheckConnection,
-    ConnectionCheckResult(Result<u32, String>),
 }

@@ -1,3 +1,4 @@
+use crate::ui::components::backup_reminder::BackupReminderMessage;
 use crate::ui::components::network_status::{DashboardNetworkMessage, NetworkStatus};
 use crate::ui::views::sidebar::NavItem;
 use chrono::{DateTime, Local};
@@ -7,6 +8,7 @@ pub enum DashboardMessage {
     Refresh,
     Navigate(NavItem),
     Network(DashboardNetworkMessage),
+    BackupReminder(BackupReminderMessage),
 }
 
 /// Aggregated recent transaction for dashboard preview
@@ -62,4 +64,5 @@ pub struct DashboardView {
     pub last_synced_label: Option<String>,
     pub network_status: NetworkStatus,
     pub recent_transactions: Vec<RecentTxItem>,
+    pub show_backup_reminder: bool,
 }
