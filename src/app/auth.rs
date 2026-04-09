@@ -2,7 +2,7 @@ use crate::error::AppError;
 use iced::Task;
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::i18n::t;
+use crate::i18n::{set_current_language, t};
 use crate::storage::Storage;
 use crate::utils::{
     normalize_nickname, pick_import_backup_path, resolve_user_path, wallet_count_text,
