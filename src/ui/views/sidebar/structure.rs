@@ -23,19 +23,21 @@ impl NavItem {
     }
 
     pub fn icon_char(self) -> String {
+        use iced_fonts::Bootstrap;
         match self {
-            Self::Dashboard => '\u{f080}'.to_string(),
-            Self::Wallets => '\u{f09a}'.to_string(),
-            Self::Send => '\u{f1d9}'.to_string(),
-            Self::Receive => '\u{f1da}'.to_string(),
-            Self::History => '\u{f1da}'.to_string(),
-            Self::Settings => '\u{f013}'.to_string(),
+            Self::Dashboard => Bootstrap::Speedometer,
+            Self::Wallets => Bootstrap::Wallet,
+            Self::Send => Bootstrap::BoxArrowUp,
+            Self::Receive => Bootstrap::BoxArrowDown,
+            Self::History => Bootstrap::ClockHistory,
+            Self::Settings => Bootstrap::Gear,
         }
+        .to_string()
     }
 
     pub fn title(self) -> &'static str {
         match self {
-            Self::Dashboard => crate::ui::i18n::t("Bảng điều khiển", "Dashboard"),
+            Self::Dashboard => crate::ui::i18n::t("Tổng quan", "Dashboard"),
             Self::Wallets => crate::ui::i18n::t("Ví", "Wallets"),
             Self::Send => crate::ui::i18n::t("Gửi", "Send"),
             Self::Receive => crate::ui::i18n::t("Nhận", "Receive"),
