@@ -8,9 +8,8 @@ use crate::infra::paths::data_directory_path;
 impl AddressBook {
     /// Get the file path for address book storage
     pub fn file_path() -> PathBuf {
-        let data_dir = data_directory_path().unwrap_or_else(|_| {
-            std::env::current_dir().unwrap_or_default()
-        });
+        let data_dir =
+            data_directory_path().unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
         data_dir.join("address_book.json")
     }
 

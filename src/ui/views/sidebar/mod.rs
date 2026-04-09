@@ -1,5 +1,5 @@
-mod structure;
 mod navigation;
+mod structure;
 
-pub use structure::*;
 pub use navigation::*;
+pub use structure::*;

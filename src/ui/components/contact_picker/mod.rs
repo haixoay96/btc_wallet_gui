@@ -1,6 +1,6 @@
-mod structure;
 mod picker;
+mod structure;
 
-pub use picker::{contact_picker_view, contact_form_view};
+pub use picker::{contact_form_view, contact_picker_view};
 
 pub use structure::*;

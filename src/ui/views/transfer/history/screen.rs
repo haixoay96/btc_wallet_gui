@@ -1,20 +1,19 @@
 use crate::i18n::t;
-use crate::ui::components::{skeleton_transactions, modal};
-use crate::ui::theme::{text_scaled,
-    input_style, pick_list_menu_style, pick_list_style, secondary_button_style,
-    selected_button_style, text_color,
-    text_primary_color, text_secondary_color, text_muted_color,
-    Colors, primary_button_style,
-};
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
-use crate::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
+use crate::ui::components::{modal, skeleton_transactions};
+use crate::ui::theme::{
+    input_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    secondary_button_style, selected_button_style, text_color, text_muted_color,
+    text_primary_color, text_scaled, text_secondary_color, Colors,
+};
 use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
-use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
+use crate::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
 use chrono::DateTime;
 use iced::{
     widget::{button, column, container, pick_list, row, scrollable, text, text_input, Space},
     Alignment, Color, Element, Length,
 };
+use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 use super::structure::*;
 
@@ -38,7 +37,12 @@ fn confirmation_status(tx: &TxRecord) -> (String, String, Color, String) {
             "check".to_string(),
             t("Đã xác nhận", "Confirmed").to_string(),
             Colors::SUCCESS,
-            format!("✓ {} ({} {})", t("Đủ xác nhận", "Fully confirmed"), tx.confirmations, t("conf", "conf")),
+            format!(
+                "✓ {} ({} {})",
+                t("Đủ xác nhận", "Fully confirmed"),
+                tx.confirmations,
+                t("conf", "conf")
+            ),
         )
     } else if tx.confirmations >= 3 {
         let remaining = 6 - tx.confirmations;
@@ -47,16 +51,32 @@ fn confirmation_status(tx: &TxRecord) -> (String, String, Color, String) {
             "check-circle".to_string(),
             format!("{} ({}/6)", t("Gần đủ", "Almost"), tx.confirmations),
             Colors::CONFIRMED_PARTIAL,
-            format!("~{} {} (~{} {})", remaining, t("conf còn lại", "conf remaining"), est_minutes, t("phút", "min")),
+            format!(
+                "~{} {} (~{} {})",
+                remaining,
+                t("conf còn lại", "conf remaining"),
+                est_minutes,
+                t("phút", "min")
+            ),
         )
     } else {
         let remaining = 6 - tx.confirmations;
         let est_minutes = remaining * 10;
         (
             "hourglass".to_string(),
-            format!("{} ({}/6)", t("Ít xác nhận", "Low confirmations"), tx.confirmations),
+            format!(
+                "{} ({}/6)",
+                t("Ít xác nhận", "Low confirmations"),
+                tx.confirmations
+            ),
             Colors::CONFIRMED_LOW,
-            format!("~{} {} (~{} {})", remaining, t("conf còn lại", "conf remaining"), est_minutes, t("phút", "min")),
+            format!(
+                "~{} {} (~{} {})",
+                remaining,
+                t("conf còn lại", "conf remaining"),
+                est_minutes,
+                t("phút", "min")
+            ),
         )
     }
 }
@@ -80,7 +100,9 @@ fn parse_amount_input(input: &str) -> Option<u64> {
     }
     // Parse as f64 BTC
     if let Ok(btc) = input.trim().parse::<f64>() {
-        if btc < 0.0 { return None; }
+        if btc < 0.0 {
+            return None;
+        }
         Some((btc * 100_000_000.0) as u64)
     } else {
         None
@@ -94,10 +116,6 @@ fn format_btc_and_sat(amount_sat: i64) -> String {
     let sign = if amount_sat < 0 { "-" } else { "" };
     format!("{}{} BTC ({} sat)", sign, formatted_btc, formatted_sat)
 }
-
-
-
-
 
 impl HistoryView {
     pub fn new() -> Self {
@@ -122,11 +140,31 @@ impl HistoryView {
                 None
             }
             HistoryMessage::Refresh => Some(HistoryEvent::Refresh),
-            HistoryMessage::FilterAll => { self.filter = Filter::All; self.current_page = 0; None }
-            HistoryMessage::FilterIncoming => { self.filter = Filter::Incoming; self.current_page = 0; None }
-            HistoryMessage::FilterOutgoing => { self.filter = Filter::Outgoing; self.current_page = 0; None }
-            HistoryMessage::FilterPending => { self.filter = Filter::Pending; self.current_page = 0; None }
-            HistoryMessage::FilterSelfTransfer => { self.filter = Filter::SelfTransfer; self.current_page = 0; None }
+            HistoryMessage::FilterAll => {
+                self.filter = Filter::All;
+                self.current_page = 0;
+                None
+            }
+            HistoryMessage::FilterIncoming => {
+                self.filter = Filter::Incoming;
+                self.current_page = 0;
+                None
+            }
+            HistoryMessage::FilterOutgoing => {
+                self.filter = Filter::Outgoing;
+                self.current_page = 0;
+                None
+            }
+            HistoryMessage::FilterPending => {
+                self.filter = Filter::Pending;
+                self.current_page = 0;
+                None
+            }
+            HistoryMessage::FilterSelfTransfer => {
+                self.filter = Filter::SelfTransfer;
+                self.current_page = 0;
+                None
+            }
             HistoryMessage::CopyTxid(_) => None,
             HistoryMessage::OpenExplorer(_) => None,
             HistoryMessage::SearchChanged(query) => {
@@ -136,12 +174,28 @@ impl HistoryView {
             }
             HistoryMessage::ExportCsv => Some(HistoryEvent::ExportCsv),
             HistoryMessage::ExportPdf => Some(HistoryEvent::ExportPdf),
-            
+
             // Filters
-            HistoryMessage::DateFromChanged(val) => { self.date_from = val; self.current_page = 0; None }
-            HistoryMessage::DateToChanged(val) => { self.date_to = val; self.current_page = 0; None }
-            HistoryMessage::MinAmountChanged(val) => { self.min_amount = val; self.current_page = 0; None }
-            HistoryMessage::MaxAmountChanged(val) => { self.max_amount = val; self.current_page = 0; None }
+            HistoryMessage::DateFromChanged(val) => {
+                self.date_from = val;
+                self.current_page = 0;
+                None
+            }
+            HistoryMessage::DateToChanged(val) => {
+                self.date_to = val;
+                self.current_page = 0;
+                None
+            }
+            HistoryMessage::MinAmountChanged(val) => {
+                self.min_amount = val;
+                self.current_page = 0;
+                None
+            }
+            HistoryMessage::MaxAmountChanged(val) => {
+                self.max_amount = val;
+                self.current_page = 0;
+                None
+            }
 
             // Pagination
             HistoryMessage::PageChanged(page) => {
@@ -176,7 +230,7 @@ impl HistoryView {
         let wallet_options = wallet_choices(wallets);
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
         let wallet = wallets.get(selected_wallet);
-        
+
         let content_padding = if compact { 16 } else { 32 };
         let content_spacing = if compact { 12 } else { 20 };
 
@@ -184,8 +238,7 @@ impl HistoryView {
             .style(text_primary_color());
 
         let wallet_selector = column![
-            text_scaled(t("Từ ví", "From Wallet"), 14)
-                .style(text_secondary_color()),
+            text_scaled(t("Từ ví", "From Wallet"), 14).style(text_secondary_color()),
             Space::with_height(4),
             pick_list(wallet_options, selected_wallet_option, |choice| {
                 HistoryMessage::SelectWallet(choice.index)
@@ -198,7 +251,9 @@ impl HistoryView {
         ]
         .spacing(4);
 
-        let mut content = column![title, wallet_selector].spacing(content_spacing).padding(content_padding);
+        let mut content = column![title, wallet_selector]
+            .spacing(content_spacing)
+            .padding(content_padding);
 
         // Filter buttons
         let refresh_label = if is_refreshing {
@@ -304,21 +359,19 @@ impl HistoryView {
             amount_min_input,
             Space::with_width(8),
             amount_max_input,
-        ].align_y(Alignment::Center);
+        ]
+        .align_y(Alignment::Center);
 
         content = content.push(advanced_filter_row);
         content = content.push(Space::with_height(8));
 
         // Search & Export Row
-        let search_input = text_input(
-            t("Tìm kiếm txid...", "Search txid..."),
-            &self.search_query,
-        )
-        .on_input(HistoryMessage::SearchChanged)
-        .padding(8)
-        .size(12)
-        .width(Length::Fixed(200.0))
-        .style(input_style());
+        let search_input = text_input(t("Tìm kiếm txid...", "Search txid..."), &self.search_query)
+            .on_input(HistoryMessage::SearchChanged)
+            .padding(8)
+            .size(12)
+            .width(Length::Fixed(200.0))
+            .style(input_style());
 
         let export_row = row![
             button(text_scaled(t("Xuất CSV", "Export CSV"), 11))
@@ -332,12 +385,8 @@ impl HistoryView {
                 .style(secondary_button_style()),
         ];
 
-        let search_export_row = row![
-            search_input,
-            Space::with_width(8),
-            export_row,
-        ]
-        .align_y(Alignment::Center);
+        let search_export_row =
+            row![search_input, Space::with_width(8), export_row,].align_y(Alignment::Center);
 
         content = content.push(search_export_row);
         content = content.push(Space::with_height(8));
@@ -364,39 +413,53 @@ impl HistoryView {
                             Filter::Incoming => matches!(tx.direction, TxDirection::Incoming),
                             Filter::Outgoing => matches!(tx.direction, TxDirection::Outgoing),
                             Filter::Pending => !tx.confirmed,
-                            Filter::SelfTransfer => matches!(tx.direction, TxDirection::SelfTransfer),
+                            Filter::SelfTransfer => {
+                                matches!(tx.direction, TxDirection::SelfTransfer)
+                            }
                         };
-                        if !type_match { return false; }
+                        if !type_match {
+                            return false;
+                        }
 
                         // 2. Search Filter
-                        let search_match = search_lower.is_empty() 
+                        let search_match = search_lower.is_empty()
                             || tx.txid.to_lowercase().contains(&search_lower);
-                        if !search_match { return false; }
+                        if !search_match {
+                            return false;
+                        }
 
                         // 3. Date Filter
                         if let Some(time) = tx.block_time {
                             if let Some(start) = parsed_date_from {
-                                if start > 0 && time < start as u64 { return false; }
+                                if start > 0 && time < start as u64 {
+                                    return false;
+                                }
                             }
                             if let Some(end) = parsed_date_to {
                                 // End date inclusive (end of day)
                                 let end_of_day = (end + 86400).max(0) as u64;
-                                if time > end_of_day { return false; } 
+                                if time > end_of_day {
+                                    return false;
+                                }
                             }
                         } else {
                             // Pending txs: only show if no date range specified
                             if parsed_date_from.is_some() || parsed_date_to.is_some() {
-                                return false; 
+                                return false;
                             }
                         }
 
                         // 4. Amount Filter (Absolute value)
                         let abs_amt = tx.amount_sat.unsigned_abs();
                         if let Some(min) = parsed_min_amt {
-                            if abs_amt < min { return false; }
+                            if abs_amt < min {
+                                return false;
+                            }
                         }
                         if let Some(max) = parsed_max_amt {
-                            if abs_amt > max { return false; }
+                            if abs_amt > max {
+                                return false;
+                            }
                         }
 
                         true
@@ -405,17 +468,21 @@ impl HistoryView {
 
                 // Pagination Logic
                 let total_items = filtered_txs.len();
-                let total_pages = if self.items_per_page == 0 { 1 } else { (total_items + self.items_per_page - 1) / self.items_per_page };
-                
+                let total_pages = if self.items_per_page == 0 {
+                    1
+                } else {
+                    (total_items + self.items_per_page - 1) / self.items_per_page
+                };
+
                 let current_page = if self.current_page >= total_pages && total_pages > 0 {
                     total_pages - 1
                 } else {
                     self.current_page
                 };
-                
+
                 let start_idx = current_page * self.items_per_page;
                 let end_idx = std::cmp::min(start_idx + self.items_per_page, total_items);
-                
+
                 let page_txs = if start_idx < total_items {
                     &filtered_txs[start_idx..end_idx]
                 } else {
@@ -435,29 +502,39 @@ impl HistoryView {
                     );
                 } else {
                     content = content.push(Space::with_height(8));
-                    content = content.push(
-                        row![
-                            text(format!(
-                                "{} {} ",
-                                total_items,
-                                t("giao dịch", "transactions")
-                            )).size(14).style(text_secondary_color()),
-                            Space::with_width(Length::Fill),
-                            text(format!(
-                                "{} {}/{} ",
-                                t("Trang", "Page"),
-                                if total_pages == 0 { 0 } else { current_page + 1 },
-                                total_pages
-                            )).size(12).style(text_muted_color())
-                        ]
-                    );
+                    content = content.push(row![
+                        text(format!(
+                            "{} {} ",
+                            total_items,
+                            t("giao dịch", "transactions")
+                        ))
+                        .size(14)
+                        .style(text_secondary_color()),
+                        Space::with_width(Length::Fill),
+                        text(format!(
+                            "{} {}/{} ",
+                            t("Trang", "Page"),
+                            if total_pages == 0 {
+                                0
+                            } else {
+                                current_page + 1
+                            },
+                            total_pages
+                        ))
+                        .size(12)
+                        .style(text_muted_color())
+                    ]);
                     content = content.push(Space::with_height(8));
 
                     let mut tx_list = column![];
-                    
+
                     for (_idx, tx) in page_txs.iter().enumerate() {
                         // Find original index in wallet history for modal
-                        let original_idx = wallet.history.iter().position(|t| t.txid == tx.txid).unwrap_or(0);
+                        let original_idx = wallet
+                            .history
+                            .iter()
+                            .position(|t| t.txid == tx.txid)
+                            .unwrap_or(0);
 
                         let direction_text = match tx.direction {
                             TxDirection::Incoming => t("NHẬN", "IN"),
@@ -477,8 +554,12 @@ impl HistoryView {
                         let txid_short = format!("{}...", &tx.txid[..16.min(tx.txid.len())]);
 
                         let _explorer_url = match wallet.network {
-                            WalletNetwork::Mainnet => format!("https://blockstream.info/tx/{}", tx.txid),
-                            WalletNetwork::Testnet => format!("https://blockstream.info/testnet/tx/{}", tx.txid),
+                            WalletNetwork::Mainnet => {
+                                format!("https://blockstream.info/tx/{}", tx.txid)
+                            }
+                            WalletNetwork::Testnet => {
+                                format!("https://blockstream.info/testnet/tx/{}", tx.txid)
+                            }
                         };
 
                         // Row Clickable
@@ -489,14 +570,20 @@ impl HistoryView {
                                     Space::with_width(12),
                                     text_scaled(txid_short, 14).style(text_primary_color()),
                                     Space::with_width(Length::Fill),
-                                    text(format!("{}{}", amount_sign, format_btc_and_sat(tx.amount_sat)))
-                                        .size(14)
-                                        .style(text_color(amount_color)),
-                                ].align_y(Alignment::Center),
+                                    text(format!(
+                                        "{}{}",
+                                        amount_sign,
+                                        format_btc_and_sat(tx.amount_sat)
+                                    ))
+                                    .size(14)
+                                    .style(text_color(amount_color)),
+                                ]
+                                .align_y(Alignment::Center),
                                 Space::with_height(4),
                                 row![
                                     {
-                                        let (icon_str, _, status_color, _) = confirmation_status(tx);
+                                        let (icon_str, _, status_color, _) =
+                                            confirmation_status(tx);
                                         let icon_bootstrap = if icon_str == "check" {
                                             Bootstrap::Check.to_string()
                                         } else if icon_str == "check-circle" {
@@ -513,27 +600,31 @@ impl HistoryView {
                                     },
                                     Space::with_width(4),
                                     {
-                                        let (_, status_text, status_color, est_time) = confirmation_status(tx);
+                                        let (_, status_text, status_color, est_time) =
+                                            confirmation_status(tx);
                                         column![
                                             text_scaled(status_text, 11)
                                                 .style(text_color(status_color)),
-                                            text_scaled(est_time, 9)
-                                                .style(text_muted_color()),
+                                            text_scaled(est_time, 9).style(text_muted_color()),
                                         ]
                                         .spacing(1)
                                     },
                                     Space::with_width(Length::Fill),
                                     if let Some(block_time) = tx.block_time {
-                                        text_scaled(format_timestamp(block_time), 11).style(text_muted_color())
+                                        text_scaled(format_timestamp(block_time), 11)
+                                            .style(text_muted_color())
                                     } else {
                                         text_scaled("", 11)
                                     },
-                                ].align_y(Alignment::Center)
+                                ]
+                                .align_y(Alignment::Center)
                             ]
                             .spacing(4),
                         )
                         .style(move |_| iced::widget::container::Style {
-                            background: Some(iced::Background::Color(Color::from_rgba(1.0, 1.0, 1.0, 0.02))),
+                            background: Some(iced::Background::Color(Color::from_rgba(
+                                1.0, 1.0, 1.0, 0.02,
+                            ))),
                             border: iced::border::rounded(8),
                             ..Default::default()
                         })
@@ -555,15 +646,16 @@ impl HistoryView {
                     }
 
                     content = content.push(scrollable(tx_list).height(Length::Fill));
-                    
+
                     // Pagination Controls
                     if total_pages > 1 {
                         let mut page_controls = row![].spacing(6).align_y(Alignment::Center);
-                        
+
                         // Prev
                         let mut prev_btn = button(text_scaled("<<", 12)).padding(6);
                         if current_page > 0 {
-                            prev_btn = prev_btn.on_press(HistoryMessage::PageChanged(current_page - 1));
+                            prev_btn =
+                                prev_btn.on_press(HistoryMessage::PageChanged(current_page - 1));
                         } else {
                             prev_btn = prev_btn.style(muted_button_style());
                         }
@@ -579,7 +671,11 @@ impl HistoryView {
                         for p in start_p..end_p {
                             let btn = button(text_scaled(format!("{}", p + 1), 12))
                                 .padding(6)
-                                .style(if p == current_page { selected_button_style() } else { secondary_button_style() })
+                                .style(if p == current_page {
+                                    selected_button_style()
+                                } else {
+                                    secondary_button_style()
+                                })
                                 .on_press(HistoryMessage::PageChanged(p));
                             page_controls = page_controls.push(btn);
                         }
@@ -587,25 +683,34 @@ impl HistoryView {
                         // Next
                         let mut next_btn = button(text_scaled(">>", 12)).padding(6);
                         if current_page < total_pages - 1 {
-                            next_btn = next_btn.on_press(HistoryMessage::PageChanged(current_page + 1));
+                            next_btn =
+                                next_btn.on_press(HistoryMessage::PageChanged(current_page + 1));
                         } else {
                             next_btn = next_btn.style(muted_button_style());
                         }
                         page_controls = page_controls.push(next_btn);
 
                         // Items per page
-                        let items_picker = pick_list(vec![20, 50, 100], Some(self.items_per_page), HistoryMessage::ItemsPerPageChanged)
-                            .width(Length::Fixed(60.0))
-                            .padding(4)
-                            .text_size(11);
+                        let items_picker = pick_list(
+                            vec![20, 50, 100],
+                            Some(self.items_per_page),
+                            HistoryMessage::ItemsPerPageChanged,
+                        )
+                        .width(Length::Fixed(60.0))
+                        .padding(4)
+                        .text_size(11);
 
                         content = content.push(Space::with_height(8));
-                        content = content.push(row![
-                            page_controls,
-                            Space::with_width(Length::Fill),
-                            text_scaled(t("Hiển thị:", "Show:"), 11).style(text_secondary_color()),
-                            items_picker
-                        ].align_y(Alignment::Center));
+                        content = content.push(
+                            row![
+                                page_controls,
+                                Space::with_width(Length::Fill),
+                                text_scaled(t("Hiển thị:", "Show:"), 11)
+                                    .style(text_secondary_color()),
+                                items_picker
+                            ]
+                            .align_y(Alignment::Center),
+                        );
                     }
                 }
             }
@@ -613,8 +718,11 @@ impl HistoryView {
             content = content.push(Space::with_height(40));
             content = content.push(
                 container(
-                    text_scaled(t("Vui lòng chọn ví trước", "Please select a wallet first"), 18)
-                        .style(text_color(Colors::ERROR)),
+                    text_scaled(
+                        t("Vui lòng chọn ví trước", "Please select a wallet first"),
+                        18,
+                    )
+                    .style(text_color(Colors::ERROR)),
                 )
                 .padding(40)
                 .center_x(Length::Fill),
@@ -622,13 +730,24 @@ impl HistoryView {
         }
 
         // Transaction Detail Modal
-        let main_content = container(content).width(Length::Fill).height(Length::Fill).into();
+        let main_content = container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into();
 
         if let Some(idx) = self.selected_tx_index {
             if let Some(wallet) = wallet {
                 if let Some(tx) = wallet.history.get(idx) {
-                    let (modal_title, modal_content) = self.render_tx_detail_modal(tx, Some(wallet.network));
-                    return modal(main_content, modal_title, modal_content, HistoryMessage::CloseTransactionDetail, compact).into();
+                    let (modal_title, modal_content) =
+                        self.render_tx_detail_modal(tx, Some(wallet.network));
+                    return modal(
+                        main_content,
+                        modal_title,
+                        modal_content,
+                        HistoryMessage::CloseTransactionDetail,
+                        compact,
+                    )
+                    .into();
                 }
             }
         }
@@ -654,28 +773,48 @@ impl HistoryView {
 
         let explorer_url = match network {
             Some(WalletNetwork::Mainnet) => format!("https://blockstream.info/tx/{}", tx.txid),
-            Some(WalletNetwork::Testnet) => format!("https://blockstream.info/testnet/tx/{}", tx.txid),
+            Some(WalletNetwork::Testnet) => {
+                format!("https://blockstream.info/testnet/tx/{}", tx.txid)
+            }
             None => String::new(),
         };
 
         let info_row = |label: &str, value: String| -> Element<'a, HistoryMessage> {
             row![
-                text_scaled(format!("{}:", label), 13).style(text_secondary_color()).width(Length::Fixed(100.0)),
+                text_scaled(format!("{}:", label), 13)
+                    .style(text_secondary_color())
+                    .width(Length::Fixed(100.0)),
                 text_scaled(value, 13).style(text_primary_color()),
                 Space::with_width(Length::Fill),
-            ].spacing(8).into()
+            ]
+            .spacing(8)
+            .into()
         };
 
         let modal_content = column![
-            text_scaled(direction_text, 18).style(text_color(amount_color)).style(text_primary_color()),
+            text_scaled(direction_text, 18)
+                .style(text_color(amount_color))
+                .style(text_primary_color()),
             Space::with_height(16),
             info_row(t("TxID", "TxID"), tx.txid.clone()),
             Space::with_height(8),
-            info_row(t("Thời gian", "Time"), tx.block_time.map(format_timestamp).unwrap_or_else(|| t("Đang chờ...", "Pending...").to_string())),
+            info_row(
+                t("Thời gian", "Time"),
+                tx.block_time.map(format_timestamp).unwrap_or_else(|| t(
+                    "Đang chờ...",
+                    "Pending..."
+                )
+                .to_string())
+            ),
             Space::with_height(8),
             info_row(t("Số tiền", "Amount"), format_btc_and_sat(tx.amount_sat)),
             Space::with_height(8),
-            info_row(t("Phí", "Fee"), tx.fee_sat.map(|f| format_btc_and_sat(f as i64)).unwrap_or_else(|| "N/A".to_string())),
+            info_row(
+                t("Phí", "Fee"),
+                tx.fee_sat
+                    .map(|f| format_btc_and_sat(f as i64))
+                    .unwrap_or_else(|| "N/A".to_string())
+            ),
             Space::with_height(8),
             info_row(t("Trạng thái", "Status"), {
                 let (_, status_text, _, est_time) = confirmation_status(tx);
@@ -702,7 +841,8 @@ impl HistoryView {
     }
 }
 
-fn muted_button_style() -> impl Fn(&iced::Theme, iced::widget::button::Status) -> iced::widget::button::Style {
+fn muted_button_style(
+) -> impl Fn(&iced::Theme, iced::widget::button::Status) -> iced::widget::button::Style {
     |_, _| iced::widget::button::Style {
         background: None,
         border: iced::Border::default(),

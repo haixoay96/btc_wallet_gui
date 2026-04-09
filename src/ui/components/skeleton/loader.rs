@@ -15,10 +15,10 @@ fn skeleton_bg_style() -> impl Fn(&Theme) -> iced::widget::container::Style {
         let colors = get_theme_colors(theme);
         iced::widget::container::Style {
             background: Some(iced::Background::Color(Color::from_rgba(
-                colors.text_muted.r, 
-                colors.text_muted.g, 
-                colors.text_muted.b, 
-                0.15
+                colors.text_muted.r,
+                colors.text_muted.g,
+                colors.text_muted.b,
+                0.15,
             ))),
             border: iced::border::rounded(4),
             ..Default::default()
@@ -37,15 +37,13 @@ pub fn skeleton(skeleton_type: SkeletonType, size: (f32, f32)) -> Element<'stati
         }
         SkeletonType::Card => {
             let (width, height) = size;
-            container(
-                column![
-                    skeleton(SkeletonType::Text, (width * 0.4, 20.0)),
-                    Space::with_height(10),
-                    skeleton(SkeletonType::Text, (width * 0.7, 30.0)),
-                    Space::with_height(10),
-                    skeleton(SkeletonType::Text, (width * 0.5, 14.0)),
-                ],
-            )
+            container(column![
+                skeleton(SkeletonType::Text, (width * 0.4, 20.0)),
+                Space::with_height(10),
+                skeleton(SkeletonType::Text, (width * 0.7, 30.0)),
+                Space::with_height(10),
+                skeleton(SkeletonType::Text, (width * 0.5, 14.0)),
+            ])
             .style(card_style())
             .padding(16)
             .width(width)

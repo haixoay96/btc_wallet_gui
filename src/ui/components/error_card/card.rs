@@ -6,11 +6,11 @@ use iced::{
 use crate::i18n::t;
 
 use super::structure::*;
+use crate::ui::theme::text_color;
 use crate::ui::theme::text_primary_color;
 use crate::ui::theme::text_secondary_color;
-use crate::ui::theme::text_color;
 use crate::ui::theme::Colors;
-use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
+use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 /// Error card với retry button
 pub fn error_card<Message: 'static + Clone>(
@@ -20,17 +20,16 @@ pub fn error_card<Message: 'static + Clone>(
 ) -> Element<'static, Message> {
     let mut content = column![
         row![
-            text(Bootstrap::XCircle.to_string()).size(24)
+            text(Bootstrap::XCircle.to_string())
+                .size(24)
                 .font(BOOTSTRAP_FONT)
                 .style(text_color(Colors::ERROR)),
             Space::with_width(12),
-            text(title).size(16)
-                .style(text_primary_color())
+            text(title).size(16).style(text_primary_color())
         ]
         .align_y(iced::Alignment::Center),
         Space::with_height(8),
-        text(message).size(13)
-            .style(text_secondary_color()),
+        text(message).size(13).style(text_secondary_color()),
     ]
     .spacing(0);
 
@@ -39,9 +38,13 @@ pub fn error_card<Message: 'static + Clone>(
         content = content.push(
             container(
                 button(
-                    text(format!("{} {}", Bootstrap::ArrowRepeat.to_string(), t("Thử lại", "Retry")))
-                        .size(13)
-                        .style(text_color(Colors::ERROR)),
+                    text(format!(
+                        "{} {}",
+                        Bootstrap::ArrowRepeat.to_string(),
+                        t("Thử lại", "Retry")
+                    ))
+                    .size(13)
+                    .style(text_color(Colors::ERROR)),
                 )
                 .on_press(retry_msg)
                 .padding(8),
@@ -51,8 +54,5 @@ pub fn error_card<Message: 'static + Clone>(
         );
     }
 
-    container(content)
-        .padding(16)
-        .width(Length::Fill)
-        .into()
+    container(content).padding(16).width(Length::Fill).into()
 }

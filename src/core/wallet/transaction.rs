@@ -9,8 +9,8 @@ use bitcoin::{
 
 use super::network::AddressChain;
 use super::structure::{
-    BuildTxResult, ChangeStrategy, InputSource, SpendableUtxo, TxBuildOptions,
-    TxDirection, TxRecord, Wallet,
+    BuildTxResult, ChangeStrategy, InputSource, SpendableUtxo, TxBuildOptions, TxDirection,
+    TxRecord, Wallet,
 };
 use crate::wallet::esplora::EsploraClient;
 use crate::wallet::secrets::WalletSecrets;

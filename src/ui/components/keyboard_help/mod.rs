@@ -1,5 +1,5 @@
-mod structure;
 mod popup;
+mod structure;
 
-pub use structure::KeyboardShortcut;
 pub use popup::shortcuts_help_popup;
+pub use structure::KeyboardShortcut;

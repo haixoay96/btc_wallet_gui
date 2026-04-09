@@ -40,10 +40,9 @@ impl App {
                     if let Ok(storage) = Storage::new() {
                         let _ = storage.save_onboarding_completed(false);
                     }
-                    self.add_info_toast(t(
-                        "Đang mở hướng dẫn...",
-                        "Opening onboarding tour...",
-                    ).to_string());
+                    self.add_info_toast(
+                        t("Đang mở hướng dẫn...", "Opening onboarding tour...").to_string(),
+                    );
                 }
                 // Accessibility events
                 SettingsEvent::FontScaleChanged(scale) => {
@@ -72,20 +71,22 @@ impl App {
                     return Task::perform(
                         async move {
                             tokio::task::spawn_blocking(move || {
-                                crate::wallet::esplora::EsploraClient::test_connection(&endpoint, timeout)
+                                crate::wallet::esplora::EsploraClient::test_connection(
+                                    &endpoint, timeout,
+                                )
                             })
                             .await
                             .unwrap_or(Err(anyhow::anyhow!("Task failed")))
                         },
-                        |result| {
-                            match result {
-                                Ok(height) => {
-                                    AppMessage::SettingsMessage(SettingsMessage::TestConnectionSuccess(format!("✅ Connected! Block height: {}", height)))
-                                }
-                                Err(e) => {
-                                    AppMessage::SettingsMessage(SettingsMessage::TestConnectionFailed(format!("❌ Failed: {}", e)))
-                                }
+                        |result| match result {
+                            Ok(height) => {
+                                AppMessage::SettingsMessage(SettingsMessage::TestConnectionSuccess(
+                                    format!("✅ Connected! Block height: {}", height),
+                                ))
                             }
+                            Err(e) => AppMessage::SettingsMessage(
+                                SettingsMessage::TestConnectionFailed(format!("❌ Failed: {}", e)),
+                            ),
                         },
                     );
                 }
@@ -116,7 +117,9 @@ impl App {
                 SettingsEvent::ResetAllSettings => {
                     if let Ok(storage) = Storage::new() {
                         let _ = storage.reset_preferences();
-                        self.add_success_toast(t("Đã đặt lại cài đặt!", "Settings reset!").to_string());
+                        self.add_success_toast(
+                            t("Đã đặt lại cài đặt!", "Settings reset!").to_string(),
+                        );
                     }
                 }
             }
@@ -143,10 +146,8 @@ impl App {
         if let Ok(storage) = Storage::new() {
             let _ = storage.save_theme(theme);
         }
-        self.settings_view.set_success(t(
-            "Đã đổi giao diện",
-            "Theme updated successfully",
-        ));
+        self.settings_view
+            .set_success(t("Đã đổi giao diện", "Theme updated successfully"));
         Task::none()
     }
 

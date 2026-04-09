@@ -1,12 +1,15 @@
 use iced::{
-    widget::{button, column, container, mouse_area, row, text, Space, stack},
+    widget::{button, column, container, mouse_area, row, stack, text, Space},
     Alignment, Element, Length,
 };
 
-use crate::ui::theme::{popup_dialog_style, popup_overlay_style, text_primary_color, text_secondary_color, get_theme_colors};
+use crate::ui::theme::{
+    get_theme_colors, popup_dialog_style, popup_overlay_style, text_primary_color,
+    text_secondary_color,
+};
 
 use super::structure::*;
-use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
+use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 /// Subtle close button style for modals
 fn close_button_style() -> impl Fn(&iced::Theme, button::Status) -> button::Style {
@@ -63,9 +66,11 @@ pub fn modal<'a, Message: 'a + Clone>(
 ) -> Element<'a, Message> {
     // 1. Overlay nền tối
     let overlay = container(
-        mouse_area(container(Space::with_width(Length::Fill))
-            .width(Length::Fill)
-            .height(Length::Fill))
+        mouse_area(
+            container(Space::with_width(Length::Fill))
+                .width(Length::Fill)
+                .height(Length::Fill),
+        )
         .on_press(on_close.clone()),
     )
     .style(popup_overlay_style())
@@ -81,7 +86,8 @@ pub fn modal<'a, Message: 'a + Clone>(
         text(title).size(title_size).style(text_primary_color()),
         Space::with_width(Length::Fill),
         button(
-            text(Bootstrap::X.to_string()).size(if compact { 14 } else { 16 })
+            text(Bootstrap::X.to_string())
+                .size(if compact { 14 } else { 16 })
                 .font(BOOTSTRAP_FONT)
                 .style(text_secondary_color())
         )
@@ -93,13 +99,9 @@ pub fn modal<'a, Message: 'a + Clone>(
 
     // 3. Card nội dung - Width cố định, căn giữa
     let popup_card = container(
-        column![
-            header,
-            Space::with_height(spacing),
-            content
-        ]
-        .spacing(0)
-        .width(Length::Fill),
+        column![header, Space::with_height(spacing), content]
+            .spacing(0)
+            .width(Length::Fill),
     )
     .style(popup_dialog_style())
     .padding(padding)

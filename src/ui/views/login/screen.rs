@@ -3,23 +3,17 @@ use iced::{
     Alignment, Element, Length, Padding,
 };
 
-use crate::ui::components::{calculate_strength, strength_bar};
 use crate::i18n::{t, AppLanguage};
-use crate::ui::theme::{text_scaled,
+use crate::ui::components::language_selector::LanguageSelector;
+use crate::ui::components::{calculate_strength, strength_bar};
+use crate::ui::theme::{
     card_style, gradient_button_style, input_style, muted_button_style, notice_style,
     screen_background_style, secondary_button_style, selected_button_style, text_color,
-    text_primary_color, text_secondary_color, text_muted_color,
-    Colors,
-    NoticeTone,
+    text_muted_color, text_primary_color, text_scaled, text_secondary_color, Colors, NoticeTone,
 };
-use crate::ui::components::language_selector::LanguageSelector;
-use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
+use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 use super::structure::*;
-
-
-
-
 
 impl LoginView {
     pub fn new() -> Self {
@@ -204,23 +198,26 @@ impl LoginView {
 
         let logo_container = container(logo).center_x(Length::Fill);
 
-        let title = text_scaled(t("Mở Ví Bitcoin", "Open Bitcoin Wallet"), 36)
-            .style(text_primary_color());
+        let title =
+            text_scaled(t("Mở Ví Bitcoin", "Open Bitcoin Wallet"), 36).style(text_primary_color());
 
-        let subtitle = text_scaled(match self.mode {
-            LoginMode::ExistingWallet => t(
-                "Đăng nhập để truy cập dữ liệu ví đã lưu trên máy này.",
-                "Log in to access wallet data already stored on this device.",
-            ),
-            LoginMode::NewWallet => t(
-                "Tạo bộ dữ liệu ví mới và đặt passphrase bảo vệ ứng dụng.",
-                "Create fresh wallet data and protect the app with a passphrase.",
-            ),
-            LoginMode::ImportBackup => t(
-                "Khôi phục toàn bộ dữ liệu ứng dụng từ file backup mã hóa.",
-                "Restore the full app data from an encrypted backup file.",
-            ),
-        }, 16)
+        let subtitle = text_scaled(
+            match self.mode {
+                LoginMode::ExistingWallet => t(
+                    "Đăng nhập để truy cập dữ liệu ví đã lưu trên máy này.",
+                    "Log in to access wallet data already stored on this device.",
+                ),
+                LoginMode::NewWallet => t(
+                    "Tạo bộ dữ liệu ví mới và đặt passphrase bảo vệ ứng dụng.",
+                    "Create fresh wallet data and protect the app with a passphrase.",
+                ),
+                LoginMode::ImportBackup => t(
+                    "Khôi phục toàn bộ dữ liệu ứng dụng từ file backup mã hóa.",
+                    "Restore the full app data from an encrypted backup file.",
+                ),
+            },
+            16,
+        )
         .style(text_secondary_color());
 
         let mode_switcher: Element<'_, LoginMessage> = if self.can_create_new_passphrase {
@@ -278,8 +275,7 @@ impl LoginView {
 
         let nickname_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
             column![
-                text_scaled(t("Tên hiển thị", "Display name"), 12)
-                    .style(text_secondary_color()),
+                text_scaled(t("Tên hiển thị", "Display name"), 12).style(text_secondary_color()),
                 Space::with_height(4),
                 text_input(t("Nhập nickname...", "Enter nickname..."), &self.nickname)
                     .on_input(LoginMessage::NicknameChanged)
@@ -294,8 +290,7 @@ impl LoginView {
         };
 
         let passphrase_input = column![
-            text_scaled(t("Passphrase", "Passphrase"), 12)
-                .style(text_secondary_color()),
+            text_scaled(t("Passphrase", "Passphrase"), 12).style(text_secondary_color()),
             Space::with_height(4),
             row![
                 text_input(
@@ -309,11 +304,14 @@ impl LoginView {
                 .size(16)
                 .style(input_style()),
                 button(
-                    text_scaled(if self.show_passphrase {
-                        Bootstrap::EyeSlash.to_string()
-                    } else {
-                        Bootstrap::Eye.to_string()
-                    }, 16)
+                    text_scaled(
+                        if self.show_passphrase {
+                            Bootstrap::EyeSlash.to_string()
+                        } else {
+                            Bootstrap::Eye.to_string()
+                        },
+                        16
+                    )
                     .font(BOOTSTRAP_FONT)
                     .style(text_muted_color()),
                 )
@@ -346,11 +344,14 @@ impl LoginView {
                     .size(16)
                     .style(input_style()),
                     button(
-                        text_scaled(if self.show_confirm_passphrase {
-                            Bootstrap::EyeSlash.to_string()
-                        } else {
-                            Bootstrap::Eye.to_string()
-                        }, 16)
+                        text_scaled(
+                            if self.show_confirm_passphrase {
+                                Bootstrap::EyeSlash.to_string()
+                            } else {
+                                Bootstrap::Eye.to_string()
+                            },
+                            16
+                        )
                         .font(BOOTSTRAP_FONT)
                         .style(text_muted_color()),
                     )
@@ -384,8 +385,7 @@ impl LoginView {
             if !self.backup_path.trim().is_empty() {
                 col = col.push(
                     container(
-                        text_scaled(self.backup_path.as_str(), 13)
-                            .style(text_primary_color()),
+                        text_scaled(self.backup_path.as_str(), 13).style(text_primary_color()),
                     )
                     .style(card_style())
                     .padding(12)
@@ -405,15 +405,11 @@ impl LoginView {
         };
 
         let error_text: Element<'_, LoginMessage> = if let Some(error) = &self.error {
-            container(
-                text(error.as_str())
-                    .style(text_primary_color())
-                    .size(14),
-            )
-            .style(notice_style(NoticeTone::Error))
-            .padding(12)
-            .width(Length::Fill)
-            .into()
+            container(text(error.as_str()).style(text_primary_color()).size(14))
+                .style(notice_style(NoticeTone::Error))
+                .padding(12)
+                .width(Length::Fill)
+                .into()
         } else {
             Space::with_height(0).into()
         };
@@ -474,11 +470,13 @@ fn mode_button(
     active: bool,
     enabled: bool,
 ) -> iced::widget::Button<'static, LoginMessage> {
-    button(text_scaled(label, 13)).padding(10).style(if !enabled {
-        muted_button_style()
-    } else if active {
-        selected_button_style()
-    } else {
-        secondary_button_style()
-    })
+    button(text_scaled(label, 13))
+        .padding(10)
+        .style(if !enabled {
+            muted_button_style()
+        } else if active {
+            selected_button_style()
+        } else {
+            secondary_button_style()
+        })
 }

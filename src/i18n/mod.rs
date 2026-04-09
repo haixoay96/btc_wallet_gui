@@ -1,5 +1,5 @@
-mod structure;
 mod macros;
+mod structure;
 
+pub use macros::{current_language, set_current_language, t};
 pub use structure::AppLanguage;
-pub use macros::{set_current_language, current_language, t};

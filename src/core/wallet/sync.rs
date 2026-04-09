@@ -3,9 +3,7 @@ use std::collections::{HashMap, HashSet};
 use anyhow::{Context, Result};
 
 use super::network::AddressChain;
-use super::structure::{
-    AddressEntry, TxDirection, TxRecord, Wallet,
-};
+use super::structure::{AddressEntry, TxDirection, TxRecord, Wallet};
 use crate::wallet::api_types::ApiTx;
 use crate::wallet::esplora::EsploraClient;
 use crate::wallet::secrets::WalletSecrets;
@@ -171,8 +169,7 @@ impl Wallet {
 
             // Tính số confirmations
             let confirmations = if tx.status.confirmed {
-                if let (Some(height), Some(block_height)) =
-                    (current_height, tx.status.block_height)
+                if let (Some(height), Some(block_height)) = (current_height, tx.status.block_height)
                 {
                     height.saturating_sub(block_height) + 1
                 } else {
@@ -201,9 +198,7 @@ impl Wallet {
             (None, None) => a.txid.cmp(&b.txid),
             (None, Some(_)) => std::cmp::Ordering::Less,
             (Some(_), None) => std::cmp::Ordering::Greater,
-            (Some(a_time), Some(b_time)) => {
-                b_time.cmp(&a_time).then_with(|| a.txid.cmp(&b.txid))
-            }
+            (Some(a_time), Some(b_time)) => b_time.cmp(&a_time).then_with(|| a.txid.cmp(&b.txid)),
         });
         history
     }

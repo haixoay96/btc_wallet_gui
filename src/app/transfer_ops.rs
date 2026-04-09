@@ -19,7 +19,7 @@ impl App {
                 self.send_view.matched_contact_name = None;
             }
         }
-        
+
         // Handle Contact Book messages first
         match &msg {
             SendMessage::SaveContact => {
@@ -27,35 +27,51 @@ impl App {
                 let address = self.send_view.contact_form_address.clone();
                 let note = self.send_view.contact_form_note.clone();
                 let editing_id = self.send_view.editing_contact_id.clone();
-                
+
                 if name.trim().is_empty() || address.trim().is_empty() {
-                    self.error = Some(AppError::validation("contact", t("Tên và địa chỉ không được để trống", "Name and address are required")));
+                    self.error = Some(AppError::validation(
+                        "contact",
+                        t(
+                            "Tên và địa chỉ không được để trống",
+                            "Name and address are required",
+                        ),
+                    ));
                     return Task::none();
                 }
 
                 // Validate BTC address before saving
                 if let Some(wallet) = self.wallets.get(self.selected_wallet) {
                     if let Err(e) = validate_address_for_network(&address, wallet.network) {
-                        self.error = Some(AppError::validation("address", &format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e)));
+                        self.error = Some(AppError::validation(
+                            "address",
+                            &format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e),
+                        ));
                         return Task::none();
                     }
                 } else {
                     // If no wallet selected, validate as mainnet
-                    if let Err(e) = validate_address_for_network(&address, crate::wallet::WalletNetwork::Mainnet) {
-                        self.error = Some(AppError::validation("address", &format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e)));
+                    if let Err(e) = validate_address_for_network(
+                        &address,
+                        crate::wallet::WalletNetwork::Mainnet,
+                    ) {
+                        self.error = Some(AppError::validation(
+                            "address",
+                            &format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e),
+                        ));
                         return Task::none();
                     }
                 }
-                
+
                 if let Some(id) = editing_id {
-                    self.address_book.update_contact(&id, &name, &address, &note);
+                    self.address_book
+                        .update_contact(&id, &name, &address, &note);
                     self.add_success_toast(t("Đã cập nhật contact", "Contact updated").to_string());
                 } else {
                     let new_id = self.address_book.add_contact(&name, &address, &note);
                     self.send_view.editing_contact_id = Some(new_id);
                     self.add_success_toast(t("Đã thêm contact", "Contact added").to_string());
                 }
-                
+
                 // Auto-save address book
                 let _ = self.address_book.save();
                 self.send_view.show_contact_form = false;
@@ -69,14 +85,14 @@ impl App {
                 // Set address from contact
                 self.send_view.to_address = address.clone();
                 self.send_view.show_contact_picker = false;
-                
+
                 // Update matched contact label
                 if let Some(contact) = self.address_book.find_by_address(&address) {
                     self.send_view.matched_contact_name = Some(contact.name.clone());
                 } else {
                     self.send_view.matched_contact_name = None;
                 }
-                
+
                 // Validate address and show error if invalid
                 if let Some(wallet) = self.wallets.get(self.selected_wallet) {
                     match validate_address_for_network(&address, wallet.network) {
@@ -89,7 +105,10 @@ impl App {
                     }
                 } else {
                     // No wallet selected, validate as mainnet
-                    match validate_address_for_network(&address, crate::wallet::WalletNetwork::Mainnet) {
+                    match validate_address_for_network(
+                        &address,
+                        crate::wallet::WalletNetwork::Mainnet,
+                    ) {
                         Ok(_) => {
                             self.send_view.to_address_error = None;
                         }
@@ -103,13 +122,13 @@ impl App {
             SendMessage::DeleteContact(id) => {
                 self.address_book.delete_contact(&id);
                 let _ = self.address_book.save();
-                
+
                 // If we were editing this contact, close the form
                 if self.send_view.editing_contact_id.as_deref() == Some(&id) {
                     self.send_view.show_contact_form = false;
                     self.send_view.editing_contact_id = None;
                 }
-                
+
                 self.add_success_toast(t("Đã xóa contact", "Contact deleted").to_string());
                 return Task::none();
             }
@@ -128,7 +147,7 @@ impl App {
             }
             _ => {}
         }
-        
+
         if let Some(event) = self.send_view.update(msg) {
             match event {
                 SendEvent::SelectWallet(index) => {
@@ -215,7 +234,9 @@ impl App {
         }
 
         self.is_calculating_max = true;
-        self.add_info_toast(t("Đang tính số lượng tối đa...", "Calculating max amount...").to_string());
+        self.add_info_toast(
+            t("Đang tính số lượng tối đa...", "Calculating max amount...").to_string(),
+        );
         self.error = None;
 
         Task::perform(
@@ -323,7 +344,10 @@ impl App {
         match result {
             Ok(fee) => {
                 self.send_view.set_fee_amount(fee);
-                self.add_success_toast(format!("{}: {fee} sat", t("Phí ước tính", "Estimated fee")));
+                self.add_success_toast(format!(
+                    "{}: {fee} sat",
+                    t("Phí ước tính", "Estimated fee")
+                ));
                 self.error = None;
             }
             Err(err) => {
@@ -331,7 +355,10 @@ impl App {
                 self.error = Some(AppError::api_with_status(
                     "fee_estimation",
                     500,
-                    &format!("{}: {err}", t("Ước tính phí thất bại", "Fee estimation failed")),
+                    &format!(
+                        "{}: {err}",
+                        t("Ước tính phí thất bại", "Fee estimation failed")
+                    ),
                 ));
             }
         }
@@ -363,7 +390,13 @@ impl App {
                 self.error = Some(AppError::api_with_status(
                     "max_amount",
                     500,
-                    &format!("{}: {err}", t("Không thể tính số lượng tối đa", "Cannot calculate max amount")),
+                    &format!(
+                        "{}: {err}",
+                        t(
+                            "Không thể tính số lượng tối đa",
+                            "Cannot calculate max amount"
+                        )
+                    ),
                 ));
             }
         }
@@ -423,7 +456,10 @@ impl App {
                 self.error = Some(AppError::api_with_status(
                     "send_transaction",
                     500,
-                    &format!("{}: {err}", t("Gửi giao dịch thất bại", "Send transaction failed")),
+                    &format!(
+                        "{}: {err}",
+                        t("Gửi giao dịch thất bại", "Send transaction failed")
+                    ),
                 ));
             }
         }

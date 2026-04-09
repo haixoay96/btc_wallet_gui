@@ -1,5 +1,5 @@
-use std::sync::atomic::{AtomicU8, Ordering};
 use crate::i18n::structure::AppLanguage;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 static CURRENT_LANGUAGE: AtomicU8 = AtomicU8::new(1);
 

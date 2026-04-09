@@ -35,7 +35,10 @@ pub enum WalletsMessage {
     ShowBackupWarning(usize),
     MnemonicPassphraseChanged(String),
     RevealMnemonic(usize),
-    ToggleBackupTest { wallet_index: usize, word_count: usize },
+    ToggleBackupTest {
+        wallet_index: usize,
+        word_count: usize,
+    },
     ExportMnemonicPdf(usize),
     ExportMnemonicEncrypted(usize),
     Slip39ExportThresholdChanged(String),
@@ -53,17 +56,41 @@ pub enum WalletsMessage {
 
 pub enum WalletsEvent {
     CreateWallet(String, WalletNetwork),
-    ImportWalletFromMnemonic { name: String, network: WalletNetwork, mnemonic: String },
-    ImportWalletFromSlip39 { name: String, network: WalletNetwork, shares: Vec<String>, slip39_passphrase: String },
+    ImportWalletFromMnemonic {
+        name: String,
+        network: WalletNetwork,
+        mnemonic: String,
+    },
+    ImportWalletFromSlip39 {
+        name: String,
+        network: WalletNetwork,
+        shares: Vec<String>,
+        slip39_passphrase: String,
+    },
     BrowseImportEncryptedPath,
-    ImportWalletFromEncrypted { path: String, passphrase: String, name_override: Option<String> },
+    ImportWalletFromEncrypted {
+        path: String,
+        passphrase: String,
+        name_override: Option<String>,
+    },
     SelectWallet(usize),
     DeleteWallet(usize),
-    RevealMnemonic { wallet_index: usize, passphrase: String },
-    VerifyMnemonicBackup { wallet_index: usize, checks: Vec<(usize, String)> },
+    RevealMnemonic {
+        wallet_index: usize,
+        passphrase: String,
+    },
+    VerifyMnemonicBackup {
+        wallet_index: usize,
+        checks: Vec<(usize, String)>,
+    },
     ExportMnemonicPdf(usize),
     ExportMnemonicEncrypted(usize),
-    ExportWalletSlip39 { wallet_index: usize, threshold: u8, share_count: u8, slip39_passphrase: String },
+    ExportWalletSlip39 {
+        wallet_index: usize,
+        threshold: u8,
+        share_count: u8,
+        slip39_passphrase: String,
+    },
     CopyAddress(String),
 }
 
@@ -98,4 +125,3 @@ pub struct WalletsView {
     pub error: Option<String>,
     pub compact_mode: bool,
 }
-

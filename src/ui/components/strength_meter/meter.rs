@@ -7,8 +7,8 @@ use iced::{
 };
 
 use crate::i18n::t;
-use crate::ui::theme::{text_scaled, text_color, Colors};
-use iced_fonts::{BOOTSTRAP_FONT, Bootstrap};
+use crate::ui::theme::{text_color, text_scaled, Colors};
+use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 /// Passphrase strength levels
 
@@ -106,41 +106,50 @@ pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'
             border: iced::border::rounded(3),
             ..Default::default()
         })
-        .width(iced::Length::FillPortion(if progress == 0 { 1 } else { progress }))
+        .width(iced::Length::FillPortion(if progress == 0 {
+            1
+        } else {
+            progress
+        }))
         .height(6);
 
     let empty_bar = container(Space::with_width(Length::Fill))
         .style(move |_| iced::widget::container::Style {
-            background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.15))),
+            background: Some(iced::Background::Color(Color::from_rgba(
+                0.5, 0.5, 0.5, 0.15,
+            ))),
             border: iced::border::rounded(3),
             ..Default::default()
         })
-        .width(iced::Length::FillPortion(if progress == 4 { 1 } else { 4 - progress }))
+        .width(iced::Length::FillPortion(if progress == 4 {
+            1
+        } else {
+            4 - progress
+        }))
         .height(6);
 
-    let mut content = column![
-        row![
-            filled_bar,
-            if progress < 4 { empty_bar } else { 
-                container(Space::with_width(0)).into() 
-            }
-        ]
-        .spacing(2)
-    ];
+    let mut content = column![row![
+        filled_bar,
+        if progress < 4 {
+            empty_bar
+        } else {
+            container(Space::with_width(0)).into()
+        }
+    ]
+    .spacing(2)];
 
     if show_label && strength != PassphraseStrength::None {
         let label = strength.label();
         let label_en = strength.label_en();
         let icon = strength.icon();
         let color = strength.color();
-        
+
         let label_row = row![
             text_scaled(icon, 11)
                 .font(BOOTSTRAP_FONT)
                 .style(text_color(color)),
             Space::with_width(4),
-            text_scaled(t(label, label_en), 11)
-                .style(text_color(color)),
+            text_scaled(t(label, label_en), 11).style(text_color(color)),
         ]
         .spacing(4)
         .align_y(iced::Alignment::Center);
@@ -149,7 +158,5 @@ pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'
         content = content.push(label_row);
     }
 
-    container(content)
-        .width(Length::Fill)
-        .into()
+    container(content).width(Length::Fill).into()
 }

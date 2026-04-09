@@ -23,14 +23,20 @@ pub fn format_btc_with_spaces(amount_sat: u64) -> String {
     let amount_btc = amount_sat as f64 / 100_000_000.0;
     let formatted = format!("{:.8}", amount_btc);
     let parts: Vec<&str> = formatted.split('.').collect();
-    if parts.len() != 2 { return formatted; }
+    if parts.len() != 2 {
+        return formatted;
+    }
     let integer_part = parts[0];
     let decimal_part = parts[1];
-    let grouped_decimal: String = decimal_part.chars().enumerate()
+    let grouped_decimal: String = decimal_part
+        .chars()
+        .enumerate()
         .flat_map(|(i, c)| {
             if i > 0 && i % 3 == 0 { Some(' ') } else { None }
-                .into_iter().chain(std::iter::once(c))
-        }).collect();
+                .into_iter()
+                .chain(std::iter::once(c))
+        })
+        .collect();
     format!("{}.{}", integer_part, grouped_decimal)
 }
 
@@ -42,14 +48,18 @@ pub fn format_number_with_spaces(amount: u64, group_size: usize) -> String {
     let mut result = String::new();
     if first_group > 0 {
         result.push_str(&s[..first_group]);
-        if first_group < len { result.push(' '); }
+        if first_group < len {
+            result.push(' ');
+        }
     }
     let mut i = first_group;
     while i < len {
         let end = (i + group_size).min(len);
         result.push_str(&s[i..end]);
         i = end;
-        if i < len { result.push(' '); }
+        if i < len {
+            result.push(' ');
+        }
     }
     result
 }
@@ -67,18 +77,27 @@ pub fn resolve_user_path(raw_path: &str) -> PathBuf {
 
 /// Trim and validate nickname
 pub fn normalize_nickname(raw: Option<&str>) -> Option<String> {
-    raw.map(str::trim).filter(|value| !value.is_empty()).map(ToOwned::to_owned)
+    raw.map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
 }
 
 /// Sanitize filename for export
 pub fn sanitize_filename(raw: &str) -> String {
     let mut result = String::with_capacity(raw.len());
     for ch in raw.chars() {
-        if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' { result.push(ch); }
-        else if ch.is_whitespace() { result.push('_'); }
+        if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+            result.push(ch);
+        } else if ch.is_whitespace() {
+            result.push('_');
+        }
     }
     let trimmed = result.trim_matches('_');
-    if trimmed.is_empty() { "wallet".to_string() } else { trimmed.to_string() }
+    if trimmed.is_empty() {
+        "wallet".to_string()
+    } else {
+        trimmed.to_string()
+    }
 }
 
 /// Default mnemonic PDF filename
@@ -93,19 +112,36 @@ pub fn default_mnemonic_encrypted_filename(wallet_name: &str) -> String {
 
 /// Default SLIP-0039 export directory name
 pub fn default_slip39_directory_name(wallet_name: &str, threshold: u8, share_count: u8) -> String {
-    format!("{}_slip39_{}of{}", sanitize_filename(wallet_name), threshold, share_count)
+    format!(
+        "{}_slip39_{}of{}",
+        sanitize_filename(wallet_name),
+        threshold,
+        share_count
+    )
 }
 
 /// Ensure path has .pdf extension
 pub fn ensure_pdf_extension(mut path: PathBuf) -> PathBuf {
-    let has_pdf = path.extension().and_then(|ext| ext.to_str()).map(|ext| ext.eq_ignore_ascii_case("pdf")).unwrap_or(false);
-    if !has_pdf { path.set_extension("pdf"); }
+    let has_pdf = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("pdf"))
+        .unwrap_or(false);
+    if !has_pdf {
+        path.set_extension("pdf");
+    }
     path
 }
 
 /// Ensure path has .enc extension
 pub fn ensure_enc_extension(mut path: PathBuf) -> PathBuf {
-    let has_enc = path.extension().and_then(|ext| ext.to_str()).map(|ext| ext.eq_ignore_ascii_case("enc")).unwrap_or(false);
-    if !has_enc { path.set_extension("enc"); }
+    let has_enc = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("enc"))
+        .unwrap_or(false);
+    if !has_enc {
+        path.set_extension("enc");
+    }
     path
 }

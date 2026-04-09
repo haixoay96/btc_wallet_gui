@@ -17,4 +17,3 @@ pub struct OnboardingView {
     pub current_step: u8,
     pub total_steps: u8,
 }
-

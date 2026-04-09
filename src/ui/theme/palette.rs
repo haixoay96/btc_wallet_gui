@@ -1,6 +1,6 @@
+use super::colors::{DarkColors, HighContrastColors};
 use iced::{Color, Theme};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use super::colors::{DarkColors, HighContrastColors};
 
 /// Global high contrast state
 static HIGH_CONTRAST_ENABLED: AtomicBool = AtomicBool::new(false);

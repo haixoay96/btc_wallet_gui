@@ -40,10 +40,7 @@ pub fn split_mnemonic_to_slip39_shares(
         .collect()
 }
 
-pub fn combine_slip39_shares(
-    share_phrases: &[String],
-    slip39_passphrase: &str,
-) -> Result<String> {
+pub fn combine_slip39_shares(share_phrases: &[String], slip39_passphrase: &str) -> Result<String> {
     if share_phrases.is_empty() {
         return Err(anyhow!("Vui lòng nhập ít nhất một SLIP-0039 share"));
     }

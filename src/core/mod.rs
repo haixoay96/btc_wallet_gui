@@ -1,3 +1,3 @@
-pub mod wallet;
-pub mod contact;
 pub mod backup;
+pub mod contact;
+pub mod wallet;

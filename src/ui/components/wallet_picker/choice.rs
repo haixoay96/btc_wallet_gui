@@ -5,8 +5,6 @@ use std::fmt;
 
 use crate::wallet::Wallet;
 
-
-
 pub fn wallet_choices(wallets: &[Wallet]) -> Vec<WalletChoice> {
     wallets
         .iter()

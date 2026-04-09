@@ -1,26 +1,20 @@
 use iced::{
-    widget::{
-        button, column, container, image, pick_list, row, scrollable, text, Space,
-    },
+    widget::{button, column, container, image, pick_list, row, scrollable, text, Space},
     Alignment, Element, Length,
 };
 use qrcode::{types::Color as QrColor, QrCode};
 
-use crate::ui::components::{modal, warning_box};
 use crate::i18n::t;
-use crate::ui::theme::{text_scaled,
-    card_style, pick_list_menu_style, pick_list_style,
-    primary_button_style, secondary_button_style, selected_button_style, text_color,
-    text_primary_color, text_secondary_color, text_muted_color,
-    Colors,
-};
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
+use crate::ui::components::{modal, warning_box};
+use crate::ui::theme::{
+    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    secondary_button_style, selected_button_style, text_color, text_muted_color,
+    text_primary_color, text_scaled, text_secondary_color, Colors,
+};
 use crate::wallet::{AddressChain, Wallet};
 
 use super::structure::*;
-
-
-
 
 impl ReceiveView {
     pub fn new() -> Self {
@@ -100,15 +94,13 @@ impl ReceiveView {
         let wallet_options = wallet_choices(wallets);
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
         let wallet = wallets.get(selected_wallet);
-        
+
         let content_padding = if compact { 16 } else { 32 };
 
-        let title = text_scaled(t("Nhận BTC", "Receive BTC"), 32)
-            .style(text_primary_color());
+        let title = text_scaled(t("Nhận BTC", "Receive BTC"), 32).style(text_primary_color());
 
         let wallet_selector = column![
-            text_scaled(t("Ví", "Wallet"), 14)
-                .style(text_secondary_color()),
+            text_scaled(t("Ví", "Wallet"), 14).style(text_secondary_color()),
             Space::with_height(4),
             pick_list(wallet_options, selected_wallet_option, |choice| {
                 ReceiveMessage::SelectWallet(choice.index)
@@ -124,7 +116,9 @@ impl ReceiveView {
         ]
         .spacing(4);
 
-        let mut content = column![title, wallet_selector].spacing(16).padding(content_padding);
+        let mut content = column![title, wallet_selector]
+            .spacing(16)
+            .padding(content_padding);
 
         if let Some(wallet) = wallet {
             let balance_btc = wallet.balance() as f64 / 100_000_000.0;
@@ -164,20 +158,25 @@ impl ReceiveView {
                 ).map(|_| ReceiveMessage::DeriveNewAddress),
             );
 
-            let derive_button =
-                button(text_scaled(t("+ Tạo địa chỉ mới", "+ Derive New Address"), 14))
-                    .on_press(ReceiveMessage::DeriveNewAddress)
-                    .padding(10)
-                    .style(primary_button_style());
+            let derive_button = button(text_scaled(
+                t("+ Tạo địa chỉ mới", "+ Derive New Address"),
+                14,
+            ))
+            .on_press(ReceiveMessage::DeriveNewAddress)
+            .padding(10)
+            .style(primary_button_style());
 
             content = content.push(derive_button);
 
             if receive_addresses.is_empty() {
                 content = content.push(
-                    text_scaled(t(
-                        "Ví chưa có địa chỉ, hãy bấm 'Tạo địa chỉ mới'.",
-                        "This wallet has no address yet, click 'Derive New Address'.",
-                    ), 14)
+                    text_scaled(
+                        t(
+                            "Ví chưa có địa chỉ, hãy bấm 'Tạo địa chỉ mới'.",
+                            "This wallet has no address yet, click 'Derive New Address'.",
+                        ),
+                        14,
+                    )
                     .style(text_muted_color()),
                 );
             } else {
@@ -209,13 +208,14 @@ impl ReceiveView {
 
                     content = content.push(
                         row![
-                            button(
-                                text_scaled(if self.copied {
+                            button(text_scaled(
+                                if self.copied {
                                     t("Đã sao chép", "Copied")
                                 } else {
                                     t("Sao chép địa chỉ", "Copy address")
-                                }, 14),
-                            )
+                                },
+                                14
+                            ),)
                             .on_press(ReceiveMessage::CopyAddress(addr.address.clone()))
                             .padding(10)
                             .style(if self.copied {
@@ -224,13 +224,14 @@ impl ReceiveView {
                                 primary_button_style()
                             }),
                             Space::with_width(8),
-                            button(
-                                text_scaled(if qr_visible_for_selected {
+                            button(text_scaled(
+                                if qr_visible_for_selected {
                                     t("Ẩn QR", "Hide QR")
                                 } else {
                                     t("Mở QR", "Open QR")
-                                }, 14),
-                            )
+                                },
+                                14
+                            ),)
                             .on_press(ReceiveMessage::ToggleQrCode(addr.address.clone()))
                             .padding(10)
                             .style(primary_button_style()),
@@ -243,19 +244,21 @@ impl ReceiveView {
                             .qr_error
                             .as_deref()
                             .unwrap_or(t("Không tạo được QR", "Failed to generate QR"));
-                        content = content.push(text_scaled(err, 13).style(text_color(Colors::ERROR)));
+                        content =
+                            content.push(text_scaled(err, 13).style(text_color(Colors::ERROR)));
                     }
                 }
 
                 content = content.push(Space::with_height(16));
                 content = content.push(
-                    button(
-                        text_scaled(if self.show_all_addresses {
+                    button(text_scaled(
+                        if self.show_all_addresses {
                             t("Ẩn danh sách địa chỉ trước đây", "Hide previous addresses")
                         } else {
                             t("Hiện tất cả địa chỉ trước đây", "Show previous addresses")
-                        }, 13),
-                    )
+                        },
+                        13,
+                    ))
                     .on_press(ReceiveMessage::ToggleAddressHistory)
                     .padding(10)
                     .style(if self.show_all_addresses {
@@ -275,11 +278,9 @@ impl ReceiveView {
                     for (i, addr) in receive_addresses.iter().enumerate() {
                         let is_selected = i == selected_index;
                         let row_content = row![
-                            text_scaled(format!("#{}", addr.index), 12)
-                                .style(text_muted_color()),
+                            text_scaled(format!("#{}", addr.index), 12).style(text_muted_color()),
                             Space::with_width(8),
-                            text_scaled(addr.address.clone(), 12)
-                                .style(text_primary_color()),
+                            text_scaled(addr.address.clone(), 12).style(text_primary_color()),
                             Space::with_width(Length::Fill),
                             if is_selected {
                                 text_scaled(t("Đang chọn", "Selected"), 11)
@@ -325,8 +326,7 @@ impl ReceiveView {
             self.qr_address.as_ref(),
         ) {
             let qr_content = column![
-                text_scaled(address.as_str(), 12)
-                    .style(text_secondary_color()),
+                text_scaled(address.as_str(), 12).style(text_secondary_color()),
                 Space::with_height(10),
                 container(
                     image::Image::new(handle.clone())

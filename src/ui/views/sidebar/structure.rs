@@ -12,7 +12,14 @@ pub enum NavItem {
 
 impl NavItem {
     pub fn all() -> Vec<Self> {
-        vec![Self::Dashboard, Self::Wallets, Self::Send, Self::Receive, Self::History, Self::Settings]
+        vec![
+            Self::Dashboard,
+            Self::Wallets,
+            Self::Send,
+            Self::Receive,
+            Self::History,
+            Self::Settings,
+        ]
     }
 
     pub fn icon_char(self) -> String {

@@ -3,12 +3,12 @@ use iced::{clipboard, Task};
 use secrecy::ExposeSecret;
 
 use crate::app::structure::{App, AppMessage, RefreshWalletsResult};
-use crate::i18n::t;
-use crate::wallet::{Wallet, WalletSecretsRef};
 use crate::components::{Toast, ToastManager};
 use crate::error::AppError;
+use crate::i18n::t;
 use crate::views::sidebar::NavItem;
 use crate::views::wallets::WalletsView;
+use crate::wallet::{Wallet, WalletSecretsRef};
 
 impl App {
     pub fn display_name(&self) -> &str {
@@ -102,13 +102,19 @@ impl App {
                     Some(AppError::api_with_status(
                         "refresh_errors",
                         500,
-                        &format!("{}: {}", t("Một số ví làm mới lỗi", "Some wallets failed to refresh"), payload.errors.join(" | ")),
+                        &format!(
+                            "{}: {}",
+                            t("Một số ví làm mới lỗi", "Some wallets failed to refresh"),
+                            payload.errors.join(" | ")
+                        ),
                     ))
                 };
                 self.error = match (save_error, refresh_error) {
-                    (Some(save_error), Some(refresh_error)) => {
-                        Some(AppError::unknown(&format!("{} | {}", save_error.user_message(), refresh_error.user_message())))
-                    }
+                    (Some(save_error), Some(refresh_error)) => Some(AppError::unknown(&format!(
+                        "{} | {}",
+                        save_error.user_message(),
+                        refresh_error.user_message()
+                    ))),
                     (Some(save_error), None) => Some(save_error),
                     (None, Some(refresh_error)) => Some(refresh_error),
                     (None, None) => None,
@@ -118,7 +124,10 @@ impl App {
                 self.error = Some(AppError::api_with_status(
                     "wallet_refresh",
                     500,
-                    &format!("{}: {err}", t("Làm mới ví thất bại", "Wallet refresh failed")),
+                    &format!(
+                        "{}: {err}",
+                        t("Làm mới ví thất bại", "Wallet refresh failed")
+                    ),
                 ));
             }
         }

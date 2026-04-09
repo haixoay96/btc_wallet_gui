@@ -4,16 +4,12 @@ use iced::{
 };
 
 use crate::i18n::t;
-use crate::ui::theme::{text_scaled,
-    card_style, primary_button_style, secondary_button_style,
-    text_primary_color, text_secondary_color, text_muted_color, text_color,
-    get_theme_colors, Colors,
+use crate::ui::theme::{
+    card_style, get_theme_colors, primary_button_style, secondary_button_style, text_color,
+    text_muted_color, text_primary_color, text_scaled, text_secondary_color, Colors,
 };
 
 use super::structure::*;
-
-
-
 
 impl OnboardingView {
     pub fn new() -> Self {
@@ -83,25 +79,18 @@ impl OnboardingView {
 
     fn step_mockup(step: u8) -> Element<'static, OnboardingMessage> {
         match step {
-            0 => {
-                container(
-                    text_scaled('₿', 64)
-                        .style(text_color(Colors::ACCENT_TEAL)),
-                )
+            0 => container(text_scaled('₿', 64).style(text_color(Colors::ACCENT_TEAL)))
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .align_x(Alignment::Center)
                 .align_y(Alignment::Center)
-                .into()
-            }
+                .into(),
             1 => {
                 let total_card = container(
                     column![
-                        text_scaled(t("Tổng số dư", "Total Balance"), 10)
-                            .style(text_muted_color()),
+                        text_scaled(t("Tổng số dư", "Total Balance"), 10).style(text_muted_color()),
                         Space::with_height(4),
-                        text_scaled("0.12345678 BTC", 18)
-                            .style(text_color(Colors::ACCENT_TEAL)),
+                        text_scaled("0.12345678 BTC", 18).style(text_color(Colors::ACCENT_TEAL)),
                     ]
                     .padding(12),
                 )
@@ -199,7 +188,8 @@ impl OnboardingView {
                         row![
                             text_scaled("+", 12).style(text_muted_color()),
                             Space::with_width(6),
-                            text_scaled(t("Thêm ví mới", "Add new wallet"), 11).style(text_muted_color()),
+                            text_scaled(t("Thêm ví mới", "Add new wallet"), 11)
+                                .style(text_muted_color()),
                         ]
                         .padding(10)
                         .align_y(Alignment::Center)
@@ -223,7 +213,7 @@ impl OnboardingView {
                         Space::with_height(4),
                         text_scaled("Code", 9).style(text_muted_color()),
                     ]
-                    .align_x(Alignment::Center)
+                    .align_x(Alignment::Center),
                 )
                 .style(|theme: &iced::Theme| {
                     let colors = get_theme_colors(theme);
@@ -259,7 +249,8 @@ impl OnboardingView {
                         address_preview,
                         Space::with_height(8),
                         container(
-                            text_scaled(t("Sao chép", "Copy"), 10).style(text_color(iced::Color::from_rgb(1.0, 1.0, 1.0))),
+                            text_scaled(t("Sao chép", "Copy"), 10)
+                                .style(text_color(iced::Color::from_rgb(1.0, 1.0, 1.0))),
                         )
                         .style(|_| iced::widget::container::Style {
                             background: Some(iced::Background::Color(Colors::ACCENT_TEAL)),
@@ -277,14 +268,20 @@ impl OnboardingView {
                     row![
                         text_scaled("!", 16).style(text_color(Colors::WARNING)),
                         Space::with_width(8),
-                        text_scaled(t("Backup ngay!", "Backup now!"), 12).style(text_color(Colors::WARNING)),
+                        text_scaled(t("Backup ngay!", "Backup now!"), 12)
+                            .style(text_color(Colors::WARNING)),
                     ]
-                    .align_y(Alignment::Center)
+                    .align_y(Alignment::Center),
                 )
                 .style(|theme: &iced::Theme| {
                     let colors = get_theme_colors(theme);
                     iced::widget::container::Style {
-                        background: Some(iced::Background::Color(iced::Color::from_rgba(colors.warning.r, colors.warning.g, colors.warning.b, 0.15))),
+                        background: Some(iced::Background::Color(iced::Color::from_rgba(
+                            colors.warning.r,
+                            colors.warning.g,
+                            colors.warning.b,
+                            0.15,
+                        ))),
                         border: iced::border::rounded(8),
                         ..Default::default()
                     }
@@ -310,7 +307,7 @@ impl OnboardingView {
                             text_scaled("able", 10).style(text_primary_color()),
                         ],
                     ]
-                    .padding(8)
+                    .padding(8),
                 )
                 .style(|theme: &iced::Theme| {
                     let colors = get_theme_colors(theme);
@@ -325,7 +322,8 @@ impl OnboardingView {
                 column![
                     warning_banner,
                     Space::with_height(8),
-                    text_scaled(t("12 từ mnemonic", "12-word mnemonic"), 10).style(text_muted_color()),
+                    text_scaled(t("12 từ mnemonic", "12-word mnemonic"), 10)
+                        .style(text_muted_color()),
                     Space::with_height(4),
                     seed_preview,
                 ]
@@ -336,30 +334,31 @@ impl OnboardingView {
     }
 
     pub fn view(&self) -> Element<'_, OnboardingMessage> {
-        let title = text_scaled(Self::step_title(self.current_step), 24)
-            .style(text_primary_color());
+        let title =
+            text_scaled(Self::step_title(self.current_step), 24).style(text_primary_color());
 
         let description = text_scaled(Self::step_description(self.current_step), 14)
             .style(text_secondary_color())
             .width(Length::Fill);
 
-        let mockup = container(Self::step_mockup(self.current_step).map(|_| OnboardingMessage::Next))
-            .style(|theme: &iced::Theme| {
-                let colors = get_theme_colors(theme);
-                iced::widget::container::Style {
-                    background: Some(iced::Background::Color(iced::Color::from_rgba(
-                        colors.bg_card.r,
-                        colors.bg_card.g,
-                        colors.bg_card.b,
-                        0.95,
-                    ))),
-                    border: iced::border::rounded(12),
-                    ..Default::default()
-                }
-            })
-            .padding(20)
-            .height(Length::Fixed(160.0))
-            .width(Length::Fill);
+        let mockup =
+            container(Self::step_mockup(self.current_step).map(|_| OnboardingMessage::Next))
+                .style(|theme: &iced::Theme| {
+                    let colors = get_theme_colors(theme);
+                    iced::widget::container::Style {
+                        background: Some(iced::Background::Color(iced::Color::from_rgba(
+                            colors.bg_card.r,
+                            colors.bg_card.g,
+                            colors.bg_card.b,
+                            0.95,
+                        ))),
+                        border: iced::border::rounded(12),
+                        ..Default::default()
+                    }
+                })
+                .padding(20)
+                .height(Length::Fixed(160.0))
+                .width(Length::Fill);
 
         let mut dots = row![];
         for i in 0..self.total_steps {
@@ -370,12 +369,13 @@ impl OnboardingView {
             } else {
                 Colors::BORDER
             };
-            let dot = container(Space::with_width(10).height(10))
-                .style(move |_| iced::widget::container::Style {
+            let dot = container(Space::with_width(10).height(10)).style(move |_| {
+                iced::widget::container::Style {
                     background: Some(iced::Background::Color(color)),
                     border: iced::border::rounded(5),
                     ..Default::default()
-                });
+                }
+            });
             dots = dots.push(dot);
             if i < self.total_steps - 1 {
                 dots = dots.push(Space::with_width(6));

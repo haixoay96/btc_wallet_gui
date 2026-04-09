@@ -14,4 +14,3 @@ pub struct DashboardView {
     pub backup_needed_wallets: usize,
     pub last_synced_label: Option<String>,
 }
-

@@ -1,5 +1,5 @@
-mod structure;
 mod overlay;
+mod structure;
 
 pub use overlay::modal;
 

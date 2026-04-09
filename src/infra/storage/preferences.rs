@@ -1,10 +1,10 @@
+use anyhow::{Context, Result};
 use std::fs;
 use std::path::Path;
-use anyhow::{Context, Result};
 
 use crate::i18n::AppLanguage;
-use crate::infra::storage::structure::{AppPreferences, AppTheme};
 use crate::infra::storage::structure::Storage;
+use crate::infra::storage::structure::{AppPreferences, AppTheme};
 
 // ─── Preference Load/Save ────────────────────────────────────────────────
 
@@ -19,7 +19,12 @@ impl Storage {
 
     pub fn save_language_preference(&self, language: AppLanguage) -> Result<()> {
         let current = self.load_preferences()?;
-        let prefs = AppPreferences { language, last_selected_wallet: current.last_selected_wallet, last_viewed_page: current.last_viewed_page, ..Default::default() };
+        let prefs = AppPreferences {
+            language,
+            last_selected_wallet: current.last_selected_wallet,
+            last_viewed_page: current.last_viewed_page,
+            ..Default::default()
+        };
         self.save_preferences(&prefs)
     }
 
@@ -95,7 +100,11 @@ impl Storage {
 
     pub fn load_timeout_secs(&self) -> Result<u64> {
         let prefs = self.load_preferences()?;
-        Ok(if prefs.timeout_secs == 0 { 15 } else { prefs.timeout_secs })
+        Ok(if prefs.timeout_secs == 0 {
+            15
+        } else {
+            prefs.timeout_secs
+        })
     }
 
     pub fn save_timeout_secs(&self, secs: u64) -> Result<()> {
@@ -151,12 +160,25 @@ impl Storage {
     // ─── Private helpers ─────────────────────────────────────────────
 
     fn save_preferences(&self, prefs: &AppPreferences) -> Result<()> {
-        let encoded = serde_json::to_vec_pretty(prefs).context("Không serialize được app preferences")?;
-        let parent: &std::path::Path = self.paths.preferences_file.parent().filter(|dir| !dir.as_os_str().is_empty()).unwrap_or_else(|| std::path::Path::new("."));
-        fs::create_dir_all(parent).with_context(|| format!("Không tạo được thư mục dữ liệu: {}", parent.display()))?;
+        let encoded =
+            serde_json::to_vec_pretty(prefs).context("Không serialize được app preferences")?;
+        let parent: &std::path::Path = self
+            .paths
+            .preferences_file
+            .parent()
+            .filter(|dir| !dir.as_os_str().is_empty())
+            .unwrap_or_else(|| std::path::Path::new("."));
+        fs::create_dir_all(parent)
+            .with_context(|| format!("Không tạo được thư mục dữ liệu: {}", parent.display()))?;
         let tmp_path = self.paths.preferences_file.with_extension("json.tmp");
-        fs::write(&tmp_path, encoded).with_context(|| format!("Không ghi được file tạm: {}", tmp_path.display()))?;
-        fs::rename(&tmp_path, &self.paths.preferences_file).with_context(|| format!("Không đổi tên file: {}", self.paths.preferences_file.display()))?;
+        fs::write(&tmp_path, encoded)
+            .with_context(|| format!("Không ghi được file tạm: {}", tmp_path.display()))?;
+        fs::rename(&tmp_path, &self.paths.preferences_file).with_context(|| {
+            format!(
+                "Không đổi tên file: {}",
+                self.paths.preferences_file.display()
+            )
+        })?;
         Ok(())
     }
 
@@ -164,8 +186,14 @@ impl Storage {
         if !self.paths.preferences_file.exists() {
             return Ok(AppPreferences::default());
         }
-        let encoded = fs::read_to_string(&self.paths.preferences_file).with_context(|| format!("Không đọc được preferences: {}", self.paths.preferences_file.display()))?;
-        let prefs: AppPreferences = serde_json::from_str(&encoded).context("Không parse được app preferences")?;
+        let encoded = fs::read_to_string(&self.paths.preferences_file).with_context(|| {
+            format!(
+                "Không đọc được preferences: {}",
+                self.paths.preferences_file.display()
+            )
+        })?;
+        let prefs: AppPreferences =
+            serde_json::from_str(&encoded).context("Không parse được app preferences")?;
         Ok(prefs)
     }
 }

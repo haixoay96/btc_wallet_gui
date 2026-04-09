@@ -3,12 +3,14 @@ use std::time::Duration;
 use iced::{clipboard, Task};
 
 use crate::app::structure::*;
+use crate::components::{Toast, ToastManager};
 use crate::error::AppError;
 use crate::i18n::t;
 use crate::storage::Storage;
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::{HistoryEvent, HistoryMessage, HistoryView},
+    language_selector::LanguageSelector,
     login::{LoginMessage, LoginView},
     onboarding::{OnboardingMessage, OnboardingView},
     receive::{ReceiveMessage, ReceiveView},
@@ -16,10 +18,8 @@ use crate::views::{
     settings::{SettingsMessage, SettingsView},
     sidebar::{NavItem, Sidebar, SidebarEvent, SidebarMessage},
     wallets::{WalletsMessage, WalletsView},
-    language_selector::LanguageSelector,
 };
 use crate::wallet::{Wallet, WalletSecretsRef, WalletSecretsVault};
-use crate::components::{Toast, ToastManager};
 
 impl App {
     pub fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
@@ -35,11 +35,12 @@ impl App {
                         if page == NavItem::Settings {
                             // Only sync once when navigating TO Settings
                             // Don't sync font_scale/high_contrast here to allow real-time slider updates
-                            self.settings_view.esplora_endpoint = if let Ok(storage) = Storage::new() {
-                                storage.load_esplora_endpoint().unwrap_or_default()
-                            } else {
-                                "https://blockstream.info/api".to_string()
-                            };
+                            self.settings_view.esplora_endpoint =
+                                if let Ok(storage) = Storage::new() {
+                                    storage.load_esplora_endpoint().unwrap_or_default()
+                                } else {
+                                    "https://blockstream.info/api".to_string()
+                                };
                             self.settings_view.timeout_secs = if let Ok(storage) = Storage::new() {
                                 storage.load_timeout_secs().unwrap_or(15)
                             } else {
@@ -95,7 +96,11 @@ impl App {
                         .spawn();
 
                     if let Err(e) = result {
-                        self.error = Some(AppError::unknown(&format!("{}: {}", t("Không thể mở trình duyệt", "Cannot open browser"), e)));
+                        self.error = Some(AppError::unknown(&format!(
+                            "{}: {}",
+                            t("Không thể mở trình duyệt", "Cannot open browser"),
+                            e
+                        )));
                     }
                     Task::none()
                 }
@@ -159,52 +164,96 @@ impl App {
                                         async move {
                                             tokio::task::spawn_blocking(move || {
                                                 rfd::FileDialog::new()
-                                                    .set_title(t("Lưu lịch sử PDF", "Save history as PDF"))
+                                                    .set_title(t(
+                                                        "Lưu lịch sử PDF",
+                                                        "Save history as PDF",
+                                                    ))
                                                     .add_filter(t("File PDF", "PDF file"), &["pdf"])
                                                     .set_file_name("history_export.pdf")
                                                     .save_file()
                                             })
                                             .await
                                             .unwrap_or(None)
-                                            .and_then(|path| {
-                                                use printpdf::{BuiltinFont, Mm, PdfDocument};
-                                                let (doc, page, layer) = PdfDocument::new(
-                                                    "Transaction History",
-                                                    Mm(210.0),
-                                                    Mm(297.0),
-                                                    "History Layer",
-                                                );
-                                                let current_layer = doc.get_page(page).get_layer(layer);
-                                                let font_regular = doc.add_builtin_font(BuiltinFont::Helvetica).ok()?;
-                                                let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold).ok()?;
-                                                current_layer.use_text(
-                                                    format!("Bitcoin Wallet - {}", wallet_clone.name),
-                                                    18.0, Mm(15.0), Mm(280.0), &font_bold,
-                                                );
-                                                let mut y_pos = 260.0;
-                                                for tx in &wallet_clone.history {
-                                                    if y_pos < 15.0 {
-                                                        break;
+                                            .and_then(
+                                                |path| {
+                                                    use printpdf::{BuiltinFont, Mm, PdfDocument};
+                                                    let (doc, page, layer) = PdfDocument::new(
+                                                        "Transaction History",
+                                                        Mm(210.0),
+                                                        Mm(297.0),
+                                                        "History Layer",
+                                                    );
+                                                    let current_layer =
+                                                        doc.get_page(page).get_layer(layer);
+                                                    let font_regular = doc
+                                                        .add_builtin_font(BuiltinFont::Helvetica)
+                                                        .ok()?;
+                                                    let font_bold = doc
+                                                        .add_builtin_font(
+                                                            BuiltinFont::HelveticaBold,
+                                                        )
+                                                        .ok()?;
+                                                    current_layer.use_text(
+                                                        format!(
+                                                            "Bitcoin Wallet - {}",
+                                                            wallet_clone.name
+                                                        ),
+                                                        18.0,
+                                                        Mm(15.0),
+                                                        Mm(280.0),
+                                                        &font_bold,
+                                                    );
+                                                    let mut y_pos = 260.0;
+                                                    for tx in &wallet_clone.history {
+                                                        if y_pos < 15.0 {
+                                                            break;
+                                                        }
+                                                        let date_str = if let Some(ts) =
+                                                            tx.block_time
+                                                        {
+                                                            let dt =
+                                                                chrono::DateTime::from_timestamp(
+                                                                    ts as i64, 0,
+                                                                )
+                                                                .unwrap_or_default();
+                                                            dt.format("%d/%m/%Y").to_string()
+                                                        } else {
+                                                            "Pending".to_string()
+                                                        };
+                                                        let amount_btc =
+                                                            tx.amount_sat as f64 / 100_000_000.0;
+                                                        current_layer.use_text(
+                                                            date_str,
+                                                            8.0,
+                                                            Mm(15.0),
+                                                            Mm(y_pos),
+                                                            &font_regular,
+                                                        );
+                                                        current_layer.use_text(
+                                                            format!("{:.8}", amount_btc),
+                                                            8.0,
+                                                            Mm(65.0),
+                                                            Mm(y_pos),
+                                                            &font_regular,
+                                                        );
+                                                        current_layer.use_text(
+                                                            &tx.txid[..16.min(tx.txid.len())],
+                                                            8.0,
+                                                            Mm(115.0),
+                                                            Mm(y_pos),
+                                                            &font_regular,
+                                                        );
+                                                        y_pos -= 10.0;
                                                     }
-                                                    let date_str = if let Some(ts) = tx.block_time {
-                                                        let dt = chrono::DateTime::from_timestamp(ts as i64, 0).unwrap_or_default();
-                                                        dt.format("%d/%m/%Y").to_string()
+                                                    if let Ok(file) = std::fs::File::create(&path) {
+                                                        let mut writer =
+                                                            std::io::BufWriter::new(file);
+                                                        doc.save(&mut writer).ok()
                                                     } else {
-                                                        "Pending".to_string()
-                                                    };
-                                                    let amount_btc = tx.amount_sat as f64 / 100_000_000.0;
-                                                    current_layer.use_text(date_str, 8.0, Mm(15.0), Mm(y_pos), &font_regular);
-                                                    current_layer.use_text(format!("{:.8}", amount_btc), 8.0, Mm(65.0), Mm(y_pos), &font_regular);
-                                                    current_layer.use_text(&tx.txid[..16.min(tx.txid.len())], 8.0, Mm(115.0), Mm(y_pos), &font_regular);
-                                                    y_pos -= 10.0;
-                                                }
-                                                if let Ok(file) = std::fs::File::create(&path) {
-                                                    let mut writer = std::io::BufWriter::new(file);
-                                                    doc.save(&mut writer).ok()
-                                                } else {
-                                                    None
-                                                }
-                                            })
+                                                        None
+                                                    }
+                                                },
+                                            )
                                         },
                                         |result| {
                                             if result.is_some() {
@@ -264,31 +313,36 @@ impl App {
                 } else if self.wallets_view.confirm_delete_index.is_some() {
                     self.wallets_view.update(WalletsMessage::CancelDelete);
                 } else if self.wallets_view.notice_wallet_index.is_some() {
-                    self.wallets_view.update(WalletsMessage::DismissWalletNotice);
+                    self.wallets_view
+                        .update(WalletsMessage::DismissWalletNotice);
                 } else if self.settings_view.show_clear_data_confirm {
-                    self.settings_view.update(SettingsMessage::ToggleClearDataConfirm);
+                    self.settings_view
+                        .update(SettingsMessage::ToggleClearDataConfirm);
                 }
                 Task::none()
             }
             AppMessage::ExportFinished(result) => {
                 match result {
                     Ok(_) => {
-                        self.add_success_toast(t("Xuất file thành công!", "Export successful!").to_string());
+                        self.add_success_toast(
+                            t("Xuất file thành công!", "Export successful!").to_string(),
+                        );
                     }
                     Err(e) => {
-                        self.error = Some(AppError::storage("export", &format!("{}: {}", t("Lỗi export", "Export error"), e)));
+                        self.error = Some(AppError::storage(
+                            "export",
+                            &format!("{}: {}", t("Lỗi export", "Export error"), e),
+                        ));
                     }
                 }
                 Task::none()
             }
-            AppMessage::DismissStatus => {
-                Task::none()
-            }
+            AppMessage::DismissStatus => Task::none(),
             AppMessage::DismissError => {
                 self.error = None;
                 Task::none()
             }
-            
+
             // Keyboard shortcut handlers
             AppMessage::KeyboardCopy => {
                 // Copy from current context based on current page
@@ -297,7 +351,8 @@ impl App {
                         // Copy current receive address
                         if let Some(addr) = self.receive_view.get_current_address() {
                             self.last_copied_address = Some(addr.clone());
-                            self.last_copied_time = Some(chrono::Local::now().format("%H:%M:%S").to_string());
+                            self.last_copied_time =
+                                Some(chrono::Local::now().format("%H:%M:%S").to_string());
                             clipboard::write(addr)
                         } else {
                             Task::none()
@@ -306,7 +361,7 @@ impl App {
                     _ => Task::none(),
                 }
             }
-            
+
             AppMessage::KeyboardPaste => {
                 // Only paste on Send screen - set focus flag to paste when text input is ready
                 if self.current_page == NavItem::Send {
@@ -314,7 +369,7 @@ impl App {
                 }
                 Task::none()
             }
-            
+
             AppMessage::KeyboardSubmitForm => {
                 // Submit form based on current context
                 if matches!(self.state, AppState::Main) && self.current_page == NavItem::Send {
@@ -325,7 +380,7 @@ impl App {
                 }
                 Task::none()
             }
-            
+
             AppMessage::KeyboardSaveState => {
                 // Manual save trigger
                 if matches!(self.state, AppState::Main) {
@@ -334,7 +389,7 @@ impl App {
                 }
                 Task::none()
             }
-            
+
             AppMessage::KeyboardFocusSearch => {
                 // Focus search box in history
                 if self.current_page == NavItem::History {
@@ -357,7 +412,11 @@ impl App {
                         return Task::none();
                     }
                 }
-                let has_pending = self.wallets.iter().any(|w| w.history.iter().any(|tx| !tx.confirmed || tx.confirmations < 6));
+                let has_pending = self.wallets.iter().any(|w| {
+                    w.history
+                        .iter()
+                        .any(|tx| !tx.confirmed || tx.confirmations < 6)
+                });
                 if has_pending {
                     return self.refresh_all_wallets();
                 }
@@ -379,5 +438,4 @@ impl App {
             }
         }
     }
-
 }

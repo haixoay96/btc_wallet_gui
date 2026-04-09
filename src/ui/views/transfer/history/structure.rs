@@ -50,4 +50,3 @@ pub struct HistoryView {
     pub items_per_page: usize,
     pub selected_tx_index: Option<usize>,
 }
-

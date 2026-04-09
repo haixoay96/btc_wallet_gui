@@ -62,7 +62,8 @@ impl AddressBook {
             return self.get_all_contacts();
         }
         let query_lower = query.to_lowercase();
-        let mut results: Vec<&ContactEntry> = self.contacts
+        let mut results: Vec<&ContactEntry> = self
+            .contacts
             .values()
             .filter(|c| {
                 c.name.to_lowercase().contains(&query_lower)
@@ -123,7 +124,9 @@ mod tests {
         let contact = book.get_all_contacts()[0];
 
         let mut new_book = AddressBook::new();
-        new_book.contacts.insert(contact.id.clone(), contact.clone());
+        new_book
+            .contacts
+            .insert(contact.id.clone(), contact.clone());
 
         assert_eq!(new_book.get_all_contacts().len(), 1);
     }

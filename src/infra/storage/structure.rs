@@ -1,14 +1,14 @@
-use std::fmt;
-use serde::{Deserialize, Serialize};
 use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use crate::core::contact::AddressBook;
 use crate::i18n::AppLanguage;
+use crate::infra::paths::StoragePaths;
 use crate::wallet::{
     runtime_wallets_from_stored, stored_wallets_from_runtime, StoredWallet, Wallet,
     WalletSecretsVault,
 };
-use crate::infra::paths::StoragePaths;
 
 // ─── State structs ───────────────────────────────────────────────────────
 

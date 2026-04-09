@@ -7,9 +7,7 @@ use iced::{
     Color, Element, Length,
 };
 
-use crate::ui::theme::{text_scaled, text_color,
-    text_secondary_color,
-    Colors};
+use crate::ui::theme::{text_color, text_scaled, text_secondary_color, Colors};
 
 /// Platform-aware key modifier display (Cmd on macOS, Ctrl elsewhere)
 pub fn ctrl_label() -> &'static str {
@@ -116,7 +114,9 @@ fn key_badge(key: &str) -> Element<'static, ()> {
     let key_owned = key.to_string();
     container(text_scaled(key_owned, 11).style(text_color(text_color_val)))
         .style(|_| iced::widget::container::Style {
-            background: Some(iced::Background::Color(Color::from_rgba(0.5, 0.5, 0.5, 0.2))),
+            background: Some(iced::Background::Color(Color::from_rgba(
+                0.5, 0.5, 0.5, 0.2,
+            ))),
             border: iced::border::rounded(4),
             ..Default::default()
         })
@@ -151,10 +151,7 @@ pub fn shortcuts_help_popup() -> Element<'static, ()> {
     }
 
     // Actions section (Items 7-10)
-    content = content.push(shortcut_section_header(
-        "Thao tác (Actions)",
-        "Actions",
-    ));
+    content = content.push(shortcut_section_header("Thao tác (Actions)", "Actions"));
     for shortcut in shortcuts.iter().skip(7).take(4) {
         content = content.push(shortcut_row(shortcut));
     }
@@ -169,25 +166,19 @@ pub fn shortcuts_help_popup() -> Element<'static, ()> {
     }
 
     scrollable(
-        column![
-            Space::with_height(8),
-            content,
-            Space::with_height(8),
-        ]
-        .spacing(0)
-        .width(Length::Fill),
+        column![Space::with_height(8), content, Space::with_height(8),]
+            .spacing(0)
+            .width(Length::Fill),
     )
     .into()
 }
 
 fn shortcut_row(shortcut: &KeyboardShortcut) -> Element<'static, ()> {
-    let keys_row = row(
-        shortcut
-            .keys
-            .iter()
-            .map(|key| key_badge(key))
-            .collect::<Vec<_>>(),
-    )
+    let keys_row = row(shortcut
+        .keys
+        .iter()
+        .map(|key| key_badge(key))
+        .collect::<Vec<_>>())
     .spacing(4)
     .align_y(iced::Alignment::Center);
 

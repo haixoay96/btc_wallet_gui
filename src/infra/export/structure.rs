@@ -27,7 +27,11 @@ impl Drop for DecryptedSecretExport {
     fn drop(&mut self) {
         match self {
             Self::Mnemonic { mnemonic, .. } => mnemonic.zeroize(),
-            Self::Slip39 { slip39_passphrase, shares, .. } => {
+            Self::Slip39 {
+                slip39_passphrase,
+                shares,
+                ..
+            } => {
                 slip39_passphrase.zeroize();
                 shares.iter_mut().for_each(Zeroize::zeroize);
             }

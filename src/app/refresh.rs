@@ -3,11 +3,11 @@ use std::time::Duration;
 use iced::Task;
 
 use crate::app::structure::*;
-use crate::i18n::t;
-use crate::wallet::{Wallet, WalletSecretsRef};
-use crate::utils::wallet_count_text;
-use crate::error::AppError;
 use crate::components::Toast;
+use crate::error::AppError;
+use crate::i18n::t;
+use crate::utils::wallet_count_text;
+use crate::wallet::{Wallet, WalletSecretsRef};
 
 impl App {
     pub fn update_dashboard(&mut self) {
@@ -46,7 +46,9 @@ impl App {
         }
 
         self.is_refreshing = true;
-        self.add_info_toast(t("Đang làm mới dữ liệu ví...", "Refreshing wallet data...").to_string());
+        self.add_info_toast(
+            t("Đang làm mới dữ liệu ví...", "Refreshing wallet data...").to_string(),
+        );
         self.error = None;
 
         let wallets = self.wallets.clone();
@@ -89,5 +91,4 @@ impl App {
             AppMessage::RefreshWalletsFinished,
         )
     }
-
 }

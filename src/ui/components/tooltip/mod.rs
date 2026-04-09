@@ -1,5 +1,5 @@
-mod structure;
 mod notice;
+mod structure;
 
+pub use notice::{help_topic_panel, info_box, warning_box};
 pub use structure::HelpTopic;
-pub use notice::{info_box, warning_box, help_topic_panel};

@@ -4,11 +4,11 @@ use iced::{
 };
 
 use crate::app::structure::*;
-use crate::i18n::t;
-use crate::theme::{screen_background_style, text_color, Colors, get_theme_colors};
-use crate::views::sidebar::NavItem;
 use crate::components::{error_card, modal, shortcuts_help_popup};
+use crate::i18n::t;
 use crate::storage::AppTheme;
+use crate::theme::{get_theme_colors, screen_background_style, text_color, Colors};
+use crate::views::sidebar::NavItem;
 
 impl App {
     pub fn view(&self) -> Element<'_, AppMessage> {
@@ -18,7 +18,10 @@ impl App {
                 .height(Length::Fill)
                 .into(),
             AppState::Main => {
-                let sidebar = self.sidebar.view(self.wallets.len(), self.compact_mode).map(AppMessage::SidebarMessage);
+                let sidebar = self
+                    .sidebar
+                    .view(self.wallets.len(), self.compact_mode)
+                    .map(AppMessage::SidebarMessage);
                 let _selected_wallet = self.wallets.get(self.selected_wallet);
 
                 let main_content = match self.current_page {
@@ -53,16 +56,22 @@ impl App {
                         .map(AppMessage::ReceiveMessage),
                     NavItem::History => self
                         .history_view
-                        .view(&self.wallets, self.selected_wallet, self.is_refreshing, self.compact_mode)
+                        .view(
+                            &self.wallets,
+                            self.selected_wallet,
+                            self.is_refreshing,
+                            self.compact_mode,
+                        )
                         .map(AppMessage::HistoryMessage),
-                    NavItem::Settings => {
-                        self.settings_view.view(
+                    NavItem::Settings => self
+                        .settings_view
+                        .view(
                             self.theme,
                             self.font_scale,
                             self.high_contrast,
-                            self.compact_mode
-                        ).map(AppMessage::SettingsMessage)
-                    }
+                            self.compact_mode,
+                        )
+                        .map(AppMessage::SettingsMessage),
                 };
 
                 let error_bar = if let Some(app_error) = &self.error {
@@ -70,17 +79,15 @@ impl App {
                     if let Some(ctx) = app_error.context() {
                         detail.push_str(&format!("\n📋 {}", ctx));
                     }
-                    container(
-                        error_card(
-                            app_error.title(),
-                            format!("{}\n\n💡 {}", detail, app_error.suggestion()),
-                            if app_error.is_retryable() {
-                                Some(AppMessage::DismissError)
-                            } else {
-                                None
-                            },
-                        ),
-                    )
+                    container(error_card(
+                        app_error.title(),
+                        format!("{}\n\n💡 {}", detail, app_error.suggestion()),
+                        if app_error.is_retryable() {
+                            Some(AppMessage::DismissError)
+                        } else {
+                            None
+                        },
+                    ))
                     .padding(10)
                 } else {
                     container(Space::with_height(0))
@@ -131,7 +138,7 @@ impl App {
                 if self.toast_manager.has_toasts() {
                     if let Some(toast_view) = self.toast_manager.view() {
                         use iced::widget::stack;
-                        
+
                         // Dùng row với 2 Space ở 2 bên để đẩy toast vào giữa
                         let centered_row = row![
                             Space::with_width(Length::Fill),
@@ -144,25 +151,19 @@ impl App {
                         ]
                         .width(Length::Fill)
                         .spacing(0);
-                        
+
                         let toast_overlay = container(
-                            column![
-                                centered_row,
-                                Space::with_height(Length::Fill),
-                            ]
-                            .spacing(0)
-                            .width(Length::Fill),
+                            column![centered_row, Space::with_height(Length::Fill),]
+                                .spacing(0)
+                                .width(Length::Fill),
                         )
                         .width(Length::Fill)
                         .height(Length::Fill);
-                        
-                        return stack![
-                            base_content,
-                            toast_overlay
-                        ]
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                        .into();
+
+                        return stack![base_content, toast_overlay]
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .into();
                     }
                 }
 
@@ -177,17 +178,21 @@ impl App {
                             .style(|theme: &iced::Theme| {
                                 let colors = get_theme_colors(theme);
                                 iced::widget::container::Style {
-                                    background: Some(iced::Background::Color(iced::Color::from_rgba(
-                                        colors.bg_primary.r,
-                                        colors.bg_primary.g,
-                                        colors.bg_primary.b,
-                                        0.75,
-                                    ))),
+                                    background: Some(iced::Background::Color(
+                                        iced::Color::from_rgba(
+                                            colors.bg_primary.r,
+                                            colors.bg_primary.g,
+                                            colors.bg_primary.b,
+                                            0.75,
+                                        ),
+                                    )),
                                     ..Default::default()
                                 }
                             }),
                         // Onboarding card
-                        self.onboarding_view.view().map(AppMessage::OnboardingMessage)
+                        self.onboarding_view
+                            .view()
+                            .map(AppMessage::OnboardingMessage)
                     ]
                     .width(Length::Fill)
                     .height(Length::Fill)
@@ -199,5 +204,4 @@ impl App {
             }
         }
     }
-
 }

@@ -17,9 +17,17 @@ pub enum LoginMessage {
 pub enum LoginEvent {
     ChangeLanguage(AppLanguage),
     BrowseBackupPath,
-    SubmitExisting { passphrase: String },
-    SubmitNew { passphrase: String, nickname: String },
-    SubmitImport { backup_path: String, passphrase: String },
+    SubmitExisting {
+        passphrase: String,
+    },
+    SubmitNew {
+        passphrase: String,
+        nickname: String,
+    },
+    SubmitImport {
+        backup_path: String,
+        passphrase: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,4 +49,3 @@ pub struct LoginView {
     pub show_passphrase: bool,
     pub show_confirm_passphrase: bool,
 }
-

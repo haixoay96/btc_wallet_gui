@@ -1,8 +1,8 @@
-use iced::widget::button;
-use iced::{Background, Border, Color, Shadow, Theme, Vector};
-use super::structure::ButtonStyleFn;
 use super::palette::get_theme_colors;
 use super::structure::color_with_alpha;
+use super::structure::ButtonStyleFn;
+use iced::widget::button;
+use iced::{Background, Border, Color, Shadow, Theme, Vector};
 
 /// Style for primary buttons (teal accent)
 pub fn primary_button_style() -> Box<ButtonStyleFn> {
@@ -24,8 +24,16 @@ pub fn primary_button_style() -> Box<ButtonStyleFn> {
         button::Style {
             background: Some(background),
             text_color: Color::from_rgb(1.0, 1.0, 1.0),
-            border: Border { radius: 12.0.into(), width: 0.0, color: Color::TRANSPARENT },
-            shadow: Shadow { color: shadow_color, offset: Vector::new(0.0, 6.0), blur_radius: shadow_blur },
+            border: Border {
+                radius: 12.0.into(),
+                width: 0.0,
+                color: Color::TRANSPARENT,
+            },
+            shadow: Shadow {
+                color: shadow_color,
+                offset: Vector::new(0.0, 6.0),
+                blur_radius: shadow_blur,
+            },
         }
     })
 }
@@ -50,8 +58,16 @@ pub fn gradient_button_style() -> Box<ButtonStyleFn> {
         button::Style {
             background: Some(background),
             text_color: Color::from_rgb(1.0, 1.0, 1.0),
-            border: Border { radius: 12.0.into(), width: 0.0, color: Color::TRANSPARENT },
-            shadow: Shadow { color: shadow_color, offset: Vector::new(0.0, 6.0), blur_radius: shadow_blur },
+            border: Border {
+                radius: 12.0.into(),
+                width: 0.0,
+                color: Color::TRANSPARENT,
+            },
+            shadow: Shadow {
+                color: shadow_color,
+                offset: Vector::new(0.0, 6.0),
+                blur_radius: shadow_blur,
+            },
         }
     })
 }
@@ -61,14 +77,20 @@ pub fn selected_button_style() -> Box<ButtonStyleFn> {
     Box::new(|theme: &Theme, status: button::Status| {
         let colors = get_theme_colors(theme);
         let background = match status {
-            button::Status::Hovered => Background::Color(color_with_alpha(colors.accent_purple, 0.28)),
+            button::Status::Hovered => {
+                Background::Color(color_with_alpha(colors.accent_purple, 0.28))
+            }
             _ => Background::Color(color_with_alpha(colors.accent_purple, 0.18)),
         };
 
         button::Style {
             background: Some(background),
             text_color: colors.text_primary,
-            border: Border { radius: 12.0.into(), width: 1.0, color: color_with_alpha(colors.accent_purple, 0.55) },
+            border: Border {
+                radius: 12.0.into(),
+                width: 1.0,
+                color: color_with_alpha(colors.accent_purple, 0.55),
+            },
             shadow: Shadow::default(),
         }
     })
@@ -81,7 +103,11 @@ pub fn muted_button_style() -> Box<ButtonStyleFn> {
         button::Style {
             background: Some(Background::Color(colors.bg_input)),
             text_color: colors.text_muted,
-            border: Border { radius: 12.0.into(), width: 1.0, color: colors.border_subtle },
+            border: Border {
+                radius: 12.0.into(),
+                width: 1.0,
+                color: colors.border_subtle,
+            },
             shadow: Shadow::default(),
         }
     })
@@ -95,19 +121,31 @@ pub fn secondary_button_style() -> Box<ButtonStyleFn> {
             button::Status::Hovered => (
                 Background::Color(colors.bg_hover),
                 colors.border_focused,
-                Shadow { color: color_with_alpha(colors.border, 0.3), offset: Vector::new(0.0, 3.0), blur_radius: 8.0 },
+                Shadow {
+                    color: color_with_alpha(colors.border, 0.3),
+                    offset: Vector::new(0.0, 3.0),
+                    blur_radius: 8.0,
+                },
             ),
             _ => (
                 Background::Color(colors.bg_card),
                 colors.border,
-                Shadow { color: color_with_alpha(colors.border, 0.2), offset: Vector::new(0.0, 2.0), blur_radius: 6.0 },
+                Shadow {
+                    color: color_with_alpha(colors.border, 0.2),
+                    offset: Vector::new(0.0, 2.0),
+                    blur_radius: 6.0,
+                },
             ),
         };
 
         button::Style {
             background: Some(background),
             text_color: colors.text_primary,
-            border: Border { radius: 12.0.into(), width: 1.0, color: border_color },
+            border: Border {
+                radius: 12.0.into(),
+                width: 1.0,
+                color: border_color,
+            },
             shadow,
         }
     })
@@ -131,8 +169,16 @@ pub fn info_style() -> Box<ButtonStyleFn> {
         button::Style {
             background: Some(background),
             text_color: Color::from_rgb(1.0, 1.0, 1.0),
-            border: Border { radius: 12.0.into(), width: 0.0, color: Color::TRANSPARENT },
-            shadow: Shadow { color: shadow_color, offset: Vector::new(0.0, 4.0), blur_radius: 12.0 },
+            border: Border {
+                radius: 12.0.into(),
+                width: 0.0,
+                color: Color::TRANSPARENT,
+            },
+            shadow: Shadow {
+                color: shadow_color,
+                offset: Vector::new(0.0, 4.0),
+                blur_radius: 12.0,
+            },
         }
     })
 }
@@ -155,8 +201,16 @@ pub fn warning_style() -> Box<ButtonStyleFn> {
         button::Style {
             background: Some(background),
             text_color: Color::from_rgb(0.0, 0.0, 0.0),
-            border: Border { radius: 12.0.into(), width: 0.0, color: Color::TRANSPARENT },
-            shadow: Shadow { color: shadow_color, offset: Vector::new(0.0, 4.0), blur_radius: 12.0 },
+            border: Border {
+                radius: 12.0.into(),
+                width: 0.0,
+                color: Color::TRANSPARENT,
+            },
+            shadow: Shadow {
+                color: shadow_color,
+                offset: Vector::new(0.0, 4.0),
+                blur_radius: 12.0,
+            },
         }
     })
 }
@@ -168,8 +222,16 @@ pub fn danger_button_style() -> Box<ButtonStyleFn> {
         button::Style {
             background: Some(Background::Color(colors.error)),
             text_color: Color::from_rgb(1.0, 1.0, 1.0),
-            border: Border { radius: 12.0.into(), width: 0.0, color: Color::TRANSPARENT },
-            shadow: Shadow { color: color_with_alpha(colors.error, 0.3), offset: Vector::new(0.0, 4.0), blur_radius: 12.0 },
+            border: Border {
+                radius: 12.0.into(),
+                width: 0.0,
+                color: Color::TRANSPARENT,
+            },
+            shadow: Shadow {
+                color: color_with_alpha(colors.error, 0.3),
+                offset: Vector::new(0.0, 4.0),
+                blur_radius: 12.0,
+            },
         }
     })
 }

@@ -21,10 +21,15 @@ impl EsploraClient {
         Self::with_custom_endpoint(None, network)
     }
 
-    pub fn with_custom_endpoint(custom_endpoint: Option<String>, network: WalletNetwork) -> Result<Self> {
+    pub fn with_custom_endpoint(
+        custom_endpoint: Option<String>,
+        network: WalletNetwork,
+    ) -> Result<Self> {
         // Load timeout from storage if available, otherwise use default
         let timeout_secs = if let Ok(storage) = crate::storage::Storage::new() {
-            storage.load_timeout_secs().unwrap_or(DEFAULT_HTTP_TIMEOUT_SECS)
+            storage
+                .load_timeout_secs()
+                .unwrap_or(DEFAULT_HTTP_TIMEOUT_SECS)
         } else {
             DEFAULT_HTTP_TIMEOUT_SECS
         };
@@ -85,10 +90,7 @@ impl EsploraClient {
     }
 
     pub fn fetch_address_utxos(&self, address: &str) -> Result<Vec<ApiAddressUtxo>> {
-        let url = format!(
-            "{}/address/{address}/utxo",
-            &self.base_url
-        );
+        let url = format!("{}/address/{address}/utxo", &self.base_url);
         self.client
             .get(&url)
             .send()

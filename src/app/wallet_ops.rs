@@ -415,7 +415,10 @@ impl App {
 
     pub fn handle_derive_addresses(&mut self, count: u32) -> Task<AppMessage> {
         let Some(secrets) = self.wallet_secret_by_index(self.selected_wallet) else {
-            self.error = Some(AppError::crypto("wallet_secret", t("Thiếu secret của ví", "Wallet secret is missing")));
+            self.error = Some(AppError::crypto(
+                "wallet_secret",
+                t("Thiếu secret của ví", "Wallet secret is missing"),
+            ));
             return Task::none();
         };
 
@@ -436,12 +439,21 @@ impl App {
                     self.error = Some(AppError::api_with_status(
                         "address_derivation",
                         500,
-                        &format!("{}: {err}", t("Không thể tạo địa chỉ mới", "Could not derive new addresses")),
+                        &format!(
+                            "{}: {err}",
+                            t(
+                                "Không thể tạo địa chỉ mới",
+                                "Could not derive new addresses"
+                            )
+                        ),
                     ));
                 }
             }
         } else {
-            self.error = Some(AppError::validation("wallet", t("Chưa chọn ví", "No wallet selected")));
+            self.error = Some(AppError::validation(
+                "wallet",
+                t("Chưa chọn ví", "No wallet selected"),
+            ));
         }
         Task::none()
     }

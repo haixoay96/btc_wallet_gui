@@ -21,8 +21,8 @@ pub fn validate_address_for_network(address: &str, network: WalletNetwork) -> Re
         return Err("Address cannot be empty".to_string());
     }
 
-    let unchecked = Address::from_str(trimmed)
-        .map_err(|_| "Invalid Bitcoin address".to_string())?;
+    let unchecked =
+        Address::from_str(trimmed).map_err(|_| "Invalid Bitcoin address".to_string())?;
 
     unchecked
         .require_network(network.bitcoin_network())

@@ -1,5 +1,5 @@
-mod structure;
 mod choice;
+mod structure;
 
+pub use choice::{selected_wallet_choice, wallet_choices};
 pub use structure::WalletChoice;
-pub use choice::{wallet_choices, selected_wallet_choice};

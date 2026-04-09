@@ -1,5 +1,5 @@
-use crate::wallet::{InputSource, ChangeStrategy};
 use crate::ui::components::BtcUnit;
+use crate::wallet::{ChangeStrategy, InputSource};
 
 #[derive(Debug, Clone)]
 pub enum SendMessage {
@@ -45,8 +45,13 @@ pub struct SendRequest {
 
 pub enum SendEvent {
     SelectWallet(usize),
-    EstimateSendFee { amount_sat: u64, input_source: InputSource },
-    MaxAmount { input_source: InputSource },
+    EstimateSendFee {
+        amount_sat: u64,
+        input_source: InputSource,
+    },
+    MaxAmount {
+        input_source: InputSource,
+    },
     SendTransaction(SendRequest),
 }
 
@@ -81,4 +86,3 @@ pub struct SendView {
     pub editing_contact_id: Option<String>,
     pub matched_contact_name: Option<String>,
 }
-

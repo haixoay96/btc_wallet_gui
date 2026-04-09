@@ -4,30 +4,33 @@ use iced::Task;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::app::structure::{App, AppMessage, AppState};
-use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::storage::{AppTheme, PersistedState, RuntimeState, Storage, UserProfile, AddressBook};
-use crate::utils::normalize_nickname;
-use crate::views::sidebar::NavItem;
-use crate::views::login::{LoginView, LoginMode};
-use crate::views::{
-    dashboard::DashboardView,
-    history::HistoryView,
-    language_selector::LanguageSelector,
-    onboarding::OnboardingView,
-    receive::ReceiveView,
-    send::SendView,
-    settings::SettingsView,
-    sidebar::Sidebar,
-    wallets::WalletsView,
-};
-use crate::wallet::WalletSecretsVault;
 use crate::components::ToastManager;
 use crate::error::AppError;
+use crate::i18n::{set_current_language, t, AppLanguage};
+use crate::storage::{AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile};
+use crate::utils::normalize_nickname;
+use crate::views::login::{LoginMode, LoginView};
+use crate::views::sidebar::NavItem;
+use crate::views::{
+    dashboard::DashboardView, history::HistoryView, language_selector::LanguageSelector,
+    onboarding::OnboardingView, receive::ReceiveView, send::SendView, settings::SettingsView,
+    sidebar::Sidebar, wallets::WalletsView,
+};
+use crate::wallet::WalletSecretsVault;
 
 impl App {
     pub fn new() -> (Self, Task<AppMessage>) {
         let fallback_language = AppLanguage::English;
-        let (initial_language, has_existing_state, initial_theme, initial_high_contrast, initial_font_scale, onboarding_completed, initial_show_satoshis, initial_compact_mode) = match Storage::new() {
+        let (
+            initial_language,
+            has_existing_state,
+            initial_theme,
+            initial_high_contrast,
+            initial_font_scale,
+            onboarding_completed,
+            initial_show_satoshis,
+            initial_compact_mode,
+        ) = match Storage::new() {
             Ok(storage) => {
                 let language = storage
                     .load_language_preference()
@@ -41,9 +44,27 @@ impl App {
                 // Set global states
                 crate::theme::set_high_contrast(high_contrast);
                 crate::theme::set_font_scale(font_scale);
-                (language, storage.has_existing_state(), theme, high_contrast, font_scale, onboarding, show_satoshis, compact_mode)
+                (
+                    language,
+                    storage.has_existing_state(),
+                    theme,
+                    high_contrast,
+                    font_scale,
+                    onboarding,
+                    show_satoshis,
+                    compact_mode,
+                )
             }
-            Err(_) => (fallback_language, false, AppTheme::Dark, false, 1.0, false, false, false),
+            Err(_) => (
+                fallback_language,
+                false,
+                AppTheme::Dark,
+                false,
+                1.0,
+                false,
+                false,
+                false,
+            ),
         };
         set_current_language(initial_language);
 
@@ -119,7 +140,13 @@ impl App {
                 self.error = Some(AppError::storage_with_path(
                     "language_preference",
                     &path,
-                    &format!("{}: {err}", t("Không thể lưu cài đặt ngôn ngữ", "Could not save language preference")),
+                    &format!(
+                        "{}: {err}",
+                        t(
+                            "Không thể lưu cài đặt ngôn ngữ",
+                            "Could not save language preference"
+                        )
+                    ),
                 ));
             }
         }
@@ -138,7 +165,13 @@ impl App {
                     Err(err) => {
                         self.error = Some(AppError::storage(
                             "assemble_state",
-                            &format!("{}: {err}", t("Không thể gom dữ liệu ví", "Failed to assemble wallet state")),
+                            &format!(
+                                "{}: {err}",
+                                t(
+                                    "Không thể gom dữ liệu ví",
+                                    "Failed to assemble wallet state"
+                                )
+                            ),
                         ));
                         return false;
                     }
@@ -147,15 +180,16 @@ impl App {
                     self.error = Some(AppError::storage_with_path(
                         "save_state",
                         &storage.file_path().display().to_string(),
-                        &format!("{}: {err}", t("Không thể lưu trạng thái", "Failed to save app state")),
+                        &format!(
+                            "{}: {err}",
+                            t("Không thể lưu trạng thái", "Failed to save app state")
+                        ),
                     ));
                     false
                 } else {
                     // Also save wallet selection
-                    let _ = storage.save_wallet_selection(
-                        self.selected_wallet,
-                        &self.current_page.title(),
-                    );
+                    let _ = storage
+                        .save_wallet_selection(self.selected_wallet, &self.current_page.title());
                     true
                 }
             }
@@ -163,7 +197,10 @@ impl App {
                 self.error = Some(AppError::storage_with_path(
                     "init_storage",
                     &format!("{}", err),
-                    &format!("{}: {err}", t("Không thể khởi tạo storage", "Failed to initialize storage")),
+                    &format!(
+                        "{}: {err}",
+                        t("Không thể khởi tạo storage", "Failed to initialize storage")
+                    ),
                 ));
                 false
             }
@@ -221,7 +258,7 @@ impl App {
         self.wallets = state.wallets;
         self.wallet_vault = state.wallet_vault;
         self.state = AppState::Main;
-        
+
         // Restore persistent wallet selection if available
         if let Ok(storage) = Storage::new() {
             if let Ok((Some(wallet_idx), Some(page_title))) = storage.load_wallet_selection() {
@@ -241,7 +278,7 @@ impl App {
                 }
             }
         }
-        
+
         self.selected_wallet = self
             .selected_wallet
             .min(self.wallets.len().saturating_sub(1));
@@ -252,5 +289,4 @@ impl App {
     pub fn current_passphrase(&self) -> Option<&SecretString> {
         self.storage_passphrase.as_ref()
     }
-
 }

@@ -1,5 +1,5 @@
-mod structure;
 mod meter;
+mod structure;
 
-pub use structure::PassphraseStrength;
 pub use meter::{calculate_strength, strength_bar};
+pub use structure::PassphraseStrength;

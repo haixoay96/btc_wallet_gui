@@ -6,7 +6,10 @@ use crate::shared::text::resolve_user_path;
 /// Pick file dialog for importing backup
 pub fn pick_import_backup_path() -> Option<PathBuf> {
     rfd::FileDialog::new()
-        .set_title(t("Chọn file backup để import", "Choose backup file to import"))
+        .set_title(t(
+            "Chọn file backup để import",
+            "Choose backup file to import",
+        ))
         .add_filter(t("File backup", "Backup files"), &["enc", "json"])
         .pick_file()
 }
@@ -14,7 +17,10 @@ pub fn pick_import_backup_path() -> Option<PathBuf> {
 /// Pick file dialog for encrypted mnemonic
 pub fn pick_encrypted_secret_import_path() -> Option<PathBuf> {
     rfd::FileDialog::new()
-        .set_title(t("Chọn file mnemonic backup mã hóa (.enc)", "Choose encrypted mnemonic backup file (.enc)"))
+        .set_title(t(
+            "Chọn file mnemonic backup mã hóa (.enc)",
+            "Choose encrypted mnemonic backup file (.enc)",
+        ))
         .add_filter(t("File mã hóa", "Encrypted file"), &["enc"])
         .pick_file()
 }
@@ -57,6 +63,9 @@ pub fn pick_encrypted_export_path(title: &str, default_file_name: &str) -> Optio
 /// Pick folder dialog for SLIP-0039 export
 pub fn pick_slip39_export_directory() -> Option<PathBuf> {
     rfd::FileDialog::new()
-        .set_title(t("Chọn thư mục chứa backup SLIP-0039", "Choose folder for SLIP-0039 backup"))
+        .set_title(t(
+            "Chọn thư mục chứa backup SLIP-0039",
+            "Choose folder for SLIP-0039 backup",
+        ))
         .pick_folder()
 }

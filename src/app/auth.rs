@@ -131,7 +131,10 @@ impl App {
             Err(err) => {
                 self.error = Some(AppError::storage(
                     "init_storage",
-                    &format!("{}: {err}", t("Không thể khởi tạo storage", "Failed to initialize storage")),
+                    &format!(
+                        "{}: {err}",
+                        t("Không thể khởi tạo storage", "Failed to initialize storage")
+                    ),
                 ));
             }
         }

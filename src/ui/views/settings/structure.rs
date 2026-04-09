@@ -30,7 +30,10 @@ pub enum SettingsMessage {
 }
 
 pub enum SettingsEvent {
-    ChangePassphrase { current: String, new_passphrase: String },
+    ChangePassphrase {
+        current: String,
+        new_passphrase: String,
+    },
     ExportWallet,
     ClearAllData(String),
     ThemeChanged(AppTheme),
@@ -70,4 +73,3 @@ pub struct SettingsView {
     pub data_folder_size: String,
     pub connection_test_result: Option<String>,
 }
-

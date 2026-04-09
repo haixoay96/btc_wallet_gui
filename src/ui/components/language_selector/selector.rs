@@ -7,7 +7,6 @@ use iced::{widget::pick_list, Element, Length};
 
 const APP_LANGUAGES: [AppLanguage; 2] = AppLanguage::ALL;
 
-
 impl LanguageSelector {
     pub fn new() -> Self {
         Self

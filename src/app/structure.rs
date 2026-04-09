@@ -6,14 +6,11 @@ use iced::{
 };
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::components::{Toast, ToastManager, shortcuts_help_popup, modal, error_card};
+use crate::components::{error_card, modal, shortcuts_help_popup, Toast, ToastManager};
 use crate::error::AppError;
 use crate::i18n::{set_current_language, t, AppLanguage};
-use crate::storage::{AppTheme, PersistedState, RuntimeState, Storage, UserProfile, AddressBook};
-use crate::theme::{
-    screen_background_style, text_color, Colors,
-    get_theme_colors,
-};
+use crate::storage::{AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile};
+use crate::theme::{get_theme_colors, screen_background_style, text_color, Colors};
 use crate::utils::{normalize_nickname, wallet_count_text};
 use crate::views::{
     dashboard::{DashboardMessage, DashboardView},
@@ -67,10 +64,10 @@ pub struct App {
     pub is_calculating_max: bool,
     pub is_sending: bool,
     pub revealed_mnemonic_session_id: u64,
-    
+
     // Toast notification system
     pub toast_manager: ToastManager,
-    
+
     // Copy tracking
     pub last_copied_address: Option<String>,
     pub last_copied_time: Option<String>,
@@ -136,4 +133,3 @@ pub struct SendExecutionResult {
     pub txid: String,
     pub broadcasted: bool,
 }
-

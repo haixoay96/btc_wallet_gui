@@ -29,8 +29,8 @@ impl App {
                         // Tab navigation
                         return None;
                     }
-                    keyboard::Key::Named(keyboard::key::Named::Enter) |
-                    keyboard::Key::Named(keyboard::key::Named::Space) => {
+                    keyboard::Key::Named(keyboard::key::Named::Enter)
+                    | keyboard::Key::Named(keyboard::key::Named::Space) => {
                         // Activate focused element
                         return Some(AppMessage::KeyboardSubmitForm);
                     }
@@ -50,22 +50,34 @@ impl App {
                 match key_code {
                     // Navigation shortcuts (Ctrl+1-6)
                     keyboard::Key::Character(c) if c == "1" => {
-                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Dashboard)));
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(
+                            NavItem::Dashboard,
+                        )));
                     }
                     keyboard::Key::Character(c) if c == "2" => {
-                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Wallets)));
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(
+                            NavItem::Wallets,
+                        )));
                     }
                     keyboard::Key::Character(c) if c == "3" => {
-                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Send)));
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(
+                            NavItem::Send,
+                        )));
                     }
                     keyboard::Key::Character(c) if c == "4" => {
-                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Receive)));
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(
+                            NavItem::Receive,
+                        )));
                     }
                     keyboard::Key::Character(c) if c == "5" => {
-                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::History)));
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(
+                            NavItem::History,
+                        )));
                     }
                     keyboard::Key::Character(c) if c == "6" => {
-                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(NavItem::Settings)));
+                        return Some(AppMessage::SidebarMessage(SidebarMessage::Navigate(
+                            NavItem::Settings,
+                        )));
                     }
                     // Copy shortcut (Ctrl+C)
                     keyboard::Key::Character(c) if c == "c" || c == "C" => {
@@ -100,7 +112,7 @@ impl App {
         } else {
             120
         };
-        
+
         let refresh_sub = if refresh_interval_secs > 0 {
             iced::time::every(Duration::from_secs(refresh_interval_secs))
                 .map(|_| AppMessage::AutoRefreshConfirmations)
@@ -110,5 +122,4 @@ impl App {
 
         Subscription::batch([keyboard_sub, refresh_sub])
     }
-
 }
