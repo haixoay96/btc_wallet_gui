@@ -92,25 +92,104 @@ impl App {
                 }
                 // Advanced events
                 SettingsEvent::DebugLoggingToggled(enabled) => {
-                    if let Ok(storage) = Storage::new() {
-                        let _ = storage.save_enable_debug(enabled);
+                    match Storage::new() {
+                        Ok(storage) => {
+                            if let Err(e) = storage.save_enable_debug(enabled) {
+                                tracing::error!(
+                                    debug_logging = enabled,
+                                    "Failed to save debug_logging: {}",
+                                    e
+                                );
+                                self.add_error_toast(format!(
+                                    "Failed to save debug logging: {}",
+                                    e
+                                ));
+                            } else {
+                                tracing::info!(
+                                    debug_logging = enabled,
+                                    "Debug logging preference saved"
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!(
+                                "Failed to create Storage for saving debug_logging: {}",
+                                e
+                            );
+                        }
                     }
+                    crate::utils::logging::set_debug_level(enabled);
                 }
-                SettingsEvent::AutoRefreshToggled(enabled) => {
-                    if let Ok(storage) = Storage::new() {
-                        let _ = storage.save_auto_refresh(enabled);
+                SettingsEvent::AutoRefreshToggled(enabled) => match Storage::new() {
+                    Ok(storage) => {
+                        if let Err(e) = storage.save_auto_refresh(enabled) {
+                            tracing::error!(
+                                auto_refresh = enabled,
+                                "Failed to save auto_refresh: {}",
+                                e
+                            );
+                            self.add_error_toast(format!("Failed to save auto refresh: {}", e));
+                        } else {
+                            tracing::info!(auto_refresh = enabled, "Auto-refresh preference saved");
+                        }
                     }
-                }
+                    Err(e) => {
+                        tracing::error!("Failed to create Storage for saving auto_refresh: {}", e);
+                    }
+                },
                 SettingsEvent::ShowSatoshisToggled(enabled) => {
                     self.show_satoshis = enabled;
-                    if let Ok(storage) = Storage::new() {
-                        let _ = storage.save_show_satoshis(enabled);
+                    match Storage::new() {
+                        Ok(storage) => {
+                            if let Err(e) = storage.save_show_satoshis(enabled) {
+                                tracing::error!(
+                                    show_satoshis = enabled,
+                                    "Failed to save show_satoshis: {}",
+                                    e
+                                );
+                                self.add_error_toast(format!(
+                                    "Failed to save show satoshis: {}",
+                                    e
+                                ));
+                            } else {
+                                tracing::info!(
+                                    show_satoshis = enabled,
+                                    "Show satoshis preference saved"
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!(
+                                "Failed to create Storage for saving show_satoshis: {}",
+                                e
+                            );
+                        }
                     }
                 }
                 SettingsEvent::CompactModeToggled(enabled) => {
                     self.compact_mode = enabled;
-                    if let Ok(storage) = Storage::new() {
-                        let _ = storage.save_compact_mode(enabled);
+                    match Storage::new() {
+                        Ok(storage) => {
+                            if let Err(e) = storage.save_compact_mode(enabled) {
+                                tracing::error!(
+                                    compact_mode = enabled,
+                                    "Failed to save compact_mode: {}",
+                                    e
+                                );
+                                self.add_error_toast(format!("Failed to save compact mode: {}", e));
+                            } else {
+                                tracing::info!(
+                                    compact_mode = enabled,
+                                    "Compact mode preference saved"
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!(
+                                "Failed to create Storage for saving compact_mode: {}",
+                                e
+                            );
+                        }
                     }
                 }
                 // Reset settings

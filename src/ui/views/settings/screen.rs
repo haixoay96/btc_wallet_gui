@@ -18,6 +18,105 @@ use super::structure::*;
 
 impl SettingsView {
     pub fn new() -> Self {
+        let debug_logging = if let Ok(storage) = crate::infra::storage::Storage::new() {
+            let value = storage.load_enable_debug().unwrap_or(false);
+            tracing::info!(
+                settings_view_init = true,
+                debug_logging_loaded = value,
+                "SettingsView initialized - debug_logging from storage"
+            );
+            value
+        } else {
+            tracing::warn!("Failed to create Storage instance for loading debug_logging");
+            false
+        };
+        let auto_refresh = if let Ok(storage) = crate::infra::storage::Storage::new() {
+            let value = storage.load_auto_refresh().unwrap_or(false);
+            tracing::info!(
+                settings_view_init = true,
+                auto_refresh_loaded = value,
+                "SettingsView initialized - auto_refresh from storage"
+            );
+            value
+        } else {
+            tracing::warn!("Failed to create Storage instance for loading auto_refresh");
+            false
+        };
+        let show_satoshis = if let Ok(storage) = crate::infra::storage::Storage::new() {
+            let value = storage.load_show_satoshis().unwrap_or(false);
+            tracing::info!(
+                settings_view_init = true,
+                show_satoshis_loaded = value,
+                "SettingsView initialized - show_satoshis from storage"
+            );
+            value
+        } else {
+            tracing::warn!("Failed to create Storage instance for loading show_satoshis");
+            false
+        };
+        let compact_mode = if let Ok(storage) = crate::infra::storage::Storage::new() {
+            let value = storage.load_compact_mode().unwrap_or(false);
+            tracing::info!(
+                settings_view_init = true,
+                compact_mode_loaded = value,
+                "SettingsView initialized - compact_mode from storage"
+            );
+            value
+        } else {
+            tracing::warn!("Failed to create Storage instance for loading compact_mode");
+            false
+        };
+        let esplora_endpoint = if let Ok(storage) = crate::infra::storage::Storage::new() {
+            let value = storage
+                .load_esplora_endpoint()
+                .unwrap_or_else(|_| "https://blockstream.info/api".to_string());
+            tracing::info!(
+                settings_view_init = true,
+                endpoint = %value,
+                "SettingsView initialized - esplora_endpoint from storage"
+            );
+            value
+        } else {
+            tracing::warn!("Failed to create Storage instance for loading esplora_endpoint");
+            "https://blockstream.info/api".to_string()
+        };
+        let timeout_secs = if let Ok(storage) = crate::infra::storage::Storage::new() {
+            let value = storage.load_timeout_secs().unwrap_or(15);
+            tracing::info!(
+                settings_view_init = true,
+                timeout_secs_loaded = value,
+                "SettingsView initialized - timeout_secs from storage"
+            );
+            value
+        } else {
+            tracing::warn!("Failed to create Storage instance for loading timeout_secs");
+            15
+        };
+        let font_scale = if let Ok(storage) = crate::infra::storage::Storage::new() {
+            let value = storage.load_font_scale().unwrap_or(1.0);
+            tracing::info!(
+                settings_view_init = true,
+                font_scale_loaded = value,
+                "SettingsView initialized - font_scale from storage"
+            );
+            value
+        } else {
+            tracing::warn!("Failed to create Storage instance for loading font_scale");
+            1.0
+        };
+        let high_contrast = if let Ok(storage) = crate::infra::storage::Storage::new() {
+            let value = storage.load_high_contrast().unwrap_or(false);
+            tracing::info!(
+                settings_view_init = true,
+                high_contrast_loaded = value,
+                "SettingsView initialized - high_contrast from storage"
+            );
+            value
+        } else {
+            tracing::warn!("Failed to create Storage instance for loading high_contrast");
+            false
+        };
+
         Self {
             show_change_passphrase: false,
             current_passphrase: String::new(),
@@ -28,16 +127,16 @@ impl SettingsView {
             clear_data_passphrase: String::new(),
             error: None,
             success: None,
-            font_scale: 1.0,
-            high_contrast: false,
-            esplora_endpoint: "https://blockstream.info/api".to_string(),
-            timeout_secs: 15,
+            font_scale,
+            high_contrast,
+            esplora_endpoint,
+            timeout_secs,
             testing_connection: false,
             connection_test_result: None,
-            debug_logging: false,
-            auto_refresh: false,
-            show_satoshis: false,
-            compact_mode: false,
+            debug_logging,
+            auto_refresh,
+            show_satoshis,
+            compact_mode,
             data_folder_path: String::new(),
             data_folder_size: String::new(),
         }

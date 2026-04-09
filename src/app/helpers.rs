@@ -39,6 +39,10 @@ impl App {
         self.toast_manager.add_toast(Toast::info(message));
     }
 
+    pub fn add_error_toast(&mut self, message: String) {
+        self.toast_manager.add_toast(Toast::error(message));
+    }
+
     pub fn track_copy(&mut self, address: String) {
         let now = Local::now();
         self.last_copied_address = Some(address);

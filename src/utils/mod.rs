@@ -1,5 +1,6 @@
 mod dialogs;
 mod filenames;
+pub mod logging;
 
 // Re-export dialogs
 pub use dialogs::{

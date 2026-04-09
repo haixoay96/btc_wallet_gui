@@ -17,23 +17,15 @@ impl Storage {
     }
 
     pub fn save_language_preference(&self, language: AppLanguage) -> Result<()> {
-        let current = self.load_preferences()?;
-        let prefs = AppPreferences {
-            language,
-            last_selected_wallet: current.last_selected_wallet,
-            last_viewed_page: current.last_viewed_page,
-            ..Default::default()
-        };
+        let mut prefs = self.load_preferences()?;
+        prefs.language = language;
         self.save_preferences(&prefs)
     }
 
     pub fn save_wallet_selection(&self, wallet_index: usize, page: &str) -> Result<()> {
-        let prefs = AppPreferences {
-            language: self.load_language_preference()?,
-            last_selected_wallet: Some(wallet_index),
-            last_viewed_page: Some(page.to_string()),
-            ..Default::default()
-        };
+        let mut prefs = self.load_preferences()?;
+        prefs.last_selected_wallet = Some(wallet_index);
+        prefs.last_viewed_page = Some(page.to_string());
         self.save_preferences(&prefs)
     }
 

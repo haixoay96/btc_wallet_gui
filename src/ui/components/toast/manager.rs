@@ -17,6 +17,7 @@ impl ToastType {
         match self {
             Self::Success => Bootstrap::CheckCircle,
             Self::Info => Bootstrap::InfoCircle,
+            Self::Error => Bootstrap::ExclamationCircle,
         }
         .to_string()
     }
@@ -25,6 +26,7 @@ impl ToastType {
         match self {
             Self::Success => Colors::SUCCESS,
             Self::Info => Colors::ACCENT_BLUE,
+            Self::Error => Colors::ERROR,
         }
     }
 }
@@ -47,6 +49,10 @@ impl Toast {
 
     pub fn info(message: String) -> Self {
         Self::new(ToastType::Info, message, 3)
+    }
+
+    pub fn error(message: String) -> Self {
+        Self::new(ToastType::Error, message, 5)
     }
 
     pub fn is_expired(&self) -> bool {

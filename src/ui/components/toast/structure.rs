@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 pub enum ToastType {
     Success,
     Info,
+    Error,
 }
 
 pub struct Toast {
