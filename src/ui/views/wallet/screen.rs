@@ -1069,23 +1069,18 @@ impl WalletsView {
                         column![
                             text_scaled(wallet.name.as_str(), 16).style(text_primary_color()),
                             text(format!(
-                                "{} | {:.8} BTC{}",
+                                "{} | {:.8} BTC{} | {}",
                                 wallet.network.as_str(),
                                 balance_btc,
                                 balance_usd
                                     .map(|u| format!(" | ${:.2} USD", u))
-                                    .unwrap_or_default()
+                                    .unwrap_or_default(),
+                                backup_status_text(wallet.has_mnemonic, wallet.mnemonic_backed_up)
                             ))
                             .size(12)
                             .style(text_secondary_color()),
-                            text(backup_status_text(
-                                wallet.has_mnemonic,
-                                wallet.mnemonic_backed_up
-                            ))
-                            .size(11)
-                            .style(text_muted_color()),
                         ]
-                        .spacing(2),
+                        .spacing(4),
                         Space::with_width(Length::Fill),
                         // Selection checkmark
                         if is_selected {
