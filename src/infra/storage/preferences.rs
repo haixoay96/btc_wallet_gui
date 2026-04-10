@@ -158,6 +158,18 @@ impl Storage {
         self.save_preferences(&prefs)
     }
 
+    pub fn load_cached_btc_price(&self) -> Result<Option<f64>> {
+        Ok(self.load_preferences()?.cached_btc_price)
+    }
+
+    pub fn save_btc_price_cache(&self, price: f64, change: f64) -> Result<()> {
+        let mut prefs = self.load_preferences()?;
+        prefs.cached_btc_price = Some(price);
+        prefs.cached_btc_change_24h = Some(change);
+        prefs.cached_price_timestamp = Some(chrono::Local::now().timestamp());
+        self.save_preferences(&prefs)
+    }
+
     // ─── Private helpers ─────────────────────────────────────────────
 
     fn save_preferences(&self, prefs: &AppPreferences) -> Result<()> {
@@ -183,7 +195,7 @@ impl Storage {
         Ok(())
     }
 
-    fn load_preferences(&self) -> Result<AppPreferences> {
+    pub fn load_preferences(&self) -> Result<AppPreferences> {
         if !self.paths.preferences_file.exists() {
             return Ok(AppPreferences::default());
         }

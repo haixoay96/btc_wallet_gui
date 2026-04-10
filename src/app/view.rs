@@ -26,7 +26,13 @@ impl App {
                 let main_content = match self.current_page {
                     NavItem::Dashboard => self
                         .dashboard
-                        .view(self.is_refreshing, self.show_satoshis, self.compact_mode)
+                        .view(
+                            self.is_refreshing,
+                            self.show_satoshis,
+                            self.compact_mode,
+                            self.btc_price.clone(),
+                            self.is_fetching_price,
+                        )
                         .map(AppMessage::DashboardMessage),
                     NavItem::Wallets => self
                         .wallets_view
@@ -35,6 +41,7 @@ impl App {
                             self.selected_wallet,
                             self.selected_wallet_revealed_mnemonic(),
                             self.compact_mode,
+                            self.btc_price.as_ref().map(|p| p.price_usd),
                         )
                         .map(AppMessage::WalletsMessage),
                     NavItem::Send => self

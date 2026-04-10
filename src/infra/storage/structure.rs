@@ -122,6 +122,13 @@ pub struct AppPreferences {
     /// Timestamp (unix epoch seconds) of last backup reminder dismissal
     #[serde(default)]
     pub last_backup_reminder_dismissed: Option<i64>,
+    /// Cached BTC price data
+    #[serde(default)]
+    pub cached_btc_price: Option<f64>,
+    #[serde(default)]
+    pub cached_btc_change_24h: Option<f64>,
+    #[serde(default)]
+    pub cached_price_timestamp: Option<i64>,
 }
 
 impl Default for AppPreferences {
@@ -144,6 +151,9 @@ impl Default for AppPreferences {
             wallet_sort_field: WalletSortField::Balance,
             wallet_sort_ascending: false,
             last_backup_reminder_dismissed: None,
+            cached_btc_price: None,
+            cached_btc_change_24h: None,
+            cached_price_timestamp: None,
         }
     }
 }

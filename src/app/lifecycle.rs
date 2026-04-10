@@ -6,11 +6,13 @@ use secrecy::{ExposeSecret, SecretString};
 use crate::app::structure::{App, AppMessage, AppState};
 use crate::core::error::AppError;
 use crate::core::wallet::WalletSecretsVault;
+use crate::infra::price_api::BtcPriceData;
 use crate::infra::storage::{
     AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile,
 };
 use crate::ui::components::language_selector::LanguageSelector;
 use crate::ui::components::network_status::DashboardNetworkMessage;
+use crate::ui::components::price_widget::structure::PriceWidgetMessage;
 use crate::ui::components::ToastManager;
 use crate::ui::i18n::{set_current_language, t, AppLanguage};
 use crate::ui::views::{
@@ -38,6 +40,7 @@ impl App {
             onboarding_completed,
             initial_show_satoshis,
             initial_compact_mode,
+            initial_btc_price,
         ) = match Storage::new() {
             Ok(storage) => {
                 let language = storage
@@ -49,6 +52,21 @@ impl App {
                 let onboarding = storage.load_onboarding_completed().unwrap_or(false);
                 let show_satoshis = storage.load_show_satoshis().unwrap_or(false);
                 let compact_mode = storage.load_compact_mode().unwrap_or(false);
+                // Load cached BTC price
+                let btc_price = storage
+                    .load_cached_btc_price()
+                    .ok()
+                    .flatten()
+                    .zip(
+                        storage
+                            .load_preferences()
+                            .ok()
+                            .and_then(|p| p.cached_btc_change_24h),
+                    )
+                    .map(|(price, change)| BtcPriceData {
+                        price_usd: price,
+                        change_24h: change,
+                    });
                 // Set global states
                 crate::ui::theme::set_high_contrast(high_contrast);
                 crate::ui::theme::set_font_scale(font_scale);
@@ -61,6 +79,7 @@ impl App {
                     onboarding,
                     show_satoshis,
                     compact_mode,
+                    btc_price,
                 )
             }
             Err(_) => (
@@ -72,6 +91,7 @@ impl App {
                 false,
                 false,
                 false,
+                None,
             ),
         };
         set_current_language(initial_language);
@@ -96,6 +116,8 @@ impl App {
                 wallets: Vec::new(),
                 wallet_vault: WalletSecretsVault::new(),
                 selected_wallet: 0,
+                btc_price: initial_btc_price,
+                is_fetching_price: false,
                 login_view,
                 sidebar: Sidebar::new(),
                 dashboard: DashboardView::new(),
@@ -122,7 +144,7 @@ impl App {
                 onboarding_view: OnboardingView::new(),
                 address_book: AddressBook::load().unwrap_or_default(),
             },
-            // Start toast cleanup + initial network check
+            // Start toast cleanup + initial network check + price fetch
             Task::batch([
                 Task::perform(
                     async move {
@@ -132,6 +154,10 @@ impl App {
                 ),
                 Task::done(AppMessage::DashboardMessage(DashboardMessage::Network(
                     DashboardNetworkMessage::CheckConnection,
+                ))),
+                // Trigger initial price fetch on startup
+                Task::done(AppMessage::DashboardMessage(DashboardMessage::PriceWidget(
+                    PriceWidgetMessage::RefreshPrice,
                 ))),
             ]),
         )

@@ -40,6 +40,8 @@ pub struct App {
     pub wallets: Vec<Wallet>,
     pub wallet_vault: WalletSecretsVault,
     pub selected_wallet: usize,
+    pub btc_price: Option<crate::infra::price_api::BtcPriceData>,
+    pub is_fetching_price: bool,
 
     pub login_view: LoginView,
     pub sidebar: Sidebar,

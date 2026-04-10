@@ -1,5 +1,6 @@
 use crate::ui::components::backup_reminder::BackupReminderMessage;
 use crate::ui::components::network_status::{DashboardNetworkMessage, NetworkStatus};
+use crate::ui::components::price_widget;
 use crate::ui::components::sparkline::BalancePoint;
 use crate::ui::views::sidebar::NavItem;
 use chrono::{DateTime, Local};
@@ -10,6 +11,7 @@ pub enum DashboardMessage {
     Navigate(NavItem),
     Network(DashboardNetworkMessage),
     BackupReminder(BackupReminderMessage),
+    PriceWidget(price_widget::PriceWidgetMessage),
 }
 
 /// Aggregated recent transaction for dashboard preview

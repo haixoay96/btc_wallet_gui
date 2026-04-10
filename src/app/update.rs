@@ -7,6 +7,7 @@ use crate::core::error::AppError;
 use crate::infra::storage::Storage;
 use crate::ui::components::backup_reminder::BackupReminderMessage;
 use crate::ui::components::network_status::{DashboardNetworkMessage, NetworkStatus};
+use crate::ui::components::price_widget::structure::PriceWidgetMessage;
 use crate::ui::i18n::t;
 use crate::ui::views::{
     dashboard::DashboardMessage,
@@ -147,6 +148,51 @@ impl App {
                 }
                 // Hide banner immediately
                 self.dashboard.show_backup_reminder = false;
+                Task::none()
+            }
+            AppMessage::DashboardMessage(DashboardMessage::PriceWidget(
+                PriceWidgetMessage::RefreshPrice,
+            )) => {
+                tracing::info!("Price refresh requested");
+                self.is_fetching_price = true;
+                let client = crate::infra::price_api::PriceClient::new();
+                Task::perform(
+                    async move {
+                        tracing::info!("Starting price fetch task");
+                        let result = tokio::task::spawn_blocking(move || client.fetch_price())
+                            .await
+                            .unwrap_or(Err(anyhow::anyhow!("Task failed")));
+                        tracing::info!("Price fetch task completed: {:?}", result.is_ok());
+                        result
+                    },
+                    |result| {
+                        tracing::info!("Price fetch callback received");
+                        AppMessage::DashboardMessage(DashboardMessage::PriceWidget(
+                            PriceWidgetMessage::PriceFetched(result.map_err(|e| e.to_string())),
+                        ))
+                    },
+                )
+            }
+            AppMessage::DashboardMessage(DashboardMessage::PriceWidget(
+                PriceWidgetMessage::PriceFetched(result),
+            )) => {
+                self.is_fetching_price = false;
+                match result {
+                    Ok(data) => {
+                        let price = data.price_usd;
+                        tracing::info!(price_usd = price, "BTC price updated successfully");
+                        self.btc_price = Some(data.clone());
+                        // Persist to storage
+                        if let Ok(storage) = Storage::new() {
+                            let _ = storage.save_btc_price_cache(data.price_usd, data.change_24h);
+                        }
+                        self.add_success_toast(format!("BTC Price updated: ${:.2} USD", price));
+                    }
+                    Err(e) => {
+                        tracing::error!(error = %e, "Failed to fetch BTC price");
+                        self.add_error_toast(format!("Failed to fetch BTC price: {}", e));
+                    }
+                }
                 Task::none()
             }
 

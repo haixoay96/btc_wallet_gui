@@ -650,6 +650,7 @@ impl WalletsView {
         selected: usize,
         revealed_mnemonic: Option<&'a str>,
         compact_mode: bool,
+        btc_price_usd: Option<f64>,
     ) -> Element<'a, WalletsMessage> {
         let title = text_scaled(t("Ví", "Wallets"), 32).style(text_primary_color());
 
@@ -1061,21 +1062,30 @@ impl WalletsView {
                 let is_selected = index == selected;
                 let needs_backup = wallet.has_mnemonic && !wallet.mnemonic_backed_up;
                 let balance_btc = wallet.balance() as f64 / 100_000_000.0;
+                let balance_usd = btc_price_usd.map(|p| balance_btc * p);
 
                 let select_btn = button(
                     row![
                         column![
                             text_scaled(wallet.name.as_str(), 16).style(text_primary_color()),
                             text(format!(
-                                "{} | {:.8} BTC | {}",
+                                "{} | {:.8} BTC{}",
                                 wallet.network.as_str(),
                                 balance_btc,
-                                backup_status_text(wallet.has_mnemonic, wallet.mnemonic_backed_up)
+                                balance_usd
+                                    .map(|u| format!(" | ${:.2} USD", u))
+                                    .unwrap_or_default()
                             ))
                             .size(12)
                             .style(text_secondary_color()),
+                            text(backup_status_text(
+                                wallet.has_mnemonic,
+                                wallet.mnemonic_backed_up
+                            ))
+                            .size(11)
+                            .style(text_muted_color()),
                         ]
-                        .spacing(4),
+                        .spacing(2),
                         Space::with_width(Length::Fill),
                         // Selection checkmark
                         if is_selected {

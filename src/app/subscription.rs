@@ -4,6 +4,7 @@ use iced::{keyboard, Subscription};
 
 use crate::app::structure::{App, AppMessage};
 use crate::ui::components::network_status::DashboardNetworkMessage;
+use crate::ui::components::price_widget::structure::PriceWidgetMessage;
 use crate::ui::views::dashboard::DashboardMessage;
 use crate::ui::views::sidebar::{NavItem, SidebarMessage};
 
@@ -128,6 +129,18 @@ impl App {
             ))
         });
 
-        Subscription::batch([keyboard_sub, refresh_sub, network_check_sub])
+        // BTC Price auto-refresh every 5 minutes
+        let price_refresh_sub = iced::time::every(Duration::from_secs(300)).map(|_| {
+            AppMessage::DashboardMessage(DashboardMessage::PriceWidget(
+                PriceWidgetMessage::RefreshPrice,
+            ))
+        });
+
+        Subscription::batch([
+            keyboard_sub,
+            refresh_sub,
+            network_check_sub,
+            price_refresh_sub,
+        ])
     }
 }

@@ -1,5 +1,6 @@
 use crate::ui::components::backup_reminder::backup_reminder_banner;
 use crate::ui::components::network_status::{network_status_indicator, NetworkStatus};
+use crate::ui::components::price_widget::price_widget_view;
 use crate::ui::components::skeleton_wallet_cards;
 use crate::ui::components::sparkline::{sparkline_view, BalancePoint};
 use crate::ui::i18n::t;
@@ -62,12 +63,18 @@ impl DashboardView {
         is_refreshing: bool,
         show_satoshis: bool,
         compact: bool,
+        btc_price: Option<crate::infra::price_api::BtcPriceData>,
+        is_fetching_price: bool,
     ) -> Element<'_, DashboardMessage> {
         let title = text_scaled(t("Tổng quan", "Dashboard"), 32).style(text_primary_color());
 
         // Network status indicator
         let network_indicator = network_status_indicator(self.network_status, !is_refreshing)
             .map(DashboardMessage::Network);
+
+        // BTC Price Widget
+        let price_widget = price_widget_view(btc_price, self.total_balance, is_fetching_price)
+            .map(DashboardMessage::PriceWidget);
 
         let total_btc = self.total_balance as f64 / 100_000_000.0;
         let confirmed_btc = self.confirmed_balance as f64 / 100_000_000.0;
@@ -228,6 +235,8 @@ impl DashboardView {
             .align_y(Alignment::Center),
             Space::with_height(12),
             quick_actions,
+            Space::with_height(spacing),
+            price_widget,
             Space::with_height(spacing),
         ]
         .padding(content_padding)
