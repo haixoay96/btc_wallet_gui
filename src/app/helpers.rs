@@ -162,7 +162,9 @@ impl App {
         match self.theme {
             crate::infra::storage::AppTheme::Dark => iced::Theme::Dark,
             crate::infra::storage::AppTheme::Light => iced::Theme::Light,
-            crate::infra::storage::AppTheme::System => iced::Theme::Dark,
+            crate::infra::storage::AppTheme::System => {
+                crate::utils::system_theme::detect_system_theme()
+            }
         }
     }
 }

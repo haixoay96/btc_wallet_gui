@@ -1,6 +1,7 @@
 mod dialogs;
 mod filenames;
 pub mod logging;
+pub mod system_theme;
 
 // Re-export dialogs
 pub use dialogs::{
