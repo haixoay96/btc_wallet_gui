@@ -1,6 +1,7 @@
 use crate::ui::components::backup_reminder::backup_reminder_banner;
 use crate::ui::components::network_status::{network_status_indicator, NetworkStatus};
 use crate::ui::components::skeleton_wallet_cards;
+use crate::ui::components::sparkline::{sparkline_view, BalancePoint};
 use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, notice_style, primary_button_style, secondary_button_style, text_color,
@@ -27,6 +28,7 @@ impl DashboardView {
             network_status: NetworkStatus::Checking,
             recent_transactions: Vec::new(),
             show_backup_reminder: false,
+            balance_history: Vec::new(),
         }
     }
 
@@ -39,6 +41,7 @@ impl DashboardView {
         backup_needed_wallets: usize,
         recent_transactions: Vec<RecentTxItem>,
         show_backup_reminder: bool,
+        balance_history: Vec<BalancePoint>,
     ) {
         self.total_balance = total;
         self.confirmed_balance = confirmed;
@@ -47,6 +50,7 @@ impl DashboardView {
         self.backup_needed_wallets = backup_needed_wallets;
         self.recent_transactions = recent_transactions;
         self.show_backup_reminder = show_backup_reminder;
+        self.balance_history = balance_history;
     }
 
     pub fn set_last_synced_label(&mut self, label: Option<String>) {
@@ -74,22 +78,29 @@ impl DashboardView {
         let content_padding = if compact { 16 } else { 32 };
         let spacing = if compact { 8 } else { 16 };
 
-        let balance_card = container(
-            column![
-                text_scaled(t("Tổng số dư", "Total Balance"), 14).style(text_secondary_color()),
-                Space::with_height(4),
-                text_scaled(format!("{:.8} BTC", total_btc), 32).style(text_primary_color()),
-                Space::with_height(2),
-                if show_satoshis {
-                    text_scaled(format!("{} sat", self.total_balance), 14).style(text_muted_color())
-                } else {
-                    text_scaled("", 10).height(0)
-                }
-            ]
-            .padding(card_padding),
-        )
-        .style(card_style())
-        .width(Length::Fill);
+        // Build balance card with optional sparkline
+        let mut balance_content = column![
+            text_scaled(t("Tổng số dư", "Total Balance"), 14).style(text_secondary_color()),
+            Space::with_height(4),
+            text_scaled(format!("{:.8} BTC", total_btc), 32).style(text_primary_color()),
+            Space::with_height(2),
+            if show_satoshis {
+                text_scaled(format!("{} sat", self.total_balance), 14).style(text_muted_color())
+            } else {
+                text_scaled("", 10).height(0)
+            }
+        ];
+
+        // Add sparkline if we have data
+        if !self.balance_history.is_empty() {
+            balance_content = balance_content.push(Space::with_height(8));
+            let sparkline_widget = sparkline_view(&self.balance_history, Colors::ACCENT_TEAL, 0.1);
+            balance_content = balance_content.push(sparkline_widget);
+        }
+
+        let balance_card = container(balance_content.padding(card_padding))
+            .style(card_style())
+            .width(Length::Fill);
 
         let confirmed_card = container(
             column![

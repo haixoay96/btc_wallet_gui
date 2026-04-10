@@ -1,5 +1,6 @@
 use crate::ui::components::backup_reminder::BackupReminderMessage;
 use crate::ui::components::network_status::{DashboardNetworkMessage, NetworkStatus};
+use crate::ui::components::sparkline::BalancePoint;
 use crate::ui::views::sidebar::NavItem;
 use chrono::{DateTime, Local};
 
@@ -65,4 +66,5 @@ pub struct DashboardView {
     pub network_status: NetworkStatus,
     pub recent_transactions: Vec<RecentTxItem>,
     pub show_backup_reminder: bool,
+    pub balance_history: Vec<BalancePoint>,
 }

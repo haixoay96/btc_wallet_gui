@@ -1,6 +1,7 @@
 use iced::Task;
 
 use crate::app::structure::*;
+use crate::ui::components::sparkline::calculate_7day_balance_history;
 use crate::ui::i18n::t;
 use crate::ui::views::dashboard::RecentTxItem;
 
@@ -24,6 +25,9 @@ impl App {
         // Aggregate recent transactions from all wallets
         let recent_transactions = collect_recent_transactions(&self.wallets);
 
+        // Calculate 7-day balance history
+        let balance_history = calculate_7day_balance_history(&self.wallets);
+
         // Check if backup reminder should be shown
         let last_dismissed = if let Ok(storage) = crate::infra::storage::Storage::new() {
             storage.load_backup_reminder_dismissed().unwrap_or(None)
@@ -44,6 +48,7 @@ impl App {
             backup_needed,
             recent_transactions,
             show_backup_reminder,
+            balance_history,
         );
     }
 
