@@ -1,4 +1,4 @@
-use super::colors::{DarkColors, HighContrastColors};
+use super::colors::{DarkColors, HighContrastColors, LightColors};
 use iced::{Color, Theme};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
@@ -78,25 +78,25 @@ impl ThemeColorPalette {
 
     pub fn light() -> Self {
         Self {
-            bg_primary: Color::from_rgb(0.87, 0.87, 0.90),
-            bg_secondary: Color::from_rgb(0.84, 0.84, 0.88),
-            bg_card: Color::from_rgb(0.91, 0.91, 0.94),
-            bg_input: Color::from_rgb(0.89, 0.89, 0.92),
-            bg_hover: Color::from_rgb(0.80, 0.80, 0.85),
-            accent_purple: Color::from_rgb(0.38, 0.28, 0.90),
-            accent_teal: Color::from_rgb(0.0, 0.62, 0.48),
-            accent_blue: Color::from_rgb(0.20, 0.45, 0.90),
-            text_primary: Color::from_rgb(0.06, 0.06, 0.08),
-            text_secondary: Color::from_rgb(0.25, 0.25, 0.30),
-            text_muted: Color::from_rgb(0.42, 0.42, 0.48),
-            text_placeholder: Color::from_rgb(0.30, 0.30, 0.35),
-            success: Color::from_rgb(0.0, 0.50, 0.35),
-            error: Color::from_rgb(0.72, 0.08, 0.08),
-            warning: Color::from_rgb(0.72, 0.42, 0.0),
-            gradient_start: Color::from_rgb(0.38, 0.28, 0.90),
-            border: Color::from_rgb(0.65, 0.65, 0.72),
-            border_focused: Color::from_rgb(0.38, 0.28, 0.90),
-            border_subtle: Color::from_rgb(0.75, 0.75, 0.80),
+            bg_primary: LightColors::BG_PRIMARY,
+            bg_secondary: LightColors::BG_SECONDARY,
+            bg_card: LightColors::BG_CARD,
+            bg_input: LightColors::BG_INPUT,
+            bg_hover: LightColors::BG_HOVER,
+            accent_purple: LightColors::ACCENT_PURPLE,
+            accent_teal: LightColors::ACCENT_TEAL,
+            accent_blue: LightColors::ACCENT_BLUE,
+            text_primary: LightColors::TEXT_PRIMARY,
+            text_secondary: LightColors::TEXT_SECONDARY,
+            text_muted: LightColors::TEXT_MUTED,
+            text_placeholder: Color::from_rgb(0.42, 0.44, 0.50),
+            success: LightColors::SUCCESS,
+            error: LightColors::ERROR,
+            warning: LightColors::WARNING,
+            gradient_start: LightColors::GRADIENT_START,
+            border: LightColors::BORDER,
+            border_focused: LightColors::BORDER_FOCUSED,
+            border_subtle: LightColors::BORDER_SUBTLE,
         }
     }
 
