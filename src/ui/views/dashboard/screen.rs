@@ -10,7 +10,7 @@ use crate::ui::theme::{
 };
 use crate::ui::views::sidebar::NavItem;
 use iced::{
-    widget::{button, column, container, row, text, Space},
+    widget::{button, column, container, row, scrollable, text, Space},
     Alignment, Element, Length,
 };
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
@@ -153,7 +153,7 @@ impl DashboardView {
             column![
                 text_scaled(t("Tổng số ví", "Total Wallets"), 14).style(text_secondary_color()),
                 Space::with_height(4),
-                text_scaled(format!("{}", self.wallet_count), 36)
+                text_scaled(format!("{}", self.wallet_count), 24)
                     .style(text_color(Colors::ACCENT_PURPLE)),
             ]
             .padding(card_padding),
@@ -166,29 +166,13 @@ impl DashboardView {
                 text_scaled(t("Ví cần backup", "Wallets Needing Backup"), 14)
                     .style(text_secondary_color()),
                 Space::with_height(4),
-                text_scaled(format!("{}", self.backup_needed_wallets), 28).style(
+                text_scaled(format!("{}", self.backup_needed_wallets), 24).style(
                     if self.backup_needed_wallets == 0 {
                         text_primary_color()
                     } else {
                         text_color(Colors::WARNING)
                     }
                 ),
-                Space::with_height(2),
-                text_scaled(
-                    if self.backup_needed_wallets == 0 {
-                        t(
-                            "Tất cả ví đã xác minh backup",
-                            "All wallets have verified backups",
-                        )
-                    } else {
-                        t(
-                            "Nên xử lý sớm để tránh mất seed",
-                            "Should be handled soon to avoid seed loss",
-                        )
-                    },
-                    12
-                )
-                .style(text_muted_color()),
             ]
             .padding(card_padding),
         )
@@ -224,15 +208,18 @@ impl DashboardView {
         ]
         .spacing(10);
 
-        let mut content = column![
-            row![
-                title,
-                Space::with_width(Length::Fill),
-                network_indicator,
-                Space::with_width(8),
-                refresh_button
-            ]
-            .align_y(Alignment::Center),
+        // Header (pinned, not scrollable)
+        let header = row![
+            title,
+            Space::with_width(Length::Fill),
+            network_indicator,
+            Space::with_width(8),
+            refresh_button
+        ]
+        .align_y(Alignment::Center);
+
+        // Scrollable content below header
+        let mut scroll_content = column![
             Space::with_height(12),
             quick_actions,
             Space::with_height(spacing),
@@ -243,7 +230,7 @@ impl DashboardView {
         .spacing(0);
 
         if let Some(last_synced) = &self.last_synced_label {
-            content = content.push(
+            scroll_content = scroll_content.push(
                 container(
                     text_scaled(
                         format!("{}: {}", t("Đồng bộ gần nhất", "Last synced"), last_synced),
@@ -255,20 +242,20 @@ impl DashboardView {
                 .padding(12)
                 .width(Length::Fill),
             );
-            content = content.push(Space::with_height(16));
+            scroll_content = scroll_content.push(Space::with_height(16));
         }
 
         // Backup reminder banner (before wallet cards)
         if self.show_backup_reminder && !is_refreshing && self.wallet_count > 0 {
-            content = content.push(
+            scroll_content = scroll_content.push(
                 backup_reminder_banner(self.backup_needed_wallets)
                     .map(DashboardMessage::BackupReminder),
             );
-            content = content.push(Space::with_height(spacing));
+            scroll_content = scroll_content.push(Space::with_height(spacing));
         }
 
         if self.wallet_count == 0 {
-            content = content.push(
+            scroll_content = scroll_content.push(
                 container(
                     column![
                         text_scaled(t("Chưa có ví nào", "No wallets yet"), 22)
@@ -296,15 +283,17 @@ impl DashboardView {
             );
         } else if is_refreshing {
             // Show skeleton loading state
-            content = content.push(skeleton_wallet_cards(3).map(|_| DashboardMessage::Refresh));
+            scroll_content =
+                scroll_content.push(skeleton_wallet_cards(3).map(|_| DashboardMessage::Refresh));
         } else {
             // Recent Transactions Preview
             if !self.recent_transactions.is_empty() {
-                content = content.push(render_recent_transactions(&self.recent_transactions));
-                content = content.push(Space::with_height(spacing));
+                scroll_content =
+                    scroll_content.push(render_recent_transactions(&self.recent_transactions));
+                scroll_content = scroll_content.push(Space::with_height(spacing));
             }
 
-            content = content
+            scroll_content = scroll_content
                 .push(balance_card)
                 .push(Space::with_height(spacing))
                 .push(
@@ -317,10 +306,17 @@ impl DashboardView {
                 );
         }
 
-        container(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into()
+        // Pin header at top, scroll only content below
+        column![
+            container(header)
+                .width(Length::Fill)
+                .padding(content_padding),
+            scrollable(container(scroll_content).width(Length::Fill))
+                .width(Length::Fill)
+                .height(Length::Fill),
+        ]
+        .spacing(0)
+        .into()
     }
 }
 

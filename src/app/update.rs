@@ -31,8 +31,9 @@ impl App {
                         self.current_page = page;
                         self.sidebar.set_active(page);
                         if page == NavItem::Dashboard {
-                            // Trigger initial network check when entering dashboard
+                            // Trigger initial network check and refresh dashboard data
                             self.dashboard.network_status = NetworkStatus::Checking;
+                            self.update_dashboard();
                         }
                         if page == NavItem::Settings {
                             // Only sync once when navigating TO Settings
