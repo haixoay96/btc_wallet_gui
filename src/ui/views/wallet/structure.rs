@@ -1,4 +1,5 @@
 use crate::core::wallet::WalletNetwork;
+use crate::infra::storage::WalletSortField;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImportMode {
@@ -52,6 +53,8 @@ pub enum WalletsMessage {
     ToggleInternalAddresses,
     CopyAddress(String),
     DeletePassphraseChanged(String),
+    SortFieldChanged(WalletSortField),
+    ToggleSortDirection,
 }
 
 pub enum WalletsEvent {
@@ -92,6 +95,8 @@ pub enum WalletsEvent {
         slip39_passphrase: String,
     },
     CopyAddress(String),
+    SortFieldChanged(WalletSortField),
+    ToggleSortDirection,
 }
 
 pub struct WalletsView {
@@ -126,4 +131,7 @@ pub struct WalletsView {
     /// Compact mode flag
     #[allow(dead_code)]
     pub compact_mode: bool,
+    /// Sorting state
+    pub sort_field: WalletSortField,
+    pub sort_ascending: bool,
 }

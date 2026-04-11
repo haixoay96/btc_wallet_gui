@@ -67,6 +67,14 @@ impl App {
                             };
                             self.settings_view.load_data_folder_info();
                         }
+                        if page == NavItem::Wallets {
+                            if let Ok(storage) = Storage::new() {
+                                self.wallets_view.sort_field =
+                                    storage.load_wallet_sort_field().unwrap_or_default();
+                                self.wallets_view.sort_ascending =
+                                    storage.load_wallet_sort_ascending().unwrap_or(false);
+                            }
+                        }
                     }
                 }
                 Task::none()

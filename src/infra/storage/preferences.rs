@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use std::fs;
 
 use crate::infra::storage::structure::Storage;
-use crate::infra::storage::structure::{AppPreferences, AppTheme};
+use crate::infra::storage::structure::{AppPreferences, AppTheme, WalletSortField};
 use crate::ui::i18n::AppLanguage;
 
 // ─── Preference Load/Save ────────────────────────────────────────────────
@@ -167,6 +167,26 @@ impl Storage {
         prefs.cached_btc_price = Some(price);
         prefs.cached_btc_change_24h = Some(change);
         prefs.cached_price_timestamp = Some(chrono::Local::now().timestamp());
+        self.save_preferences(&prefs)
+    }
+
+    pub fn load_wallet_sort_field(&self) -> Result<WalletSortField> {
+        Ok(self.load_preferences()?.wallet_sort_field)
+    }
+
+    pub fn save_wallet_sort_field(&self, field: WalletSortField) -> Result<()> {
+        let mut prefs = self.load_preferences()?;
+        prefs.wallet_sort_field = field;
+        self.save_preferences(&prefs)
+    }
+
+    pub fn load_wallet_sort_ascending(&self) -> Result<bool> {
+        Ok(self.load_preferences()?.wallet_sort_ascending)
+    }
+
+    pub fn save_wallet_sort_ascending(&self, ascending: bool) -> Result<()> {
+        let mut prefs = self.load_preferences()?;
+        prefs.wallet_sort_ascending = ascending;
         self.save_preferences(&prefs)
     }
 

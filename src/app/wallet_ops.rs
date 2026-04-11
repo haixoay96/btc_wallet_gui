@@ -5,6 +5,7 @@ use secrecy::{ExposeSecret, SecretString};
 use zeroize::Zeroize;
 
 use crate::core::wallet::{Wallet, WalletNetwork, WalletSecretsRef};
+use crate::infra::storage::Storage;
 use crate::ui::i18n::t;
 use crate::ui::views::receive::{ReceiveEvent, ReceiveMessage};
 use crate::ui::views::wallets::{WalletsEvent, WalletsMessage, WalletsView};
@@ -112,6 +113,17 @@ impl App {
                 }
                 WalletsEvent::CopyAddress(address) => {
                     return clipboard::write(address);
+                }
+                WalletsEvent::SortFieldChanged(field) => {
+                    if let Ok(storage) = Storage::new() {
+                        let _ = storage.save_wallet_sort_field(field);
+                    }
+                }
+                WalletsEvent::ToggleSortDirection => {
+                    if let Ok(storage) = Storage::new() {
+                        let current = storage.load_wallet_sort_ascending().unwrap_or(false);
+                        let _ = storage.save_wallet_sort_ascending(!current);
+                    }
                 }
             }
         }

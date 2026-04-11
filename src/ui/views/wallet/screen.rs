@@ -1,7 +1,10 @@
 use iced::{
-    widget::{button, column, container, mouse_area, row, scrollable, text, text_input, Space},
+    widget::{
+        button, column, container, mouse_area, pick_list, row, scrollable, text, text_input, Space,
+    },
     Alignment, Background, Element, Length,
 };
+use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 use crate::core::wallet::{AddressChain, Wallet, WalletNetwork};
 use crate::ui::components::info_box;
@@ -9,11 +12,13 @@ use crate::ui::components::modal;
 use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, danger_button_style, get_theme_colors, input_style, notice_style,
-    primary_button_style, secondary_button_style, selected_button_style, text_color,
-    text_muted_color, text_primary_color, text_scaled, text_secondary_color, Colors, NoticeTone,
+    pick_list_menu_style, pick_list_style, primary_button_style, secondary_button_style,
+    selected_button_style, text_color, text_muted_color, text_primary_color, text_scaled,
+    text_secondary_color, Colors, NoticeTone,
 };
 
 use super::structure::*;
+use crate::infra::storage::WalletSortField;
 
 impl WalletsView {
     pub fn new() -> Self {
@@ -47,6 +52,8 @@ impl WalletsView {
             info: None,
             error: None,
             compact_mode: false,
+            sort_field: WalletSortField::Balance,
+            sort_ascending: false,
         }
     }
 
@@ -641,6 +648,14 @@ impl WalletsView {
                 self.error = None;
                 None
             }
+            WalletsMessage::SortFieldChanged(field) => {
+                self.sort_field = field;
+                Some(WalletsEvent::SortFieldChanged(field))
+            }
+            WalletsMessage::ToggleSortDirection => {
+                self.sort_ascending = !self.sort_ascending;
+                Some(WalletsEvent::ToggleSortDirection)
+            }
         }
     }
 
@@ -693,7 +708,8 @@ impl WalletsView {
             primary_button_style()
         });
 
-        let mut content = column![
+        // Header (Pinned at top)
+        let header = column![
             title,
             Space::with_height(spacing),
             row![
@@ -706,8 +722,14 @@ impl WalletsView {
         .spacing(spacing)
         .padding(main_padding);
 
+        // Scrollable Content
+        let mut scroll_content =
+            column![]
+                .spacing(spacing)
+                .padding(main_padding);
+
         if let Some(info) = &self.info {
-            content = content.push(
+            scroll_content = scroll_content.push(
                 container(
                     row![
                         text_scaled(info.as_str(), 13).style(text_primary_color()),
@@ -726,7 +748,7 @@ impl WalletsView {
         }
 
         if let Some(error) = &self.error {
-            content = content.push(
+            scroll_content = scroll_content.push(
                 container(text(error.as_str()).size(13).style(text_primary_color()))
                     .style(notice_style(NoticeTone::Error))
                     .padding(10)
@@ -785,7 +807,7 @@ impl WalletsView {
             .padding(20)
             .width(Length::Fill);
 
-            content = content.push(form);
+            scroll_content = scroll_content.push(form);
         }
 
         if self.show_import_mnemonic_form {
@@ -1052,14 +1074,76 @@ impl WalletsView {
                 .padding(20)
                 .width(Length::Fill);
 
-            content = content.push(form);
+            scroll_content = scroll_content.push(form);
         }
 
         if !wallets.is_empty() {
+            // Sorting controls (inside a card to match wallet list)
+            let sort_controls = container(
+                row![
+                    text(t("Sắp xếp theo:", "Sort by:"))
+                        .size(14)
+                        .style(text_secondary_color()),
+                    Space::with_width(12),
+                    pick_list(
+                        vec![
+                            WalletSortField::Balance,
+                            WalletSortField::Name,
+                            WalletSortField::Created,
+                            WalletSortField::Network,
+                        ],
+                        Some(self.sort_field),
+                        WalletsMessage::SortFieldChanged
+                    )
+                    .padding(8)
+                    .style(pick_list_style())
+                    .menu_style(pick_list_menu_style()),
+                    Space::with_width(Length::Fill),
+                    button(
+                        text(if self.sort_ascending {
+                            Bootstrap::ArrowUp.to_string()
+                        } else {
+                            Bootstrap::ArrowDown.to_string()
+                        })
+                        .size(12)
+                        .font(BOOTSTRAP_FONT),
+                    )
+                    .on_press(WalletsMessage::ToggleSortDirection)
+                    .padding([8, 12])
+                    .style(secondary_button_style()),
+                ]
+                .align_y(Alignment::Center),
+            )
+            .style(card_style())
+            .padding(16)
+            .width(Length::Fill);
+
+            scroll_content = scroll_content.push(sort_controls);
+            scroll_content = scroll_content.push(Space::with_height(12));
+
+            // Prepare sorted indices
+            let mut sorted_indices: Vec<usize> = (0..wallets.len()).collect();
+            sorted_indices.sort_by(|&a, &b| {
+                let wa = &wallets[a];
+                let wb = &wallets[b];
+                let ord = match self.sort_field {
+                    WalletSortField::Balance => wa.balance().cmp(&wb.balance()),
+                    WalletSortField::Name => wa.name.to_lowercase().cmp(&wb.name.to_lowercase()),
+                    WalletSortField::Created => a.cmp(&b), // Use index as proxy for created time
+                    WalletSortField::Network => wa.network.as_str().cmp(wb.network.as_str()),
+                };
+                if self.sort_ascending {
+                    ord
+                } else {
+                    ord.reverse()
+                }
+            });
+
             let mut wallet_list = column![];
 
-            for (index, wallet) in wallets.iter().enumerate() {
-                let is_selected = index == selected;
+            for sorted_index in sorted_indices {
+                let wallet = &wallets[sorted_index];
+                let is_selected = sorted_index == selected;
                 let needs_backup = wallet.has_mnemonic && !wallet.mnemonic_backed_up;
                 let balance_btc = wallet.balance() as f64 / 100_000_000.0;
                 let balance_usd = btc_price_usd.map(|p| balance_btc * p);
@@ -1098,7 +1182,7 @@ impl WalletsView {
                                     .font(iced_fonts::BOOTSTRAP_FONT)
                                     .style(text_color(Colors::WARNING)),
                             )
-                            .on_press(WalletsMessage::ShowBackupWarning(index))
+                            .on_press(WalletsMessage::ShowBackupWarning(sorted_index))
                             .padding(0)
                             .style(crate::ui::theme::flat_icon_button_style())
                         } else {
@@ -1113,7 +1197,7 @@ impl WalletsView {
                     ]
                     .align_y(Alignment::Center),
                 )
-                .on_press(WalletsMessage::SelectWallet(index))
+                .on_press(WalletsMessage::SelectWallet(sorted_index))
                 .padding(12)
                 .style(if is_selected {
                     selected_button_style()
@@ -1122,7 +1206,7 @@ impl WalletsView {
                 });
 
                 let delete_btn = button(text_scaled(t("Xóa", "Delete"), 12))
-                    .on_press(WalletsMessage::DeleteWallet(index))
+                    .on_press(WalletsMessage::DeleteWallet(sorted_index))
                     .padding([6, 10])
                     .style(danger_button_style());
 
@@ -1137,7 +1221,7 @@ impl WalletsView {
                 wallet_list = wallet_list.push(Space::with_height(8));
             }
 
-            content = content.push(
+            scroll_content = scroll_content.push(
                 container(
                     column![
                         text_scaled(t("Danh sách ví", "Your Wallets"), 18)
@@ -1153,10 +1237,10 @@ impl WalletsView {
             );
 
             if let Some(selected_wallet) = wallets.get(selected) {
-                content = content.push(Space::with_height(12));
-                content = content.push(wallet_summary_card(selected_wallet));
-                content = content.push(Space::with_height(12));
-                content = content.push(
+                scroll_content = scroll_content.push(Space::with_height(12));
+                scroll_content = scroll_content.push(wallet_summary_card(selected_wallet));
+                scroll_content = scroll_content.push(Space::with_height(12));
+                scroll_content = scroll_content.push(
                     container(
                         column![
                             text_scaled(t("Danh sách địa chỉ", "Addresses"), 18)
@@ -1175,12 +1259,15 @@ impl WalletsView {
                     .padding(16)
                     .width(Length::Fill),
                 );
-                content = content.push(Space::with_height(12));
-                content =
-                    content.push(self.backup_panel(selected, selected_wallet, revealed_mnemonic));
+                scroll_content = scroll_content.push(Space::with_height(12));
+                scroll_content = scroll_content.push(self.backup_panel(
+                    selected,
+                    selected_wallet,
+                    revealed_mnemonic,
+                ));
             }
         } else if !self.show_create_form && !self.show_import_mnemonic_form {
-            content = content.push(
+            scroll_content = scroll_content.push(
                 container(
                     text(t(
                         "Chưa có ví nào. Hãy tạo ví đầu tiên!",
@@ -1194,10 +1281,12 @@ impl WalletsView {
             );
         }
 
-        let base_content: Element<'_, WalletsMessage> = scrollable(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into();
+        let base_content: Element<'_, WalletsMessage> =
+            column![header, scrollable(scroll_content).width(Length::Fill),]
+                .spacing(0)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into();
 
         if let Some(index) = self.confirm_delete_index {
             let wallet_name = wallets
