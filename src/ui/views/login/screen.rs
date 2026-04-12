@@ -7,9 +7,9 @@ use crate::ui::components::language_selector::LanguageSelector;
 use crate::ui::components::{calculate_strength, strength_bar};
 use crate::ui::i18n::t;
 use crate::ui::theme::{
-    card_style, gradient_button_style, input_style, muted_button_style, notice_style,
-    screen_background_style, secondary_button_style, selected_button_style, text_color,
-    text_muted_color, text_primary_color, text_scaled, text_secondary_color, Colors, NoticeTone,
+    input_style, muted_button_style, notice_style, primary_button_style, screen_background_style,
+    secondary_button_style, selected_button_style, text_color, text_muted_color,
+    text_primary_color, text_scaled, text_secondary_color, Colors, NoticeTone,
 };
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
@@ -198,45 +198,56 @@ impl LoginView {
 
         let logo_container = container(logo).center_x(Length::Fill);
 
-        let title =
-            text_scaled(t("Mở Ví Bitcoin", "Open Bitcoin Wallet"), 36).style(text_primary_color());
-
-        let subtitle = text_scaled(
-            match self.mode {
-                LoginMode::ExistingWallet => t(
-                    "Đăng nhập để truy cập dữ liệu ví đã lưu trên máy này.",
-                    "Log in to access wallet data already stored on this device.",
-                ),
-                LoginMode::NewWallet => t(
-                    "Tạo bộ dữ liệu ví mới và đặt passphrase bảo vệ ứng dụng.",
-                    "Create fresh wallet data and protect the app with a passphrase.",
-                ),
-                LoginMode::ImportBackup => t(
-                    "Khôi phục toàn bộ dữ liệu ứng dụng từ file backup mã hóa.",
-                    "Restore the full app data from an encrypted backup file.",
-                ),
-            },
-            16,
+        let title = container(
+            text_scaled(t("Mở Ví Bitcoin", "Open Bitcoin Wallet"), 36).style(text_primary_color()),
         )
-        .style(text_secondary_color());
+        .width(Length::Fill)
+        .align_x(iced::alignment::Horizontal::Center);
+
+        let subtitle = container(
+            text_scaled(
+                match self.mode {
+                    LoginMode::ExistingWallet => t(
+                        "Đăng nhập để truy cập dữ liệu ví đã lưu trên máy này.",
+                        "Log in to access wallet data already stored on this device.",
+                    ),
+                    LoginMode::NewWallet => t(
+                        "Tạo bộ dữ liệu ví mới và đặt passphrase bảo vệ ứng dụng.",
+                        "Create fresh wallet data and protect the app with a passphrase.",
+                    ),
+                    LoginMode::ImportBackup => t(
+                        "Khôi phục toàn bộ dữ liệu ứng dụng từ file backup mã hóa.",
+                        "Restore the full app data from an encrypted backup file.",
+                    ),
+                },
+                16,
+            )
+            .style(text_secondary_color()),
+        )
+        .width(Length::Fill)
+        .align_x(iced::alignment::Horizontal::Center);
 
         let mode_switcher: Element<'_, LoginMessage> = if self.can_create_new_passphrase {
-            row![
-                mode_button(
-                    t("Tạo passphrase mới", "Create new passphrase").to_string(),
-                    self.mode == LoginMode::NewWallet,
-                    true,
-                )
-                .on_press(LoginMessage::SetMode(LoginMode::NewWallet)),
-                mode_button(
-                    t("Import backup", "Import backup").to_string(),
-                    self.mode == LoginMode::ImportBackup,
-                    true,
-                )
-                .on_press(LoginMessage::SetMode(LoginMode::ImportBackup)),
-            ]
-            .spacing(10)
-            .align_y(Alignment::Center)
+            container(
+                row![
+                    mode_button(
+                        t("Tạo passphrase mới", "Create new passphrase").to_string(),
+                        self.mode == LoginMode::NewWallet,
+                        true,
+                    )
+                    .on_press(LoginMessage::SetMode(LoginMode::NewWallet)),
+                    mode_button(
+                        t("Import backup", "Import backup").to_string(),
+                        self.mode == LoginMode::ImportBackup,
+                        true,
+                    )
+                    .on_press(LoginMessage::SetMode(LoginMode::ImportBackup)),
+                ]
+                .spacing(10)
+                .align_y(Alignment::Center),
+            )
+            .width(Length::Fill)
+            .align_x(iced::alignment::Horizontal::Center)
             .into()
         } else {
             container(
@@ -267,9 +278,8 @@ impl LoginView {
                 ]
                 .spacing(10),
             )
-            .style(notice_style(NoticeTone::Info))
-            .padding(14)
             .width(Length::Fill)
+            .align_x(iced::alignment::Horizontal::Center)
             .into()
         };
 
@@ -383,14 +393,8 @@ impl LoginView {
             .spacing(8);
 
             if !self.backup_path.trim().is_empty() {
-                col = col.push(
-                    container(
-                        text_scaled(self.backup_path.as_str(), 13).style(text_primary_color()),
-                    )
-                    .style(card_style())
-                    .padding(12)
-                    .width(Length::Fill),
-                );
+                col = col
+                    .push(text_scaled(self.backup_path.as_str(), 13).style(text_primary_color()));
             }
 
             col.into()
@@ -405,11 +409,14 @@ impl LoginView {
         };
 
         let error_text: Element<'_, LoginMessage> = if let Some(error) = &self.error {
-            container(text(error.as_str()).style(text_primary_color()).size(14))
-                .style(notice_style(NoticeTone::Error))
-                .padding(12)
-                .width(Length::Fill)
-                .into()
+            container(
+                container(text(error.as_str()).style(text_primary_color()).size(14))
+                    .style(notice_style(NoticeTone::Error))
+                    .padding(12),
+            )
+            .width(Length::Fill)
+            .align_x(iced::alignment::Horizontal::Center)
+            .into()
         } else {
             Space::with_height(0).into()
         };
@@ -433,11 +440,15 @@ impl LoginView {
             Space::with_height(16),
             error_text,
             Space::with_height(20),
-            button(text_scaled(action_label, 16))
-                .on_press(LoginMessage::Submit)
-                .padding(12)
-                .width(Length::Fill)
-                .style(gradient_button_style()),
+            button(
+                container(text_scaled(action_label, 16))
+                    .width(Length::Fill)
+                    .align_x(iced::alignment::Horizontal::Center),
+            )
+            .on_press(LoginMessage::Submit)
+            .padding(12)
+            .width(Length::Fill)
+            .style(primary_button_style()),
             Space::with_height(4),
         ]
         .spacing(0);
@@ -445,8 +456,7 @@ impl LoginView {
         let login_container = container(login_content)
             .width(Length::Fixed(560.0))
             .center_x(Length::Fill)
-            .padding(Padding::from(28))
-            .style(card_style());
+            .padding(Padding::from(28));
 
         let main_layout = column![
             header_bar,
