@@ -227,7 +227,7 @@ impl LoginView {
         .width(Length::Fill)
         .align_x(iced::alignment::Horizontal::Center);
 
-        let mode_switcher: Element<'_, LoginMessage> = if self.can_create_new_passphrase {
+        let mode_switcher_content: Element<'_, LoginMessage> = if self.can_create_new_passphrase {
             container(
                 row![
                     mode_button(
@@ -250,38 +250,37 @@ impl LoginView {
             .align_x(iced::alignment::Horizontal::Center)
             .into()
         } else {
-            container(
-                column![
-                    row![
-                        mode_button(
-                            t("Đăng nhập", "Login").to_string(),
-                            true,
-                            true,
-                        ),
-                        mode_button(
-                            t("Tạo dữ liệu mới", "Create new data").to_string(),
-                            false,
-                            false,
-                        ),
-                        mode_button(
-                            t("Import app backup", "Import app backup").to_string(),
-                            false,
-                            false,
-                        ),
-                    ]
-                    .spacing(10),
-                    text_scaled(t(
-                        "Để khôi phục thêm ví riêng lẻ, vào Wallets > Import sau khi đăng nhập.",
-                        "To restore additional individual wallets, use Wallets > Import after login.",
-                    ), 12)
-                    .style(text_secondary_color()),
+            column![
+                row![
+                    mode_button(
+                        t("Đăng nhập", "Login").to_string(),
+                        true,
+                        true,
+                    ),
+                    mode_button(
+                        t("Tạo dữ liệu mới", "Create new data").to_string(),
+                        false,
+                        false,
+                    ),
+                    mode_button(
+                        t("Import app backup", "Import app backup").to_string(),
+                        false,
+                        false,
+                    ),
                 ]
                 .spacing(10),
-            )
-            .width(Length::Fill)
-            .align_x(iced::alignment::Horizontal::Center)
+                text_scaled(t(
+                    "Để khôi phục thêm ví riêng lẻ, vào Wallets > Import sau khi đăng nhập.",
+                    "To restore additional individual wallets, use Wallets > Import after login.",
+                ), 12)
+                .style(text_secondary_color()),
+            ]
+            .spacing(10)
+            .align_x(Alignment::Center)
             .into()
         };
+
+        let input_width = Length::Fixed(570.0);
 
         let nickname_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
             column![
@@ -294,6 +293,7 @@ impl LoginView {
                     .style(input_style()),
             ]
             .spacing(0)
+            .width(input_width)
             .into()
         } else {
             Space::with_height(0).into()
@@ -330,9 +330,11 @@ impl LoginView {
                 .style(secondary_button_style()),
             ]
             .spacing(8)
-            .align_y(Alignment::Center),
+            .align_y(Alignment::Center)
+            .width(Length::Fill),
         ]
-        .spacing(0);
+        .spacing(0)
+        .width(input_width);
 
         let confirm_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
             let strength = calculate_strength(&self.passphrase);
@@ -370,11 +372,13 @@ impl LoginView {
                     .style(secondary_button_style()),
                 ]
                 .spacing(8)
-                .align_y(Alignment::Center),
+                .align_y(Alignment::Center)
+                .width(Length::Fill),
                 Space::with_height(8),
                 strength_widget,
             ]
             .spacing(0)
+            .width(input_width)
             .into()
         } else {
             Space::with_height(0).into()
@@ -390,7 +394,8 @@ impl LoginView {
                     .padding(12)
                     .style(secondary_button_style()),
             ]
-            .spacing(8);
+            .spacing(8)
+            .width(input_width);
 
             if !self.backup_path.trim().is_empty() {
                 col = col
@@ -414,21 +419,14 @@ impl LoginView {
                     .style(notice_style(NoticeTone::Error))
                     .padding(12),
             )
-            .width(Length::Fill)
-            .align_x(iced::alignment::Horizontal::Center)
+            .width(input_width)
             .into()
         } else {
             Space::with_height(0).into()
         };
 
-        let login_content = column![
-            logo_container,
-            Space::with_height(4),
-            title,
-            Space::with_height(8),
-            subtitle,
-            Space::with_height(20),
-            mode_switcher,
+        let input_section = column![
+            mode_switcher_content,
             Space::with_height(20),
             nickname_input,
             Space::with_height(12),
@@ -449,12 +447,28 @@ impl LoginView {
             .padding(12)
             .width(Length::Fill)
             .style(primary_button_style()),
+        ]
+        .spacing(0)
+        .width(input_width)
+        .align_x(iced::alignment::Horizontal::Center);
+
+        let login_content = column![
+            logo_container,
+            Space::with_height(4),
+            title,
+            Space::with_height(8),
+            subtitle,
+            Space::with_height(20),
+            container(input_section)
+                .width(Length::Fill)
+                .align_x(iced::alignment::Horizontal::Center),
             Space::with_height(4),
         ]
-        .spacing(0);
+        .spacing(0)
+        .width(Length::Fill);
 
         let login_container = container(login_content)
-            .width(Length::Fixed(560.0))
+            .width(Length::Fixed(700.0))
             .center_x(Length::Fill)
             .padding(Padding::from(28));
 
