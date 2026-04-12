@@ -96,6 +96,8 @@ pub struct Wallet {
     pub next_internal_index: u32,
     pub addresses: Vec<AddressEntry>,
     pub history: Vec<TxRecord>,
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 // ─── Impl Wallet (simple methods) ────────────────────────────────────────

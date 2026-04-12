@@ -1,5 +1,6 @@
 use crate::core::wallet::WalletNetwork;
 use crate::infra::storage::WalletSortField;
+use crate::ui::components::tag_picker::TagMessage;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImportMode {
@@ -55,6 +56,8 @@ pub enum WalletsMessage {
     DeletePassphraseChanged(String),
     SortFieldChanged(WalletSortField),
     ToggleSortDirection,
+    TagMessage(TagMessage),
+    ToggleTagModal(usize),
 }
 
 pub enum WalletsEvent {
@@ -97,6 +100,8 @@ pub enum WalletsEvent {
     CopyAddress(String),
     SortFieldChanged(WalletSortField),
     ToggleSortDirection,
+    TagInputChanged(String),
+    RemoveTag(String),
 }
 
 pub struct WalletsView {
@@ -134,4 +139,7 @@ pub struct WalletsView {
     /// Sorting state
     pub sort_field: WalletSortField,
     pub sort_ascending: bool,
+    /// Tag management state
+    pub tag_input: String,
+    pub tag_modal_index: Option<usize>,
 }

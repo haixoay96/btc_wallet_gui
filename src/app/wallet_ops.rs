@@ -125,6 +125,44 @@ impl App {
                         let _ = storage.save_wallet_sort_ascending(!current);
                     }
                 }
+                WalletsEvent::TagInputChanged(tag) => {
+                    let tag_trimmed = tag.trim().to_string();
+                    if !tag_trimmed.is_empty() {
+                        // Dùng ví đang mở modal, fallback về ví đang chọn nếu không có modal
+                        let target_index = self
+                            .wallets_view
+                            .tag_modal_index
+                            .unwrap_or(self.selected_wallet);
+                        if let Some(wallet) = self.wallets.get_mut(target_index) {
+                            if !wallet
+                                .tags
+                                .iter()
+                                .any(|t| t.eq_ignore_ascii_case(&tag_trimmed))
+                            {
+                                wallet.tags.push(tag_trimmed.clone());
+                                tracing::info!(
+                                    wallet = wallet.name,
+                                    tag = tag_trimmed,
+                                    "Tag added"
+                                );
+                                self.save_state(); // Persist immediately
+                            }
+                        }
+                    }
+                    self.wallets_view.tag_input.clear();
+                }
+                WalletsEvent::RemoveTag(tag) => {
+                    // Dùng ví đang mở modal, fallback về ví đang chọn nếu không có modal
+                    let target_index = self
+                        .wallets_view
+                        .tag_modal_index
+                        .unwrap_or(self.selected_wallet);
+                    if let Some(wallet) = self.wallets.get_mut(target_index) {
+                        wallet.tags.retain(|t| !t.eq_ignore_ascii_case(&tag));
+                        tracing::info!(wallet = wallet.name, tag = tag, "Tag removed");
+                        self.save_state(); // Persist immediately
+                    }
+                }
             }
         }
         Task::none()

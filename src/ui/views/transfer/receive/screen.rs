@@ -153,7 +153,7 @@ impl ReceiveView {
             content = content.push(
                 warning_box(
                     t("Không nên tái sử dụng địa chỉ", "Address reuse warning"),
-                    t("Để bảo mật tốt hơn, hãy tạo địa chỉ mới cho mỗi giao dịch nhận. Điều này giúp bảo vệ quyền riêng tư của bạn trên blockchain.", 
+                    t("Để bảo mật tốt hơn, hãy tạo địa chỉ mới cho mỗi giao dịch nhận. Điều này giúp bảo vệ quyền riêng tư của bạn trên blockchain.",
                       "For better privacy, derive a new address for each receiving transaction. This helps protect your privacy on the blockchain."),
                 ).map(|_| ReceiveMessage::DeriveNewAddress),
             );
@@ -345,6 +345,7 @@ impl ReceiveView {
                 qr_content.into(),
                 ReceiveMessage::CloseQrPopup,
                 compact,
+                true, // close_on_backdrop: true
             );
         }
 

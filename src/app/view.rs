@@ -137,6 +137,7 @@ impl App {
                         shortcuts_help_popup().map(|_| AppMessage::ToggleShortcutsHelp),
                         AppMessage::ToggleShortcutsHelp,
                         self.compact_mode,
+                        true, // close_on_backdrop: true
                     );
                 }
 

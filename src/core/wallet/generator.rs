@@ -156,6 +156,7 @@ impl Wallet {
             next_internal_index: 0,
             addresses: Vec::new(),
             history: Vec::new(),
+            tags: Vec::new(),
         };
 
         let secrets = WalletSecrets::new(Some(mnemonic_phrase), account_xprv.to_string());

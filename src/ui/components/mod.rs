@@ -10,6 +10,7 @@ pub mod price_widget;
 pub mod skeleton;
 pub mod sparkline;
 pub mod strength_meter;
+pub mod tag_picker;
 pub mod toast;
 pub mod tooltip;
 pub mod unit_selector;

@@ -62,19 +62,27 @@ pub fn modal<'a, Message: 'a + Clone>(
     content: Element<'a, Message>,
     on_close: Message,
     compact: bool,
+    close_on_backdrop: bool,
 ) -> Element<'a, Message> {
     // 1. Overlay nền tối
-    let overlay = container(
-        mouse_area(
-            container(Space::with_width(Length::Fill))
-                .width(Length::Fill)
-                .height(Length::Fill),
+    let overlay = if close_on_backdrop {
+        container(
+            mouse_area(
+                container(Space::with_width(Length::Fill))
+                    .width(Length::Fill)
+                    .height(Length::Fill),
+            )
+            .on_press(on_close.clone()),
         )
-        .on_press(on_close.clone()),
-    )
-    .style(popup_overlay_style())
-    .width(Length::Fill)
-    .height(Length::Fill);
+        .style(popup_overlay_style())
+        .width(Length::Fill)
+        .height(Length::Fill)
+    } else {
+        container(Space::with_width(Length::Fill))
+            .style(popup_overlay_style())
+            .width(Length::Fill)
+            .height(Length::Fill)
+    };
 
     let spacing = if compact { 8 } else { 16 };
     let padding = if compact { 16 } else { 24 };

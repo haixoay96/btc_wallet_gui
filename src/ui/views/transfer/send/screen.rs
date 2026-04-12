@@ -1011,6 +1011,7 @@ impl SendView {
                 contact_ui,
                 SendMessage::HideContactPicker,
                 compact,
+                true, // close_on_backdrop
             );
         }
 
@@ -1120,6 +1121,7 @@ impl SendView {
                 confirm_content.into(),
                 SendMessage::CancelSend,
                 compact,
+                true, // close_on_backdrop: true
             )
         } else {
             base_content

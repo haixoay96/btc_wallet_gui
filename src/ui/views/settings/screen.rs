@@ -902,6 +902,7 @@ impl SettingsView {
                 clear_content.into(),
                 SettingsMessage::CancelClearData,
                 compact_mode,
+                true, // close_on_backdrop: true
             );
         }
         base

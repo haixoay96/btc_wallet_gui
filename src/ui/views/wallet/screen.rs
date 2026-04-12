@@ -1,8 +1,9 @@
 use iced::{
     widget::{
-        button, column, container, mouse_area, pick_list, row, scrollable, text, text_input, Space,
+        button, column, container, mouse_area, pick_list, row, scrollable, text, text_input,
+        tooltip, Space,
     },
-    Alignment, Background, Element, Length,
+    Alignment, Background, Color, Element, Length,
 };
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
@@ -19,6 +20,7 @@ use crate::ui::theme::{
 
 use super::structure::*;
 use crate::infra::storage::WalletSortField;
+use crate::ui::components::tag_picker::tag_picker;
 
 impl WalletsView {
     pub fn new() -> Self {
@@ -54,6 +56,8 @@ impl WalletsView {
             compact_mode: false,
             sort_field: WalletSortField::Balance,
             sort_ascending: false,
+            tag_input: String::new(),
+            tag_modal_index: None,
         }
     }
 
@@ -656,6 +660,38 @@ impl WalletsView {
                 self.sort_ascending = !self.sort_ascending;
                 Some(WalletsEvent::ToggleSortDirection)
             }
+            WalletsMessage::TagMessage(tag_msg) => match tag_msg {
+                crate::ui::components::tag_picker::TagMessage::InputChanged(text) => {
+                    self.tag_input = text;
+                    None
+                }
+                crate::ui::components::tag_picker::TagMessage::SelectTag(tag) => {
+                    self.tag_input = tag.clone();
+                    Some(WalletsEvent::TagInputChanged(tag))
+                }
+                crate::ui::components::tag_picker::TagMessage::CreateTag(tag) => {
+                    if !tag.is_empty() {
+                        self.tag_input = tag.clone();
+                        Some(WalletsEvent::TagInputChanged(tag))
+                    } else {
+                        None
+                    }
+                }
+                crate::ui::components::tag_picker::TagMessage::RemoveTag(tag) => {
+                    self.tag_input.clear();
+                    Some(WalletsEvent::RemoveTag(tag))
+                }
+            },
+            WalletsMessage::ToggleTagModal(index) => {
+                if self.tag_modal_index == Some(index) {
+                    self.tag_modal_index = None;
+                    self.tag_input.clear();
+                } else {
+                    self.tag_modal_index = Some(index);
+                    self.tag_input.clear();
+                }
+                None
+            }
         }
     }
 
@@ -723,10 +759,7 @@ impl WalletsView {
         .padding(main_padding);
 
         // Scrollable Content
-        let mut scroll_content =
-            column![]
-                .spacing(spacing)
-                .padding(main_padding);
+        let mut scroll_content = column![].spacing(spacing).padding(main_padding);
 
         if let Some(info) = &self.info {
             scroll_content = scroll_content.push(
@@ -1148,10 +1181,73 @@ impl WalletsView {
                 let balance_btc = wallet.balance() as f64 / 100_000_000.0;
                 let balance_usd = btc_price_usd.map(|p| balance_btc * p);
 
+                // Tag button to open tag modal
+                let tag_btn = button(
+                    text(Bootstrap::Tags.to_string())
+                        .size(14)
+                        .font(BOOTSTRAP_FONT)
+                        .style(text_color(Colors::ACCENT_PURPLE)),
+                )
+                .on_press(WalletsMessage::ToggleTagModal(sorted_index))
+                .padding([4, 6])
+                .style(secondary_button_style());
+
+                // Render existing tags as small text badges
+                let mut tags_display = row![].spacing(4).align_y(Alignment::Center);
+
+                for (i, tag) in wallet.tags.iter().enumerate().take(3) {
+                    let color = crate::ui::components::tag_picker::TAG_COLORS
+                        [i % crate::ui::components::tag_picker::TAG_COLORS.len()];
+                    let tag_text = if tag.len() > 8 {
+                        format!("{}...", &tag[..8])
+                    } else {
+                        tag.clone()
+                    };
+
+                    tags_display = tags_display.push(
+                        container(text(tag_text).size(9).style(text_primary_color()))
+                            .padding([2, 6])
+                            .style(move |_theme: &iced::Theme| iced::widget::container::Style {
+                                background: Some(iced::Background::Color(Color {
+                                    r: color.r,
+                                    g: color.g,
+                                    b: color.b,
+                                    a: 0.85,
+                                })),
+                                border: iced::Border {
+                                    radius: 4.0.into(),
+                                    width: 0.0,
+                                    color: Color::TRANSPARENT,
+                                },
+                                ..Default::default()
+                            }),
+                    );
+                }
+                if wallet.tags.len() > 3 {
+                    let remaining_count = wallet.tags.len() - 3;
+                    let remaining_tags: Vec<_> = wallet.tags.iter().skip(3).cloned().collect();
+                    let tooltip_content = remaining_tags.join(", ");
+
+                    let plus_indicator = text(format!("+{}", remaining_count))
+                        .size(10)
+                        .style(text_muted_color());
+
+                    tags_display = tags_display.push(tooltip(
+                        plus_indicator,
+                        text(tooltip_content).size(12).style(text_secondary_color()),
+                        tooltip::Position::Top,
+                    ));
+                }
+
                 let select_btn = button(
                     row![
                         column![
-                            text_scaled(wallet.name.as_str(), 16).style(text_primary_color()),
+                            row![
+                                text_scaled(wallet.name.as_str(), 16).style(text_primary_color()),
+                                Space::with_width(8),
+                                tags_display,
+                            ]
+                            .align_y(Alignment::Center),
                             text(format!(
                                 "{} | {:.8} BTC{} | {}",
                                 wallet.network.as_str(),
@@ -1212,8 +1308,14 @@ impl WalletsView {
 
                 wallet_list = wallet_list.push(
                     container(
-                        row![select_btn, Space::with_width(8), delete_btn]
-                            .align_y(Alignment::Center),
+                        row![
+                            select_btn,
+                            Space::with_width(8),
+                            tag_btn,
+                            Space::with_width(4),
+                            delete_btn
+                        ]
+                        .align_y(Alignment::Center),
                     )
                     .style(card_style())
                     .padding(12),
@@ -1337,7 +1439,25 @@ impl WalletsView {
                 delete_content.into(),
                 WalletsMessage::CancelDelete,
                 compact_mode,
+                true, // close_on_backdrop: true
             );
+        }
+
+        // Tag Management Modal
+        if let Some(tag_index) = self.tag_modal_index {
+            if let Some(wallet) = wallets.get(tag_index) {
+                let tag_modal_content =
+                    tag_picker(&wallet.tags, &self.tag_input).map(WalletsMessage::TagMessage);
+
+                return modal(
+                    base_content,
+                    t("Quản lý Tag", "Manage Tags"),
+                    tag_modal_content,
+                    WalletsMessage::ToggleTagModal(tag_index),
+                    compact_mode,
+                    false, // close_on_backdrop: false (chỉ đóng khi bấm X)
+                );
+            }
         }
 
         base_content

@@ -754,6 +754,7 @@ impl HistoryView {
                         modal_content,
                         HistoryMessage::CloseTransactionDetail,
                         compact,
+                        true, // close_on_backdrop: true
                     );
                 }
             }
