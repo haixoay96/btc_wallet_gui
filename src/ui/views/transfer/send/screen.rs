@@ -353,12 +353,10 @@ impl SendView {
             }
             SendMessage::ShowAmountHelp => {
                 self.show_amount_help = !self.show_amount_help;
-                self.show_fee_help = false;
                 None
             }
             SendMessage::ShowFeeHelp => {
                 self.show_fee_help = !self.show_fee_help;
-                self.show_amount_help = false;
                 None
             }
             SendMessage::ToggleAddressHelp => {
@@ -486,8 +484,8 @@ impl SendView {
 
         // Apply compact mode
         let content_padding = if compact { 16 } else { 32 };
-        let _spacing = if compact { 8 } else { 16 };
-        let _card_padding = if compact { 12 } else { 16 };
+        let spacing = if compact { 8 } else { 16 };
+        let card_padding = if compact { 12 } else { 16 };
 
         let title = text_scaled(t("Gửi BTC", "Send BTC"), 32).style(text_primary_color());
 
@@ -529,7 +527,7 @@ impl SendView {
                 .align_y(Alignment::Center),
             )
             .style(card_style())
-            .padding(14)
+            .padding(card_padding)
         } else {
             container(
                 text_scaled(t("Chưa chọn ví", "No wallet selected"), 14)
@@ -598,12 +596,18 @@ impl SendView {
                 ]
                 .align_y(Alignment::Center)
             } else {
-                row![]
+                row![].height(0)
             },
-            if let Some(error) = &self.to_address_error {
-                text_scaled(error.as_str(), 12).style(text_color(Colors::ERROR))
-            } else {
-                text("")
+            {
+                let error_widget: Element<'_, SendMessage> =
+                    if let Some(error) = &self.to_address_error {
+                        text_scaled(error.as_str(), 12)
+                            .style(text_color(Colors::ERROR))
+                            .into()
+                    } else {
+                        Space::with_height(0).into()
+                    };
+                error_widget
             }
         ]
         .spacing(4);
@@ -810,7 +814,7 @@ impl SendView {
                         "Advanced options are only needed when you want to control specific inputs/change.",
                     ), 12)
                     .style(text_secondary_color()),
-                    Space::with_height(8),
+                    Space::with_height(spacing / 2),
                     column![
                         text(t(
                             "Chỉ số địa chỉ nguồn (phân tách bởi dấu phẩy)",
@@ -818,15 +822,15 @@ impl SendView {
                         ))
                         .size(12)
                         .style(text_secondary_color()),
-                        Space::with_height(4),
+                        Space::with_height(spacing / 2),
                         text_input(t("Ví dụ: 0,1,4", "Example: 0,1,4"), &self.from_address)
                             .on_input(SendMessage::FromAddressChanged)
                             .padding(10)
                             .size(12)
                             .style(input_style())
                     ]
-                    .spacing(2),
-                    Space::with_height(8),
+                    .spacing(spacing / 2),
+                    Space::with_height(spacing / 2),
                     column![
                         text(t(
                             "Chỉ số địa chỉ trả lại (để trống = tạo mới)",
@@ -834,19 +838,19 @@ impl SendView {
                         ))
                         .size(12)
                         .style(text_secondary_color()),
-                        Space::with_height(4),
+                        Space::with_height(spacing / 2),
                         text_input(t("Ví dụ: 2", "Example: 2"), &self.change_address)
                             .on_input(SendMessage::ChangeAddressChanged)
                             .padding(10)
                             .size(12)
                             .style(input_style())
                     ]
-                    .spacing(2),
+                    .spacing(spacing / 2),
                 ]
-                .spacing(8),
+                .spacing(spacing / 2),
             )
             .style(card_style())
-            .padding(16)
+            .padding(card_padding)
             .width(Length::Fill)
             .into()
         } else {
@@ -878,52 +882,55 @@ impl SendView {
         } else {
             t("Gửi giao dịch", "Send Transaction")
         };
-        let mut send_btn = button(text_scaled(send_label, 16))
-            .padding(14)
-            .width(Length::Fill)
-            .style(primary_button_style());
+        let mut send_btn = button(
+            container(text_scaled(send_label, 16))
+                .width(Length::Fill)
+                .align_x(iced::alignment::Horizontal::Center),
+        )
+        .padding([14, 14])
+        .width(Length::Fill)
+        .height(Length::Fixed(56.0))
+        .style(primary_button_style());
         if !is_any_busy {
             send_btn = send_btn.on_press(SendMessage::Send);
         }
 
         let mut content = column![
             title,
-            Space::with_height(8),
+            Space::with_height(spacing / 2),
             wallet_selector,
-            Space::with_height(8),
+            Space::with_height(spacing / 2),
             balance_text,
-            Space::with_height(24),
+            Space::with_height(spacing),
             to_input,
-            Space::with_height(4),
+            Space::with_height(spacing),
             address_help,
-            Space::with_height(16),
+            Space::with_height(spacing),
             amount_label,
-            Space::with_height(4),
             amount_input_row,
             amount_info,
-            Space::with_height(4),
+            Space::with_height(spacing),
             amount_help,
-            Space::with_height(16),
+            Space::with_height(spacing),
             fee_label,
-            Space::with_height(4),
             fee_row,
             fee_info,
-            Space::with_height(4),
+            Space::with_height(spacing),
             fee_help,
-            Space::with_height(24),
+            Space::with_height(spacing),
             advanced_toggle,
             advanced_section,
-            Space::with_height(24),
+            Space::with_height(spacing),
             error_text,
             success_text,
-            Space::with_height(16),
+            Space::with_height(spacing),
             send_btn,
-            Space::with_height(24),
+            Space::with_height(spacing),
             // Help topics section
             text_scaled(t("Trợ giúp", "Help"), 14).style(text_primary_color()),
-            Space::with_height(8),
+            Space::with_height(spacing / 2),
         ]
-        .spacing(8)
+        .spacing(0)
         .padding(content_padding);
 
         // Add help topics
@@ -953,10 +960,8 @@ impl SendView {
                 SendMessage::ToggleHelpTopic(topic.id.to_string()),
             );
             content = content.push(panel);
-            content = content.push(Space::with_height(8));
+            content = content.push(Space::with_height(spacing));
         }
-
-        let content = column![content].padding(content_padding);
 
         let mut base_content: Element<'_, SendMessage> = scrollable(content)
             .width(Length::Fill)
