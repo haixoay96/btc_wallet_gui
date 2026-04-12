@@ -58,6 +58,7 @@ pub enum WalletsMessage {
     ToggleSortDirection,
     TagMessage(TagMessage),
     ToggleTagModal(usize),
+    SearchChanged(String),
 }
 
 pub enum WalletsEvent {
@@ -142,4 +143,6 @@ pub struct WalletsView {
     /// Tag management state
     pub tag_input: String,
     pub tag_modal_index: Option<usize>,
+    /// Search state
+    pub search_query: String,
 }

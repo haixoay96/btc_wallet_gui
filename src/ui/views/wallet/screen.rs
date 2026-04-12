@@ -58,6 +58,7 @@ impl WalletsView {
             sort_ascending: false,
             tag_input: String::new(),
             tag_modal_index: None,
+            search_query: String::new(),
         }
     }
 
@@ -692,6 +693,10 @@ impl WalletsView {
                 }
                 None
             }
+            WalletsMessage::SearchChanged(query) => {
+                self.search_query = query;
+                None
+            }
         }
     }
 
@@ -1154,8 +1159,21 @@ impl WalletsView {
             scroll_content = scroll_content.push(sort_controls);
             scroll_content = scroll_content.push(Space::with_height(12));
 
-            // Prepare sorted indices
+            // Search Input
+            let search_input =
+                text_input(t("Tìm kiếm ví...", "Search wallets..."), &self.search_query)
+                    .on_input(WalletsMessage::SearchChanged)
+                    .padding(8)
+                    .size(14)
+                    .style(crate::ui::theme::input_style());
+
+            scroll_content = scroll_content.push(search_input);
+            scroll_content = scroll_content.push(Space::with_height(12));
+
+            // Prepare sorted indices and filter by search query
             let mut sorted_indices: Vec<usize> = (0..wallets.len()).collect();
+
+            // Sort first
             sorted_indices.sort_by(|&a, &b| {
                 let wa = &wallets[a];
                 let wb = &wallets[b];
@@ -1172,9 +1190,27 @@ impl WalletsView {
                 }
             });
 
+            // Filter second
+            if !self.search_query.is_empty() {
+                let query = self.search_query.to_lowercase();
+                sorted_indices.retain(|&idx| {
+                    let wallet = &wallets[idx];
+                    let name_match = wallet.name.to_lowercase().contains(&query);
+                    let tag_match = wallet
+                        .tags
+                        .iter()
+                        .any(|t| t.to_lowercase().contains(&query));
+                    let address_match = wallet
+                        .addresses
+                        .iter()
+                        .any(|a| a.address.to_lowercase().contains(&query));
+                    name_match || tag_match || address_match
+                });
+            }
+
             let mut wallet_list = column![];
 
-            for sorted_index in sorted_indices {
+            for &sorted_index in &sorted_indices {
                 let wallet = &wallets[sorted_index];
                 let is_selected = sorted_index == selected;
                 let needs_backup = wallet.has_mnemonic && !wallet.mnemonic_backed_up;
@@ -1321,6 +1357,22 @@ impl WalletsView {
                     .padding(12),
                 );
                 wallet_list = wallet_list.push(Space::with_height(8));
+            }
+
+            // Show "No results" message if search query is active but no wallets match
+            if sorted_indices.is_empty() && !self.search_query.is_empty() {
+                wallet_list = wallet_list.push(
+                    container(
+                        text(t(
+                            "Không tìm thấy ví nào khớp với tìm kiếm",
+                            "No wallets match your search",
+                        ))
+                        .size(14)
+                        .style(text_muted_color()),
+                    )
+                    .padding(16)
+                    .width(Length::Fill),
+                );
             }
 
             scroll_content = scroll_content.push(
