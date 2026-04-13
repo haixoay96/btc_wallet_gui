@@ -116,7 +116,12 @@ impl ReceiveView {
         ]
         .spacing(4);
 
-        let mut content = column![title, wallet_selector]
+        // Header (Pinned at top)
+        let header = container(title)
+            .padding(content_padding)
+            .width(Length::Fill);
+
+        let mut content = column![wallet_selector]
             .spacing(16)
             .padding(content_padding);
 
@@ -305,7 +310,7 @@ impl ReceiveView {
                         list = list.push(Space::with_height(6));
                     }
 
-                    content = content.push(scrollable(list).height(Length::Fill));
+                    content = content.push(scrollable(list).height(Length::Fixed(200.0)));
                 }
             }
         } else {
@@ -315,10 +320,12 @@ impl ReceiveView {
             );
         }
 
-        let base: Element<'a, ReceiveMessage> = container(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into();
+        let base: Element<'a, ReceiveMessage> =
+            column![header, scrollable(content).width(Length::Fill),]
+                .spacing(0)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into();
 
         if let (true, Some(handle), Some(address)) = (
             self.show_qr,
