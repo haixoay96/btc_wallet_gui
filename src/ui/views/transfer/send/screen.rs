@@ -489,6 +489,24 @@ impl SendView {
 
         let title = text_scaled(t("Gửi BTC", "Send BTC"), 32).style(text_primary_color());
 
+        let send_label = if is_sending {
+            t("Đang gửi...", "Sending...")
+        } else {
+            t("Gửi giao dịch", "Send Transaction")
+        };
+        let mut send_btn = button(text_scaled(send_label, 14))
+            .padding([8, 16])
+            .height(Length::Fixed(36.0))
+            .style(primary_button_style());
+        if !is_any_busy {
+            send_btn = send_btn.on_press(SendMessage::Send);
+        }
+
+        // Header (Pinned at top)
+        let header = row![title, Space::with_width(Length::Fill), send_btn,]
+            .align_y(Alignment::Center)
+            .padding(content_padding);
+
         let wallet_selector = column![
             text_scaled(t("Từ ví", "From Wallet"), 14).style(text_secondary_color()),
             Space::with_height(4),
@@ -877,27 +895,7 @@ impl SendView {
             Space::with_height(0).into()
         };
 
-        let send_label = if is_sending {
-            t("Đang gửi giao dịch...", "Sending transaction...")
-        } else {
-            t("Gửi giao dịch", "Send Transaction")
-        };
-        let mut send_btn = button(
-            container(text_scaled(send_label, 16))
-                .width(Length::Fill)
-                .align_x(iced::alignment::Horizontal::Center),
-        )
-        .padding([14, 14])
-        .width(Length::Fill)
-        .height(Length::Fixed(56.0))
-        .style(primary_button_style());
-        if !is_any_busy {
-            send_btn = send_btn.on_press(SendMessage::Send);
-        }
-
         let mut content = column![
-            title,
-            Space::with_height(spacing / 2),
             wallet_selector,
             Space::with_height(spacing / 2),
             balance_text,
@@ -923,8 +921,6 @@ impl SendView {
             Space::with_height(spacing),
             error_text,
             success_text,
-            Space::with_height(spacing),
-            send_btn,
             Space::with_height(spacing),
             // Help topics section
             text_scaled(t("Trợ giúp", "Help"), 14).style(text_primary_color()),
@@ -963,10 +959,12 @@ impl SendView {
             content = content.push(Space::with_height(spacing));
         }
 
-        let mut base_content: Element<'_, SendMessage> = scrollable(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into();
+        let mut base_content: Element<'_, SendMessage> =
+            column![header, scrollable(content).width(Length::Fill),]
+                .spacing(0)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into();
 
         // Contact Picker Modal
         if self.show_contact_picker || self.show_contact_form {
