@@ -750,17 +750,14 @@ impl WalletsView {
         });
 
         // Header (Pinned at top)
-        let header = column![
+        let header = row![
             title,
-            Space::with_height(spacing),
-            row![
-                create_toggle_btn,
-                Space::with_width(btn_spacing),
-                import_toggle_btn
-            ]
-            .align_y(Alignment::Center)
+            Space::with_width(Length::Fill),
+            create_toggle_btn,
+            Space::with_width(btn_spacing),
+            import_toggle_btn,
         ]
-        .spacing(spacing)
+        .align_y(Alignment::Center)
         .padding(main_padding);
 
         // Scrollable Content
