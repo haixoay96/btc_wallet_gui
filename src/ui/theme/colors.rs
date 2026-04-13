@@ -21,8 +21,6 @@ impl DarkColors {
     pub const SUCCESS: Color = Color::from_rgb(0.0, 0.83, 0.67);
     pub const ERROR: Color = Color::from_rgb(1.0, 0.35, 0.35);
     pub const WARNING: Color = Color::from_rgb(1.0, 0.75, 0.0);
-    pub const CONFIRMED_LOW: Color = Color::from_rgb(1.0, 0.6, 0.0);
-    pub const CONFIRMED_PARTIAL: Color = Color::from_rgb(0.4, 0.85, 0.5);
 
     pub const BORDER: Color = Color::from_rgb(0.25, 0.25, 0.35);
     pub const BORDER_FOCUSED: Color = Color::from_rgb(0.48, 0.38, 1.0);

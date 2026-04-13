@@ -24,22 +24,27 @@ fn format_timestamp(timestamp: u64) -> String {
 }
 
 /// Get confirmation status info for color coding and display
-fn confirmation_status(tx: &TxRecord) -> (String, String, Color, String) {
-    // Returns: (icon, status_text, color, estimated_time)
+/// Returns: (icon_name, status_text, color, detail_text)
+fn confirmation_status(tx: &TxRecord) -> (String, String, iced::Color, String) {
+    use crate::ui::theme::get_theme_colors;
+
+    // Dùng fallback theme để lấy màu
+    let colors = get_theme_colors(&iced::Theme::Dark);
+
     if !tx.confirmed || tx.confirmations == 0 {
         (
             "clock".to_string(),
             t("Chờ xác nhận", "Pending").to_string(),
-            DarkColors::WARNING,
+            colors.warning,
             format!("~{}", t("đang chờ", "waiting")),
         )
     } else if tx.confirmations >= 6 {
         (
             "check".to_string(),
             t("Đã xác nhận", "Confirmed").to_string(),
-            DarkColors::SUCCESS,
+            colors.success,
             format!(
-                "✓ {} ({} {})",
+                "{} ({} {})",
                 t("Đủ xác nhận", "Fully confirmed"),
                 tx.confirmations,
                 t("conf", "conf")
@@ -51,7 +56,7 @@ fn confirmation_status(tx: &TxRecord) -> (String, String, Color, String) {
         (
             "check-circle".to_string(),
             format!("{} ({}/6)", t("Gần đủ", "Almost"), tx.confirmations),
-            DarkColors::CONFIRMED_PARTIAL,
+            colors.accent_teal,
             format!(
                 "~{} {} (~{} {})",
                 remaining,
@@ -70,7 +75,7 @@ fn confirmation_status(tx: &TxRecord) -> (String, String, Color, String) {
                 t("Ít xác nhận", "Low confirmations"),
                 tx.confirmations
             ),
-            DarkColors::CONFIRMED_LOW,
+            colors.warning,
             format!(
                 "~{} {} (~{} {})",
                 remaining,
