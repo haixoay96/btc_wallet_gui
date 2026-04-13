@@ -38,40 +38,6 @@ pub fn primary_button_style() -> Box<ButtonStyleFn> {
     })
 }
 
-/// Style for gradient buttons (purple accent)
-pub fn gradient_button_style() -> Box<ButtonStyleFn> {
-    Box::new(|theme: &Theme, status: button::Status| {
-        let colors = get_theme_colors(theme);
-        let (background, shadow_color, shadow_blur) = match status {
-            button::Status::Hovered => (
-                Background::Color(colors.accent_purple),
-                color_with_alpha(colors.gradient_start, 0.40),
-                16.0,
-            ),
-            _ => (
-                Background::Color(colors.gradient_start),
-                color_with_alpha(colors.gradient_start, 0.30),
-                12.0,
-            ),
-        };
-
-        button::Style {
-            background: Some(background),
-            text_color: Color::from_rgb(1.0, 1.0, 1.0),
-            border: Border {
-                radius: 12.0.into(),
-                width: 0.0,
-                color: Color::TRANSPARENT,
-            },
-            shadow: Shadow {
-                color: shadow_color,
-                offset: Vector::new(0.0, 6.0),
-                blur_radius: shadow_blur,
-            },
-        }
-    })
-}
-
 /// Style for selected/active buttons
 pub fn selected_button_style() -> Box<ButtonStyleFn> {
     Box::new(|theme: &Theme, status: button::Status| {

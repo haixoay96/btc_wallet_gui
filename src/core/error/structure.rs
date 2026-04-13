@@ -1,4 +1,5 @@
 /// Categorized application error with user-friendly messages
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum AppError {
     /// User input validation errors

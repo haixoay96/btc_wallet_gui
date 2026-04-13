@@ -102,7 +102,6 @@ pub enum AppMessage {
     ExportFinished(Result<(), String>),
     GlobalEscKey,
     DismissStatus,
-    DismissError,
     KeyboardCopy,
     KeyboardPaste,
     KeyboardSubmitForm,

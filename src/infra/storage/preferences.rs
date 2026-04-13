@@ -124,25 +124,7 @@ impl Storage {
         self.save_preferences(&prefs)
     }
 
-    pub fn load_show_satoshis(&self) -> Result<bool> {
-        Ok(self.load_preferences()?.show_satoshis)
-    }
-
-    pub fn save_show_satoshis(&self, enabled: bool) -> Result<()> {
-        let mut prefs = self.load_preferences()?;
-        prefs.show_satoshis = enabled;
-        self.save_preferences(&prefs)
-    }
-
-    pub fn load_compact_mode(&self) -> Result<bool> {
-        Ok(self.load_preferences()?.compact_mode)
-    }
-
-    pub fn save_compact_mode(&self, enabled: bool) -> Result<()> {
-        let mut prefs = self.load_preferences()?;
-        prefs.compact_mode = enabled;
-        self.save_preferences(&prefs)
-    }
+    // Deprecated: show_satoshis and compact_mode removed
 
     pub fn reset_preferences(&self) -> Result<()> {
         self.save_preferences(&AppPreferences::default())

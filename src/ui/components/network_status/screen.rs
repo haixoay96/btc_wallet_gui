@@ -1,6 +1,8 @@
 use crate::ui::components::network_status::structure::{DashboardNetworkMessage, NetworkStatus};
 use crate::ui::i18n::t;
-use crate::ui::theme::{text_color, text_secondary_color, Colors};
+use crate::ui::theme::{
+    text_error_color, text_secondary_color, text_success_color, text_warning_color,
+};
 use iced::widget::{button, container, row, text, Space};
 use iced::{widget::tooltip, Alignment, Element, Length};
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
@@ -13,14 +15,6 @@ impl NetworkStatus {
             NetworkStatus::Checking => Bootstrap::ArrowClockwise,
         }
         .to_string()
-    }
-
-    pub fn color(&self) -> iced::Color {
-        match self {
-            NetworkStatus::Connected { .. } => Colors::SUCCESS,
-            NetworkStatus::Disconnected => Colors::ERROR,
-            NetworkStatus::Checking => Colors::WARNING,
-        }
     }
 
     pub fn label(&self) -> String {
@@ -39,10 +33,17 @@ pub fn network_status_indicator(
     status: NetworkStatus,
     is_clickable: bool,
 ) -> Element<'static, DashboardNetworkMessage> {
+    // Dùng style function động để lấy màu từ theme hiện tại
+    let icon_style = match status {
+        NetworkStatus::Connected { .. } => text_success_color(),
+        NetworkStatus::Disconnected => text_error_color(),
+        NetworkStatus::Checking => text_warning_color(),
+    };
+
     let icon = text(status.icon_char())
         .size(14)
         .font(BOOTSTRAP_FONT)
-        .style(text_color(status.color()));
+        .style(icon_style);
 
     let label = text(status.label()).size(11).style(text_secondary_color());
 

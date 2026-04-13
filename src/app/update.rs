@@ -455,10 +455,6 @@ impl App {
                 Task::none()
             }
             AppMessage::DismissStatus => Task::none(),
-            AppMessage::DismissError => {
-                self.error = None;
-                Task::none()
-            }
 
             // Keyboard shortcut handlers
             AppMessage::KeyboardCopy => {

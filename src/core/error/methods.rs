@@ -1,6 +1,7 @@
 use crate::core::error::structure::AppError;
 use crate::ui::i18n::t;
 
+#[allow(dead_code)]
 impl AppError {
     /// Convenience constructors
     pub fn validation(field: &str, message: &str) -> Self {

@@ -92,9 +92,7 @@ pub fn notice_style(tone: NoticeTone) -> Box<ContainerStyleFn> {
                 colors.accent_blue,
                 color_with_alpha(colors.accent_blue, 0.12),
             ),
-            NoticeTone::Success => (colors.success, color_with_alpha(colors.success, 0.12)),
             NoticeTone::Warning => (colors.warning, color_with_alpha(colors.warning, 0.14)),
-            NoticeTone::Error => (colors.error, color_with_alpha(colors.error, 0.14)),
         };
 
         container::Style {

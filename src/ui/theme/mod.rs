@@ -17,9 +17,8 @@ pub use palette::{get_theme_colors, set_font_scale, set_high_contrast};
 
 // Export button styles
 pub use button_styles::{
-    danger_button_style, flat_icon_button_style, gradient_button_style, info_style,
-    muted_button_style, primary_button_style, secondary_button_style, selected_button_style,
-    warning_style,
+    danger_button_style, flat_icon_button_style, info_style, muted_button_style,
+    primary_button_style, secondary_button_style, selected_button_style, warning_style,
 };
 
 // Export container styles
@@ -33,5 +32,6 @@ pub use input_styles::{input_style, pick_list_menu_style, pick_list_style};
 
 // Export text styles
 pub use text_styles::{
-    text_color, text_muted_color, text_primary_color, text_scaled, text_secondary_color,
+    text_color, text_error_color, text_muted_color, text_primary_color, text_scaled,
+    text_secondary_color, text_success_color, text_warning_color,
 };

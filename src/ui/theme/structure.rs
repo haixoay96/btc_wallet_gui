@@ -14,9 +14,7 @@ pub type TextStyleFn = dyn Fn(&Theme) -> text::Style;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoticeTone {
     Info,
-    Success,
     Warning,
-    Error,
 }
 
 /// Helper function tạo Color với alpha

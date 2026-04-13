@@ -24,8 +24,6 @@ impl DarkColors {
     pub const CONFIRMED_LOW: Color = Color::from_rgb(1.0, 0.6, 0.0);
     pub const CONFIRMED_PARTIAL: Color = Color::from_rgb(0.4, 0.85, 0.5);
 
-    pub const GRADIENT_START: Color = Color::from_rgb(0.48, 0.38, 1.0);
-
     pub const BORDER: Color = Color::from_rgb(0.25, 0.25, 0.35);
     pub const BORDER_FOCUSED: Color = Color::from_rgb(0.48, 0.38, 1.0);
     pub const BORDER_SUBTLE: Color = Color::from_rgb(0.20, 0.20, 0.28);
@@ -57,8 +55,6 @@ impl LightColors {
     pub const ERROR: Color = Color::from_rgb(0.75, 0.30, 0.30); // #BF4D4D
     pub const WARNING: Color = Color::from_rgb(0.85, 0.55, 0.10); // #D98C1A
 
-    pub const GRADIENT_START: Color = Color::from_rgb(0.45, 0.35, 0.85);
-
     // Subtle borders
     pub const BORDER: Color = Color::from_rgb(0.80, 0.80, 0.83); // #CCCCCCD4
     pub const BORDER_FOCUSED: Color = Color::from_rgb(0.45, 0.35, 0.85);
@@ -86,8 +82,6 @@ impl HighContrastColors {
     pub const SUCCESS: Color = Color::from_rgb(0.0, 1.0, 0.0);
     pub const ERROR: Color = Color::from_rgb(1.0, 0.0, 0.0);
     pub const WARNING: Color = Color::from_rgb(1.0, 1.0, 0.0);
-
-    pub const GRADIENT_START: Color = Color::from_rgb(0.60, 0.50, 1.0);
 
     pub const BORDER: Color = Color::from_rgb(0.60, 0.60, 0.60);
     pub const BORDER_FOCUSED: Color = Color::from_rgb(1.0, 1.0, 1.0);

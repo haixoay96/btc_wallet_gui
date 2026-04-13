@@ -47,3 +47,33 @@ pub fn text_muted_color() -> Box<TextStyleFn> {
         }
     })
 }
+
+/// Text success color - theme aware (lấy màu từ palette)
+pub fn text_success_color() -> Box<TextStyleFn> {
+    Box::new(|theme: &Theme| {
+        let colors = get_theme_colors(theme);
+        text::Style {
+            color: Some(colors.success),
+        }
+    })
+}
+
+/// Text error color - theme aware
+pub fn text_error_color() -> Box<TextStyleFn> {
+    Box::new(|theme: &Theme| {
+        let colors = get_theme_colors(theme);
+        text::Style {
+            color: Some(colors.error),
+        }
+    })
+}
+
+/// Text warning color - theme aware
+pub fn text_warning_color() -> Box<TextStyleFn> {
+    Box::new(|theme: &Theme| {
+        let colors = get_theme_colors(theme);
+        text::Style {
+            color: Some(colors.warning),
+        }
+    })
+}
