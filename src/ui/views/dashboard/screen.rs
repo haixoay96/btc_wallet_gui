@@ -61,8 +61,6 @@ impl DashboardView {
     pub fn view(
         &self,
         is_refreshing: bool,
-        show_satoshis: bool,
-        compact: bool,
         btc_price: Option<crate::infra::price_api::BtcPriceData>,
         is_fetching_price: bool,
     ) -> Element<'_, DashboardMessage> {
@@ -80,10 +78,9 @@ impl DashboardView {
         let confirmed_btc = self.confirmed_balance as f64 / 100_000_000.0;
         let pending_btc = self.pending_balance as f64 / 100_000_000.0;
 
-        // Compact mode adjustments
-        let card_padding = if compact { 12 } else { 24 };
-        let content_padding = if compact { 16 } else { 32 };
-        let spacing = if compact { 8 } else { 16 };
+        let card_padding = 24;
+        let content_padding = 32;
+        let spacing = 16;
 
         // Build balance card with optional sparkline
         let mut balance_content = column![
@@ -91,11 +88,7 @@ impl DashboardView {
             Space::with_height(4),
             text_scaled(format!("{:.8} BTC", total_btc), 32).style(text_primary_color()),
             Space::with_height(2),
-            if show_satoshis {
-                text_scaled(format!("{} sat", self.total_balance), 14).style(text_muted_color())
-            } else {
-                text_scaled("", 10).height(0)
-            }
+            text_scaled(format!("{} sat", self.total_balance), 14).style(text_muted_color()),
         ];
 
         // Add sparkline if we have data
@@ -117,12 +110,8 @@ impl DashboardView {
                 text_scaled(format!("{:.8} BTC", confirmed_btc), 24)
                     .style(text_color(Colors::SUCCESS)),
                 Space::with_height(2),
-                if show_satoshis {
-                    text_scaled(format!("{} sat", self.confirmed_balance), 14)
-                        .style(text_muted_color())
-                } else {
-                    text_scaled("", 10).height(0)
-                }
+                text_scaled(format!("{} sat", self.confirmed_balance), 14)
+                    .style(text_muted_color()),
             ]
             .padding(card_padding),
         )
@@ -137,12 +126,7 @@ impl DashboardView {
                 text_scaled(format!("{:.8} BTC", pending_btc), 24)
                     .style(text_color(Colors::WARNING)),
                 Space::with_height(2),
-                if show_satoshis {
-                    text_scaled(format!("{} sat", self.pending_balance), 14)
-                        .style(text_muted_color())
-                } else {
-                    text_scaled("", 10).height(0)
-                }
+                text_scaled(format!("{} sat", self.pending_balance), 14).style(text_muted_color()),
             ]
             .padding(card_padding),
         )

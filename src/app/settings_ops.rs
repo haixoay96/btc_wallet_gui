@@ -137,61 +137,6 @@ impl App {
                         tracing::error!("Failed to create Storage for saving auto_refresh: {}", e);
                     }
                 },
-                SettingsEvent::ShowSatoshisToggled(enabled) => {
-                    self.show_satoshis = enabled;
-                    match Storage::new() {
-                        Ok(storage) => {
-                            if let Err(e) = storage.save_show_satoshis(enabled) {
-                                tracing::error!(
-                                    show_satoshis = enabled,
-                                    "Failed to save show_satoshis: {}",
-                                    e
-                                );
-                                self.add_error_toast(format!(
-                                    "Failed to save show satoshis: {}",
-                                    e
-                                ));
-                            } else {
-                                tracing::info!(
-                                    show_satoshis = enabled,
-                                    "Show satoshis preference saved"
-                                );
-                            }
-                        }
-                        Err(e) => {
-                            tracing::error!(
-                                "Failed to create Storage for saving show_satoshis: {}",
-                                e
-                            );
-                        }
-                    }
-                }
-                SettingsEvent::CompactModeToggled(enabled) => {
-                    self.compact_mode = enabled;
-                    match Storage::new() {
-                        Ok(storage) => {
-                            if let Err(e) = storage.save_compact_mode(enabled) {
-                                tracing::error!(
-                                    compact_mode = enabled,
-                                    "Failed to save compact_mode: {}",
-                                    e
-                                );
-                                self.add_error_toast(format!("Failed to save compact mode: {}", e));
-                            } else {
-                                tracing::info!(
-                                    compact_mode = enabled,
-                                    "Compact mode preference saved"
-                                );
-                            }
-                        }
-                        Err(e) => {
-                            tracing::error!(
-                                "Failed to create Storage for saving compact_mode: {}",
-                                e
-                            );
-                        }
-                    }
-                }
                 // Reset settings
                 SettingsEvent::ResetAllSettings => {
                     if let Ok(storage) = Storage::new() {

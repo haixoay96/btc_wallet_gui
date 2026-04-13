@@ -24,8 +24,6 @@ pub enum SettingsMessage {
     TestConnection,
     DebugLoggingToggled(bool),
     AutoRefreshToggled(bool),
-    ShowSatoshisToggled(bool),
-    CompactModeToggled(bool),
     ResetAllSettings,
     TestConnectionSuccess(String),
     TestConnectionFailed(String),
@@ -49,8 +47,6 @@ pub enum SettingsEvent {
     TestConnection,
     DebugLoggingToggled(bool),
     AutoRefreshToggled(bool),
-    ShowSatoshisToggled(bool),
-    CompactModeToggled(bool),
     ResetAllSettings,
 }
 
@@ -71,8 +67,6 @@ pub struct SettingsView {
     pub testing_connection: bool,
     pub debug_logging: bool,
     pub auto_refresh: bool,
-    pub show_satoshis: bool,
-    pub compact_mode: bool,
     pub data_folder_path: String,
     pub data_folder_size: String,
     pub connection_test_result: Option<String>,

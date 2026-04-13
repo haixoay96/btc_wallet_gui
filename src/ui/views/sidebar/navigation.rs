@@ -47,17 +47,13 @@ impl Sidebar {
         }
     }
 
-    pub fn view(&self, wallet_count: usize, compact: bool) -> Element<'_, SidebarMessage> {
+    pub fn view(&self, wallet_count: usize) -> Element<'_, SidebarMessage> {
         let logo = text_scaled("₿", 48).style(text_color(Colors::ACCENT_PURPLE));
-        let icon_size = if compact { 16 } else { 20 };
-        let title_size = if compact { 12 } else { 14 };
-        let item_padding = if compact { 8 } else { 12 };
-        let item_spacing = if compact { 6 } else { 8 };
-        let logo_padding = if compact {
-            Padding::from([12, 20])
-        } else {
-            Padding::from([20, 30])
-        };
+        let icon_size = 20;
+        let title_size = 14;
+        let item_padding = 12;
+        let item_spacing = 8;
+        let logo_padding = Padding::from([20, 30]);
 
         let logo_container = container(logo).padding(logo_padding).center_x(Length::Fill);
 
@@ -109,14 +105,10 @@ impl Sidebar {
                 .collect::<Vec<_>>(),
         )
         .spacing(item_spacing)
-        .padding(Padding::from(if compact { 12 } else { 16 }))
+        .padding(Padding::from(16))
         .into();
 
-        let content = column![
-            logo_container,
-            Space::with_height(if compact { 12 } else { 20 }),
-            nav_items
-        ];
+        let content = column![logo_container, Space::with_height(20), nav_items];
 
         container(content)
             .width(220)

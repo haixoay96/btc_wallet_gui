@@ -19,7 +19,7 @@ impl App {
             AppState::Main => {
                 let sidebar = self
                     .sidebar
-                    .view(self.wallets.len(), self.compact_mode)
+                    .view(self.wallets.len())
                     .map(AppMessage::SidebarMessage);
                 let _selected_wallet = self.wallets.get(self.selected_wallet);
 
@@ -28,8 +28,6 @@ impl App {
                         .dashboard
                         .view(
                             self.is_refreshing,
-                            self.show_satoshis,
-                            self.compact_mode,
                             self.btc_price.clone(),
                             self.is_fetching_price,
                         )
@@ -40,7 +38,6 @@ impl App {
                             &self.wallets,
                             self.selected_wallet,
                             self.selected_wallet_revealed_mnemonic(),
-                            self.compact_mode,
                             self.btc_price.as_ref().map(|p| p.price_usd),
                         )
                         .map(AppMessage::WalletsMessage),
@@ -53,30 +50,19 @@ impl App {
                             self.is_calculating_max,
                             self.is_sending,
                             &self.address_book,
-                            self.compact_mode,
                         )
                         .map(AppMessage::SendMessage),
                     NavItem::Receive => self
                         .receive_view
-                        .view(&self.wallets, self.selected_wallet, self.compact_mode)
+                        .view(&self.wallets, self.selected_wallet)
                         .map(AppMessage::ReceiveMessage),
                     NavItem::History => self
                         .history_view
-                        .view(
-                            &self.wallets,
-                            self.selected_wallet,
-                            self.is_refreshing,
-                            self.compact_mode,
-                        )
+                        .view(&self.wallets, self.selected_wallet, self.is_refreshing)
                         .map(AppMessage::HistoryMessage),
                     NavItem::Settings => self
                         .settings_view
-                        .view(
-                            self.theme,
-                            self.font_scale,
-                            self.high_contrast,
-                            self.compact_mode,
-                        )
+                        .view(self.theme, self.font_scale, self.high_contrast)
                         .map(AppMessage::SettingsMessage),
                 };
 
@@ -136,8 +122,8 @@ impl App {
                         t("Phím tắt", "Keyboard Shortcuts"),
                         shortcuts_help_popup().map(|_| AppMessage::ToggleShortcutsHelp),
                         AppMessage::ToggleShortcutsHelp,
-                        self.compact_mode,
-                        true, // close_on_backdrop: true
+                        false, // compact_mode removed
+                        true,  // close_on_backdrop: true
                     );
                 }
 

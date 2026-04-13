@@ -89,13 +89,12 @@ impl ReceiveView {
         &'a self,
         wallets: &'a [Wallet],
         selected_wallet: usize,
-        compact: bool,
     ) -> Element<'a, ReceiveMessage> {
         let wallet_options = wallet_choices(wallets);
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
         let wallet = wallets.get(selected_wallet);
 
-        let content_padding = if compact { 16 } else { 32 };
+        let content_padding = 32;
 
         let title = text_scaled(t("Nhận BTC", "Receive BTC"), 32).style(text_primary_color());
 
@@ -351,8 +350,8 @@ impl ReceiveView {
                 t("QR Code nhận BTC", "BTC Receive QR Code"),
                 qr_content.into(),
                 ReceiveMessage::CloseQrPopup,
-                compact,
-                true, // close_on_backdrop: true
+                false, // compact removed
+                true,  // close_on_backdrop: true
             );
         }
 

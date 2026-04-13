@@ -225,14 +225,13 @@ impl HistoryView {
         wallets: &'a [Wallet],
         selected_wallet: usize,
         is_refreshing: bool,
-        compact: bool,
     ) -> Element<'a, HistoryMessage> {
         let wallet_options = wallet_choices(wallets);
         let selected_wallet_option = selected_wallet_choice(wallets, selected_wallet);
         let wallet = wallets.get(selected_wallet);
 
-        let content_padding = if compact { 16 } else { 32 };
-        let content_spacing = if compact { 12 } else { 20 };
+        let content_padding = 32;
+        let content_spacing = 20;
 
         let title = text_scaled(t("Lịch sử giao dịch", "Transaction History"), 32)
             .style(text_primary_color());
@@ -753,8 +752,8 @@ impl HistoryView {
                         modal_title,
                         modal_content,
                         HistoryMessage::CloseTransactionDetail,
-                        compact,
-                        true, // close_on_backdrop: true
+                        false, // compact removed
+                        true,  // close_on_backdrop: true
                     );
                 }
             }

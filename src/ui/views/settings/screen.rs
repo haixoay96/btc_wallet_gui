@@ -42,30 +42,6 @@ impl SettingsView {
             tracing::warn!("Failed to create Storage instance for loading auto_refresh");
             false
         };
-        let show_satoshis = if let Ok(storage) = crate::infra::storage::Storage::new() {
-            let value = storage.load_show_satoshis().unwrap_or(false);
-            tracing::info!(
-                settings_view_init = true,
-                show_satoshis_loaded = value,
-                "SettingsView initialized - show_satoshis from storage"
-            );
-            value
-        } else {
-            tracing::warn!("Failed to create Storage instance for loading show_satoshis");
-            false
-        };
-        let compact_mode = if let Ok(storage) = crate::infra::storage::Storage::new() {
-            let value = storage.load_compact_mode().unwrap_or(false);
-            tracing::info!(
-                settings_view_init = true,
-                compact_mode_loaded = value,
-                "SettingsView initialized - compact_mode from storage"
-            );
-            value
-        } else {
-            tracing::warn!("Failed to create Storage instance for loading compact_mode");
-            false
-        };
         let esplora_endpoint = if let Ok(storage) = crate::infra::storage::Storage::new() {
             let value = storage
                 .load_esplora_endpoint()
@@ -135,8 +111,6 @@ impl SettingsView {
             connection_test_result: None,
             debug_logging,
             auto_refresh,
-            show_satoshis,
-            compact_mode,
             data_folder_path: String::new(),
             data_folder_size: String::new(),
         }
@@ -323,14 +297,6 @@ impl SettingsView {
                 self.auto_refresh = enabled;
                 Some(SettingsEvent::AutoRefreshToggled(enabled))
             }
-            SettingsMessage::ShowSatoshisToggled(enabled) => {
-                self.show_satoshis = enabled;
-                Some(SettingsEvent::ShowSatoshisToggled(enabled))
-            }
-            SettingsMessage::CompactModeToggled(enabled) => {
-                self.compact_mode = enabled;
-                Some(SettingsEvent::CompactModeToggled(enabled))
-            }
             SettingsMessage::TestConnectionSuccess(result) => {
                 self.testing_connection = false;
                 self.connection_test_result = Some(result);
@@ -350,7 +316,6 @@ impl SettingsView {
         current_theme: AppTheme,
         _font_scale: f64,
         _high_contrast: bool,
-        compact_mode: bool,
     ) -> Element<'_, SettingsMessage> {
         // CRITICAL: Use self.font_scale instead of parameter for real-time slider updates
         // The parameter is from App which is updated AFTER event handling
@@ -361,9 +326,9 @@ impl SettingsView {
             .size(s(32))
             .style(text_primary_color());
 
-        // Apply compact mode to main container padding and spacing
-        let main_padding = if compact_mode { 16 } else { 32 };
-        let main_spacing = if compact_mode { 12 } else { 20 };
+        // Apply main container padding and spacing
+        let main_padding = 32;
+        let main_spacing = 20;
 
         // Header (Pinned at top)
         let header = container(title)
@@ -549,8 +514,6 @@ impl SettingsView {
         );
 
         // Advanced Options Section
-        let card_padding = if self.compact_mode { 12 } else { 16 };
-        let row_spacing = if self.compact_mode { 4 } else { 8 };
         content = content.push(
             container(column![
                 text(t("Nâng cao", "Advanced"))
@@ -579,7 +542,7 @@ impl SettingsView {
                     }),
                 ]
                 .align_y(Alignment::Center),
-                Space::with_height(row_spacing),
+                Space::with_height(8),
                 row![
                     text(t("Tự động refresh", "Auto-refresh"))
                         .size(s(13))
@@ -602,55 +565,9 @@ impl SettingsView {
                     }),
                 ]
                 .align_y(Alignment::Center),
-                Space::with_height(row_spacing),
-                row![
-                    text(t("Hiện satoshi", "Show satoshis"))
-                        .size(s(13))
-                        .style(text_primary_color()),
-                    Space::with_width(Length::Fill),
-                    button(
-                        text(if self.show_satoshis {
-                            t("Bật", "ON")
-                        } else {
-                            t("Tắt", "OFF")
-                        })
-                        .size(s(12))
-                    )
-                    .on_press(SettingsMessage::ShowSatoshisToggled(!self.show_satoshis))
-                    .padding([6, 12])
-                    .style(if self.show_satoshis {
-                        primary_button_style()
-                    } else {
-                        secondary_button_style()
-                    }),
-                ]
-                .align_y(Alignment::Center),
-                Space::with_height(row_spacing),
-                row![
-                    text(t("Chế độ gọn", "Compact mode"))
-                        .size(s(13))
-                        .style(text_primary_color()),
-                    Space::with_width(Length::Fill),
-                    button(
-                        text(if self.compact_mode {
-                            t("Bật", "ON")
-                        } else {
-                            t("Tắt", "OFF")
-                        })
-                        .size(s(12))
-                    )
-                    .on_press(SettingsMessage::CompactModeToggled(!self.compact_mode))
-                    .padding([6, 12])
-                    .style(if self.compact_mode {
-                        primary_button_style()
-                    } else {
-                        secondary_button_style()
-                    }),
-                ]
-                .align_y(Alignment::Center),
             ])
             .style(card_style())
-            .padding(card_padding)
+            .padding(16)
             .width(Length::Fill),
         );
 
@@ -908,8 +825,8 @@ impl SettingsView {
                 t("Xác nhận xóa toàn bộ", "Confirm Full Data Deletion"),
                 clear_content.into(),
                 SettingsMessage::CancelClearData,
-                compact_mode,
-                true, // close_on_backdrop: true
+                false, // compact_mode always false now
+                true,  // close_on_backdrop: true
             );
         }
         base

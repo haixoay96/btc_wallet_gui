@@ -58,12 +58,6 @@ impl App {
                             } else {
                                 false
                             };
-                            self.settings_view.show_satoshis = self.show_satoshis;
-                            self.settings_view.compact_mode = if let Ok(storage) = Storage::new() {
-                                storage.load_compact_mode().unwrap_or(false)
-                            } else {
-                                false
-                            };
                             self.settings_view.load_data_folder_info();
                         }
                         if page == NavItem::Wallets {

@@ -34,8 +34,6 @@ pub struct App {
     pub theme: AppTheme,
     pub high_contrast: bool,
     pub font_scale: f64,
-    pub show_satoshis: bool,
-    pub compact_mode: bool,
     pub user_nickname: Option<String>,
     pub wallets: Vec<Wallet>,
     pub wallet_vault: WalletSecretsVault,

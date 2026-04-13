@@ -38,8 +38,6 @@ impl App {
             initial_high_contrast,
             initial_font_scale,
             onboarding_completed,
-            initial_show_satoshis,
-            initial_compact_mode,
             initial_btc_price,
         ) = match Storage::new() {
             Ok(storage) => {
@@ -50,8 +48,6 @@ impl App {
                 let high_contrast = storage.load_high_contrast().unwrap_or(false);
                 let font_scale = storage.load_font_scale().unwrap_or(1.0);
                 let onboarding = storage.load_onboarding_completed().unwrap_or(false);
-                let show_satoshis = storage.load_show_satoshis().unwrap_or(false);
-                let compact_mode = storage.load_compact_mode().unwrap_or(false);
                 // Load cached BTC price
                 let btc_price = storage
                     .load_cached_btc_price()
@@ -77,8 +73,6 @@ impl App {
                     high_contrast,
                     font_scale,
                     onboarding,
-                    show_satoshis,
-                    compact_mode,
                     btc_price,
                 )
             }
@@ -88,8 +82,6 @@ impl App {
                 AppTheme::Dark,
                 false,
                 1.0,
-                false,
-                false,
                 false,
                 None,
             ),
@@ -110,8 +102,6 @@ impl App {
                 theme: initial_theme,
                 high_contrast: initial_high_contrast,
                 font_scale: initial_font_scale,
-                show_satoshis: initial_show_satoshis,
-                compact_mode: initial_compact_mode,
                 user_nickname: None,
                 wallets: Vec::new(),
                 wallet_vault: WalletSecretsVault::new(),
