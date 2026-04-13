@@ -81,11 +81,11 @@ impl App {
                         |result| match result {
                             Ok(height) => {
                                 AppMessage::SettingsMessage(SettingsMessage::TestConnectionSuccess(
-                                    format!("✅ Connected! Block height: {}", height),
+                                    format!("{} #{}", t("Block height", "Block height"), height),
                                 ))
                             }
                             Err(e) => AppMessage::SettingsMessage(
-                                SettingsMessage::TestConnectionFailed(format!("❌ Failed: {}", e)),
+                                SettingsMessage::TestConnectionFailed(e.to_string()),
                             ),
                         },
                     );

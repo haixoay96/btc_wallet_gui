@@ -4,6 +4,7 @@ use iced::{
     },
     Alignment, Element, Length,
 };
+use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 use crate::infra::storage::AppTheme;
 use crate::ui::components::modal;
@@ -499,13 +500,47 @@ impl SettingsView {
                 .align_y(Alignment::Center),
                 Space::with_height(4),
                 if self.testing_connection {
-                    text(t("⏳ Đang kiểm tra kết nối...", "⏳ Testing connection..."))
-                        .size(s(11))
-                        .style(text_color(Colors::ACCENT_TEAL))
+                    let testing_status: Element<'_, SettingsMessage> = container(
+                        row![
+                            text(Bootstrap::ArrowClockwise.to_string())
+                                .size(s(11))
+                                .font(BOOTSTRAP_FONT)
+                                .style(text_color(Colors::ACCENT_TEAL)),
+                            Space::with_width(4),
+                            text(t("Đang kiểm tra...", "Testing connection..."))
+                                .size(s(11))
+                                .style(text_color(Colors::ACCENT_TEAL)),
+                        ]
+                        .align_y(Alignment::Center),
+                    )
+                    .into();
+                    testing_status
                 } else if let Some(result) = &self.connection_test_result {
-                    text(result).size(s(11)).style(text_muted_color())
+                    let icon = if result.contains(t("Block height", "Block height")) {
+                        Bootstrap::Wifi
+                    } else {
+                        Bootstrap::WifiOff
+                    };
+                    let icon_color = if result.contains(t("Block height", "Block height")) {
+                        Colors::SUCCESS
+                    } else {
+                        Colors::ERROR
+                    };
+                    let result_status: Element<'_, SettingsMessage> = container(
+                        row![
+                            text(icon.to_string())
+                                .size(s(11))
+                                .font(BOOTSTRAP_FONT)
+                                .style(text_color(icon_color)),
+                            Space::with_width(4),
+                            text(result).size(s(11)).style(text_muted_color()),
+                        ]
+                        .align_y(Alignment::Center),
+                    )
+                    .into();
+                    result_status
                 } else {
-                    text("").size(s(11))
+                    Space::with_height(s(11)).into()
                 }
             ])
             .style(card_style())
