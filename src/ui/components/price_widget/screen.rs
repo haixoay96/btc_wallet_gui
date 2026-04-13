@@ -1,7 +1,8 @@
 use crate::ui::components::price_widget::structure::PriceWidgetMessage;
 use crate::ui::i18n::t;
 use crate::ui::theme::{
-    card_style, text_color, text_muted_color, text_primary_color, text_secondary_color, Colors,
+    card_style, text_accent_teal_color, text_error_color, text_muted_color, text_primary_color,
+    text_secondary_color, text_success_color,
 };
 use iced::widget::{button, column, container, row, text, Space};
 use iced::{Alignment, Element, Length};
@@ -25,7 +26,7 @@ pub fn price_widget_view(
             text(Bootstrap::ArrowClockwise.to_string())
                 .size(12)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::ACCENT_TEAL)),
+                .style(text_accent_teal_color()),
         )
         .on_press(PriceWidgetMessage::RefreshPrice)
         .padding(4)
@@ -40,11 +41,6 @@ pub fn price_widget_view(
     // Price display
     if let Some(price_data) = &price {
         let formatted_price = format_price_usd(price_data.price_usd);
-        let change_color = if price_data.change_24h >= 0.0 {
-            Colors::SUCCESS
-        } else {
-            Colors::ERROR
-        };
 
         // Bootstrap icon for change direction (rendered with BOOTSTRAP_FONT)
         let change_icon = if price_data.change_24h >= 0.0 {
@@ -55,17 +51,27 @@ pub fn price_widget_view(
         .to_string();
 
         // BTC price row: price + icon + percentage
+        let icon_style = if price_data.change_24h >= 0.0 {
+            text_success_color()
+        } else {
+            text_error_color()
+        };
+        let text_style = if price_data.change_24h >= 0.0 {
+            text_success_color()
+        } else {
+            text_error_color()
+        };
         let price_row = row![
             text(formatted_price).size(20).style(text_primary_color()),
             Space::with_width(8),
             text(change_icon)
                 .size(13)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(change_color)),
+                .style(icon_style),
             Space::with_width(2),
             text(format!("{:.2}% (24h)", price_data.change_24h.abs()))
                 .size(13)
-                .style(text_color(change_color)),
+                .style(text_style),
         ]
         .align_y(Alignment::Center);
 

@@ -6,7 +6,9 @@ use iced::{
 use crate::app::structure::*;
 use crate::ui::components::{modal, shortcuts_help_popup};
 use crate::ui::i18n::t;
-use crate::ui::theme::{get_theme_colors, screen_background_style, text_color, Colors};
+use crate::ui::theme::{
+    get_theme_colors, screen_background_style, text_muted_color, text_secondary_color,
+};
 use crate::ui::views::sidebar::NavItem;
 
 impl App {
@@ -76,11 +78,11 @@ impl App {
                             self.display_name()
                         ))
                         .size(14)
-                        .style(text_color(Colors::TEXT_SECONDARY)),
+                        .style(text_secondary_color()),
                         Space::with_width(Length::Fill),
                         text(self.current_page.title())
                             .size(14)
-                            .style(text_color(Colors::TEXT_MUTED)),
+                            .style(text_muted_color()),
                         Space::with_width(12),
                         language_picker,
                     ]

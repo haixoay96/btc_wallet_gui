@@ -12,10 +12,6 @@ pub fn sparkline_view<Message: Clone + 'static>(
     line_color: Color,
     fill_alpha: f32,
 ) -> Element<'static, Message> {
-    if points.is_empty() {
-        return Space::with_height(0).into();
-    }
-
     // Find max absolute balance for scaling
     let max_balance = points
         .iter()
@@ -47,7 +43,7 @@ pub fn sparkline_view<Message: Clone + 'static>(
             container(Space::with_height(bar_h))
                 .width(Length::Fixed(12.0))
                 .style(move |_theme: &iced::Theme| iced::widget::container::Style {
-                    background: Some(iced::Background::Color(Color {
+                    background: Some(iced::Background::Color(iced::Color {
                         r: line_color.r,
                         g: line_color.g,
                         b: line_color.b,
@@ -56,7 +52,7 @@ pub fn sparkline_view<Message: Clone + 'static>(
                     border: iced::Border {
                         radius: 3.0.into(),
                         width: 0.0,
-                        color: Color::TRANSPARENT,
+                        color: iced::Color::TRANSPARENT,
                     },
                     ..Default::default()
                 }),

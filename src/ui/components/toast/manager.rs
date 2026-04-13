@@ -4,10 +4,13 @@ use std::time::{Duration, Instant};
 
 use iced::{
     widget::{column, container, row, text, Space},
-    Alignment, Color, Element, Length,
+    Alignment, Element, Length, Theme,
 };
 
-use crate::ui::theme::{popup_dialog_style, text_color, text_primary_color, Colors};
+use crate::ui::theme::{
+    popup_dialog_style, text_accent_blue_color, text_error_color, text_primary_color,
+    text_success_color,
+};
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 /// Toast notification types
@@ -22,11 +25,11 @@ impl ToastType {
         .to_string()
     }
 
-    pub fn color(&self) -> Color {
+    pub fn text_style(&self) -> Box<dyn Fn(&Theme) -> iced::widget::text::Style> {
         match self {
-            Self::Success => Colors::SUCCESS,
-            Self::Info => Colors::ACCENT_BLUE,
-            Self::Error => Colors::ERROR,
+            Self::Success => text_success_color(),
+            Self::Info => text_accent_blue_color(),
+            Self::Error => text_error_color(),
         }
     }
 }
@@ -99,10 +102,11 @@ impl ToastManager {
         let mut toast_elements: Vec<Element<'_, ()>> = Vec::new();
 
         for toast in &self.toasts {
+            let icon_style = toast.toast_type.text_style();
             let icon = text(toast.toast_type.icon_char())
                 .size(16)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(toast.toast_type.color()));
+                .style(icon_style);
 
             let message_text = text(&toast.message).size(13).style(text_primary_color());
 

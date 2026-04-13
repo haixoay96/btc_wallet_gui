@@ -2,11 +2,14 @@ use super::structure::PassphraseStrength;
 
 use iced::{
     widget::{column, container, row, Space},
-    Color, Element, Length,
+    Color, Element, Length, Theme,
 };
 
 use crate::ui::i18n::t;
-use crate::ui::theme::{text_color, text_scaled, Colors};
+use crate::ui::theme::{
+    get_theme_colors, text_error_color, text_muted_color, text_scaled, text_success_color,
+    text_warning_color,
+};
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 /// Passphrase strength levels
@@ -32,13 +35,14 @@ impl PassphraseStrength {
         }
     }
 
-    pub fn color(&self) -> Color {
+    pub fn color(&self, theme: &Theme) -> Color {
+        let colors = get_theme_colors(theme);
         match self {
-            Self::None => Colors::TEXT_MUTED,
-            Self::Weak => Colors::ERROR,
-            Self::Medium => Colors::WARNING,
+            Self::None => colors.text_muted,
+            Self::Weak => colors.error,
+            Self::Medium => colors.warning,
             Self::Strong => Color::from_rgb8(0xF5, 0x9E, 0x0B),
-            Self::VeryStrong => Colors::SUCCESS,
+            Self::VeryStrong => colors.success,
         }
     }
 
@@ -96,14 +100,16 @@ pub fn calculate_strength(passphrase: &str) -> PassphraseStrength {
 
 /// Render strength indicator bar
 pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'static, ()> {
-    let bar_color = strength.color();
     let progress = strength.progress();
 
     let filled_bar = container(Space::with_width(Length::Fill))
-        .style(move |_| iced::widget::container::Style {
-            background: Some(iced::Background::Color(bar_color)),
-            border: iced::border::rounded(3),
-            ..Default::default()
+        .style(move |theme: &Theme| {
+            let bar_color = strength.color(theme);
+            iced::widget::container::Style {
+                background: Some(iced::Background::Color(bar_color)),
+                border: iced::border::rounded(3),
+                ..Default::default()
+            }
         })
         .width(iced::Length::FillPortion(if progress == 0 {
             1
@@ -141,14 +147,24 @@ pub fn strength_bar(strength: PassphraseStrength, show_label: bool) -> Element<'
         let label = strength.label();
         let label_en = strength.label_en();
         let icon = strength.icon();
-        let color = strength.color();
+
+        let icon_style = match strength {
+            PassphraseStrength::Weak => text_error_color(),
+            PassphraseStrength::Medium => text_warning_color(),
+            PassphraseStrength::Strong | PassphraseStrength::VeryStrong => text_success_color(),
+            PassphraseStrength::None => text_muted_color(),
+        };
+        let label_style = match strength {
+            PassphraseStrength::Weak => text_error_color(),
+            PassphraseStrength::Medium => text_warning_color(),
+            PassphraseStrength::Strong | PassphraseStrength::VeryStrong => text_success_color(),
+            PassphraseStrength::None => text_muted_color(),
+        };
 
         let label_row = row![
-            text_scaled(icon, 11)
-                .font(BOOTSTRAP_FONT)
-                .style(text_color(color)),
+            text_scaled(icon, 11).font(BOOTSTRAP_FONT).style(icon_style),
             Space::with_width(4),
-            text_scaled(t(label, label_en), 11).style(text_color(color)),
+            text_scaled(t(label, label_en), 11).style(label_style),
         ]
         .spacing(4)
         .align_y(iced::Alignment::Center);

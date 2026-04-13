@@ -6,9 +6,9 @@ use iced::{
 use crate::ui::i18n::t;
 
 use crate::ui::theme::text_color;
+use crate::ui::theme::text_error_color;
 use crate::ui::theme::text_primary_color;
 use crate::ui::theme::text_secondary_color;
-use crate::ui::theme::Colors;
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 /// Error card với retry button
@@ -22,7 +22,7 @@ pub fn error_card<Message: 'static + Clone>(
             text(Bootstrap::XCircle.to_string())
                 .size(24)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::ERROR)),
+                .style(text_error_color()),
             Space::with_width(12),
             text(title).size(16).style(text_primary_color())
         ]
@@ -43,7 +43,7 @@ pub fn error_card<Message: 'static + Clone>(
                         t("Thử lại", "Retry")
                     ))
                     .size(13)
-                    .style(text_color(Colors::ERROR)),
+                    .style(text_error_color()),
                 )
                 .on_press(retry_msg)
                 .padding(8),

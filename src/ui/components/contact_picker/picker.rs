@@ -7,8 +7,9 @@ use crate::ui::i18n::t;
 
 use crate::core::contact::{AddressBook, ContactEntry};
 use crate::ui::theme::{
-    get_theme_colors, input_style, primary_button_style, secondary_button_style, text_color,
-    text_muted_color, text_primary_color, text_secondary_color, Colors,
+    get_theme_colors, input_style, primary_button_style, secondary_button_style,
+    text_accent_purple_color, text_accent_teal_color, text_error_color, text_muted_color,
+    text_primary_color, text_secondary_color, text_success_color,
 };
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
@@ -66,7 +67,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
             text(Bootstrap::Person.to_string())
                 .size(16)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::ACCENT_TEAL)),
+                .style(text_accent_teal_color()),
             Space::with_width(6),
             text(t("Contact", "Contact"))
                 .size(14)
@@ -120,7 +121,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                 text(Bootstrap::PersonFill.to_string())
                     .size(14)
                     .font(BOOTSTRAP_FONT)
-                    .style(text_color(Colors::ACCENT_PURPLE)),
+                    .style(text_accent_purple_color()),
                 Space::with_width(8),
                 column![
                     text(&contact.name).size(13).style(text_primary_color()),
@@ -154,7 +155,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                     text(Bootstrap::Pencil.to_string())
                         .size(10)
                         .font(BOOTSTRAP_FONT)
-                        .style(text_color(Colors::ACCENT_TEAL)),
+                        .style(text_accent_teal_color()),
                 )
                 .on_press(on_edit_contact(contact.id.clone()))
                 .padding([4, 6])
@@ -163,7 +164,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                     text(Bootstrap::Trash.to_string())
                         .size(11)
                         .font(BOOTSTRAP_FONT)
-                        .style(text_color(Colors::ERROR)),
+                        .style(text_error_color()),
                 )
                 .on_press(on_delete_contact(contact.id.clone()))
                 .padding([4, 6])
@@ -253,7 +254,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 text(Bootstrap::Trash.to_string())
                     .size(12)
                     .font(BOOTSTRAP_FONT)
-                    .style(text_color(Colors::ERROR)),
+                    .style(text_error_color()),
             )
             .on_press(delete_msg)
             .padding([6, 10])
@@ -285,7 +286,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 text(Bootstrap::PersonPlus.to_string())
                     .size(16)
                     .font(BOOTSTRAP_FONT)
-                    .style(text_color(Colors::ACCENT_TEAL)),
+                    .style(text_accent_teal_color()),
                 Space::with_width(6),
                 text(title).size(14).style(text_primary_color()),
             ]
@@ -327,12 +328,12 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                         text(Bootstrap::ExclamationTriangle.to_string())
                             .size(10)
                             .font(BOOTSTRAP_FONT)
-                            .style(text_color(Colors::ERROR))
+                            .style(text_error_color())
                     } else if is_address_valid {
                         text(Bootstrap::CheckCircle.to_string())
                             .size(10)
                             .font(BOOTSTRAP_FONT)
-                            .style(text_color(Colors::SUCCESS))
+                            .style(text_success_color())
                     } else {
                         text("").size(10)
                     },
@@ -347,7 +348,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 if address_error.is_some() && !address.trim().is_empty() {
                     text(address_error.unwrap())
                         .size(11)
-                        .style(text_color(Colors::ERROR))
+                        .style(text_error_color())
                 } else {
                     text("").size(11)
                 },

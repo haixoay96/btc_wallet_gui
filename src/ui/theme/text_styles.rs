@@ -77,3 +77,33 @@ pub fn text_warning_color() -> Box<TextStyleFn> {
         }
     })
 }
+
+/// Text accent teal color - theme aware
+pub fn text_accent_teal_color() -> Box<TextStyleFn> {
+    Box::new(|theme: &Theme| {
+        let colors = get_theme_colors(theme);
+        text::Style {
+            color: Some(colors.accent_teal),
+        }
+    })
+}
+
+/// Text accent purple color - theme aware
+pub fn text_accent_purple_color() -> Box<TextStyleFn> {
+    Box::new(|theme: &Theme| {
+        let colors = get_theme_colors(theme);
+        text::Style {
+            color: Some(colors.accent_purple),
+        }
+    })
+}
+
+/// Text accent blue color - theme aware
+pub fn text_accent_blue_color() -> Box<TextStyleFn> {
+    Box::new(|theme: &Theme| {
+        let colors = get_theme_colors(theme);
+        text::Style {
+            color: Some(colors.accent_blue),
+        }
+    })
+}

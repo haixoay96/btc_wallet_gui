@@ -11,8 +11,9 @@ use crate::ui::components::modal;
 use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, danger_button_style, info_style, input_style, pick_list_menu_style,
-    pick_list_style, primary_button_style, secondary_button_style, text_color, text_muted_color,
-    text_primary_color, text_secondary_color, warning_style, Colors,
+    pick_list_style, primary_button_style, secondary_button_style, text_accent_teal_color,
+    text_error_color, text_muted_color, text_primary_color, text_secondary_color,
+    text_success_color, warning_style,
 };
 
 use super::structure::*;
@@ -387,7 +388,7 @@ impl SettingsView {
                     Space::with_width(8),
                     text(&self.data_folder_size)
                         .size(s(12))
-                        .style(text_color(Colors::ACCENT_TEAL)),
+                        .style(text_accent_teal_color()),
                 ]
                 .align_y(Alignment::Center),
             ])
@@ -411,7 +412,7 @@ impl SettingsView {
                     Space::with_width(8),
                     text(format!("{}%", font_scale_percent))
                         .size(s(13))
-                        .style(text_color(Colors::ACCENT_TEAL)),
+                        .style(text_accent_teal_color()),
                 ]
                 .align_y(Alignment::Center),
                 Space::with_height(8),
@@ -505,11 +506,11 @@ impl SettingsView {
                             text(Bootstrap::ArrowClockwise.to_string())
                                 .size(s(11))
                                 .font(BOOTSTRAP_FONT)
-                                .style(text_color(Colors::ACCENT_TEAL)),
+                                .style(text_accent_teal_color()),
                             Space::with_width(4),
                             text(t("Đang kiểm tra...", "Testing connection..."))
                                 .size(s(11))
-                                .style(text_color(Colors::ACCENT_TEAL)),
+                                .style(text_accent_teal_color()),
                         ]
                         .align_y(Alignment::Center),
                     )
@@ -521,17 +522,17 @@ impl SettingsView {
                     } else {
                         Bootstrap::WifiOff
                     };
-                    let icon_color = if result.contains(t("Block height", "Block height")) {
-                        Colors::SUCCESS
+                    let icon_style = if result.contains(t("Block height", "Block height")) {
+                        text_success_color()
                     } else {
-                        Colors::ERROR
+                        text_error_color()
                     };
                     let result_status: Element<'_, SettingsMessage> = container(
                         row![
                             text(icon.to_string())
                                 .size(s(11))
                                 .font(BOOTSTRAP_FONT)
-                                .style(text_color(icon_color)),
+                                .style(icon_style),
                             Space::with_width(4),
                             text(result).size(s(11)).style(text_muted_color()),
                         ]
@@ -727,7 +728,7 @@ impl SettingsView {
         let mut clear_data_col = column![
             text(t("Vùng nguy hiểm", "Danger Zone"))
                 .size(s(16))
-                .style(text_color(Colors::ERROR)),
+                .style(text_error_color()),
             Space::with_height(16),
             row![clear_data_button, reset_settings_btn,]
                 .spacing(10)
@@ -739,7 +740,7 @@ impl SettingsView {
             clear_data_col = clear_data_col.push(
                 column![
                     Space::with_height(12),
-                    text(t("Thao tác này sẽ xóa toàn bộ ví khỏi máy hiện tại.", "This action will remove every wallet from the current device.")).size(s(13)).style(text_color(Colors::ERROR)),
+                    text(t("Thao tác này sẽ xóa toàn bộ ví khỏi máy hiện tại.", "This action will remove every wallet from the current device.")).size(s(13)).style(text_error_color()),
                     text(t("Bạn sẽ cần app backup hoặc các secret backup riêng của từng ví để khôi phục lại sau này.", "You will need the app backup or each wallet's own secret backup to restore later.")).size(s(12)).style(text_secondary_color()),
                 ].spacing(4),
             );

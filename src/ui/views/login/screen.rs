@@ -8,8 +8,8 @@ use crate::ui::components::{calculate_strength, strength_bar};
 use crate::ui::i18n::t;
 use crate::ui::theme::{
     input_style, muted_button_style, primary_button_style, screen_background_style,
-    secondary_button_style, selected_button_style, text_color, text_muted_color,
-    text_primary_color, text_scaled, text_secondary_color, Colors,
+    secondary_button_style, selected_button_style, text_accent_purple_color, text_muted_color,
+    text_primary_color, text_scaled, text_secondary_color,
 };
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
@@ -194,7 +194,7 @@ impl LoginView {
         .width(Length::Fill)
         .padding(Padding::from([16, 24]));
 
-        let logo = text_scaled("₿", 64).style(text_color(Colors::ACCENT_PURPLE));
+        let logo = text_scaled("₿", 64).style(text_accent_purple_color());
 
         let logo_container = container(logo).center_x(Length::Fill);
 

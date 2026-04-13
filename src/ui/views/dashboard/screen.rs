@@ -4,9 +4,11 @@ use crate::ui::components::price_widget::price_widget_view;
 use crate::ui::components::skeleton_wallet_cards;
 use crate::ui::components::sparkline::{sparkline_view, BalancePoint};
 use crate::ui::i18n::t;
+use crate::ui::theme::colors::DarkColors;
 use crate::ui::theme::{
-    card_style, notice_style, primary_button_style, secondary_button_style, text_color,
-    text_muted_color, text_primary_color, text_scaled, text_secondary_color, Colors, NoticeTone,
+    card_style, notice_style, primary_button_style, secondary_button_style,
+    text_accent_purple_color, text_error_color, text_muted_color, text_primary_color, text_scaled,
+    text_secondary_color, text_success_color, text_warning_color, NoticeTone,
 };
 use crate::ui::views::sidebar::NavItem;
 use iced::{
@@ -94,7 +96,8 @@ impl DashboardView {
         // Add sparkline if we have data
         if !self.balance_history.is_empty() {
             balance_content = balance_content.push(Space::with_height(8));
-            let sparkline_widget = sparkline_view(&self.balance_history, Colors::ACCENT_TEAL, 0.1);
+            let sparkline_widget =
+                sparkline_view(&self.balance_history, DarkColors::ACCENT_TEAL, 0.1);
             balance_content = balance_content.push(sparkline_widget);
         }
 
@@ -107,8 +110,7 @@ impl DashboardView {
                 text_scaled(t("Số dư đã xác nhận", "Confirmed Balance"), 14)
                     .style(text_secondary_color()),
                 Space::with_height(4),
-                text_scaled(format!("{:.8} BTC", confirmed_btc), 24)
-                    .style(text_color(Colors::SUCCESS)),
+                text_scaled(format!("{:.8} BTC", confirmed_btc), 24).style(text_success_color()),
                 Space::with_height(2),
                 text_scaled(format!("{} sat", self.confirmed_balance), 14)
                     .style(text_muted_color()),
@@ -123,8 +125,7 @@ impl DashboardView {
                 text_scaled(t("Số dư chờ xác nhận", "Pending Balance"), 14)
                     .style(text_secondary_color()),
                 Space::with_height(4),
-                text_scaled(format!("{:.8} BTC", pending_btc), 24)
-                    .style(text_color(Colors::WARNING)),
+                text_scaled(format!("{:.8} BTC", pending_btc), 24).style(text_warning_color()),
                 Space::with_height(2),
                 text_scaled(format!("{} sat", self.pending_balance), 14).style(text_muted_color()),
             ]
@@ -137,8 +138,7 @@ impl DashboardView {
             column![
                 text_scaled(t("Tổng số ví", "Total Wallets"), 14).style(text_secondary_color()),
                 Space::with_height(4),
-                text_scaled(format!("{}", self.wallet_count), 24)
-                    .style(text_color(Colors::ACCENT_PURPLE)),
+                text_scaled(format!("{}", self.wallet_count), 24).style(text_accent_purple_color()),
             ]
             .padding(card_padding),
         )
@@ -154,7 +154,7 @@ impl DashboardView {
                     if self.backup_needed_wallets == 0 {
                         text_primary_color()
                     } else {
-                        text_color(Colors::WARNING)
+                        text_warning_color()
                     }
                 ),
             ]
@@ -343,12 +343,12 @@ fn render_recent_transactions(
             text(Bootstrap::ArrowDownRight.to_string())
                 .size(14)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::SUCCESS))
+                .style(text_success_color())
         } else {
             text(Bootstrap::ArrowUpRight.to_string())
                 .size(14)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::ERROR))
+                .style(text_error_color())
         };
 
         let txid_short = crate::shared::text::short_txid(&tx.txid);
@@ -365,11 +365,11 @@ fn render_recent_transactions(
         .align_y(Alignment::Center);
 
         let right = column![
-            text_scaled(&tx.formatted_amount(), 13).style(text_color(if tx.is_incoming() {
-                Colors::SUCCESS
+            text_scaled(&tx.formatted_amount(), 13).style(if tx.is_incoming() {
+                text_success_color()
             } else {
-                Colors::ERROR
-            })),
+                text_error_color()
+            }),
             text_scaled(&tx.time_ago(), 11).style(text_muted_color()),
         ]
         .align_x(Alignment::End);

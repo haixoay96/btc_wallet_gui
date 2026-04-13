@@ -6,7 +6,8 @@ use iced::{
 };
 
 use crate::ui::theme::{
-    text_color, text_muted_color, text_primary_color, text_secondary_color, Colors,
+    text_accent_blue_color, text_accent_teal_color, text_muted_color, text_primary_color,
+    text_secondary_color, text_warning_color,
 };
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
@@ -20,7 +21,7 @@ pub fn info_box(title: impl Into<String>, description: impl Into<String>) -> Ele
             text(Bootstrap::InfoCircle.to_string())
                 .size(16)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::ACCENT_BLUE)),
+                .style(text_accent_blue_color()),
             Space::with_width(8),
             column![
                 text(title).size(13).style(text_primary_color()),
@@ -56,7 +57,7 @@ pub fn warning_box(
             text(Bootstrap::ExclamationTriangle.to_string())
                 .size(16)
                 .font(BOOTSTRAP_FONT)
-                .style(text_color(Colors::WARNING)),
+                .style(text_warning_color()),
             Space::with_width(8),
             column![
                 text(title).size(13).style(text_primary_color()),
@@ -129,7 +130,7 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
         text(icon.to_string())
             .size(14)
             .font(BOOTSTRAP_FONT)
-            .style(text_color(Colors::ACCENT_TEAL)),
+            .style(text_accent_teal_color()),
         Space::with_width(6),
         text(title)
             .size(12)

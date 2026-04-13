@@ -2,10 +2,11 @@ use crate::core::wallet::{TxDirection, TxRecord, Wallet, WalletNetwork};
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::ui::components::{modal, skeleton_transactions};
 use crate::ui::i18n::t;
+use crate::ui::theme::colors::DarkColors;
 use crate::ui::theme::{
     input_style, pick_list_menu_style, pick_list_style, primary_button_style,
-    secondary_button_style, selected_button_style, text_color, text_muted_color,
-    text_primary_color, text_scaled, text_secondary_color, Colors,
+    secondary_button_style, selected_button_style, text_color, text_error_color, text_muted_color,
+    text_primary_color, text_scaled, text_secondary_color, text_success_color,
 };
 use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
 use chrono::DateTime;
@@ -29,14 +30,14 @@ fn confirmation_status(tx: &TxRecord) -> (String, String, Color, String) {
         (
             "clock".to_string(),
             t("Chờ xác nhận", "Pending").to_string(),
-            Colors::WARNING,
+            DarkColors::WARNING,
             format!("~{}", t("đang chờ", "waiting")),
         )
     } else if tx.confirmations >= 6 {
         (
             "check".to_string(),
             t("Đã xác nhận", "Confirmed").to_string(),
-            Colors::SUCCESS,
+            DarkColors::SUCCESS,
             format!(
                 "✓ {} ({} {})",
                 t("Đủ xác nhận", "Fully confirmed"),
@@ -50,7 +51,7 @@ fn confirmation_status(tx: &TxRecord) -> (String, String, Color, String) {
         (
             "check-circle".to_string(),
             format!("{} ({}/6)", t("Gần đủ", "Almost"), tx.confirmations),
-            Colors::CONFIRMED_PARTIAL,
+            DarkColors::CONFIRMED_PARTIAL,
             format!(
                 "~{} {} (~{} {})",
                 remaining,
@@ -69,7 +70,7 @@ fn confirmation_status(tx: &TxRecord) -> (String, String, Color, String) {
                 t("Ít xác nhận", "Low confirmations"),
                 tx.confirmations
             ),
-            Colors::CONFIRMED_LOW,
+            DarkColors::CONFIRMED_LOW,
             format!(
                 "~{} {} (~{} {})",
                 remaining,
@@ -545,10 +546,15 @@ impl HistoryView {
                             TxDirection::Outgoing => Bootstrap::ArrowUpRight.to_string(),
                             TxDirection::SelfTransfer => Bootstrap::ArrowLeftRight.to_string(),
                         };
-                        let amount_color = match tx.direction {
-                            TxDirection::Incoming => Colors::SUCCESS,
-                            TxDirection::Outgoing => Colors::ERROR,
-                            TxDirection::SelfTransfer => Colors::TEXT_SECONDARY,
+                        let amount_style_icon = match tx.direction {
+                            TxDirection::Incoming => text_success_color(),
+                            TxDirection::Outgoing => text_error_color(),
+                            TxDirection::SelfTransfer => text_secondary_color(),
+                        };
+                        let amount_style_text = match tx.direction {
+                            TxDirection::Incoming => text_success_color(),
+                            TxDirection::Outgoing => text_error_color(),
+                            TxDirection::SelfTransfer => text_secondary_color(),
                         };
                         let amount_sign = match tx.direction {
                             TxDirection::Incoming => "+",
@@ -573,7 +579,7 @@ impl HistoryView {
                                     text(direction_icon.clone())
                                         .size(14)
                                         .font(BOOTSTRAP_FONT)
-                                        .style(text_color(amount_color)),
+                                        .style(amount_style_icon),
                                     Space::with_width(12),
                                     text_scaled(txid_short, 14).style(text_primary_color()),
                                     Space::with_width(Length::Fill),
@@ -583,7 +589,7 @@ impl HistoryView {
                                         format_btc_and_sat(tx.amount_sat)
                                     ))
                                     .size(14)
-                                    .style(text_color(amount_color)),
+                                    .style(amount_style_text),
                                 ]
                                 .align_y(Alignment::Center),
                                 Space::with_height(4),
@@ -643,7 +649,7 @@ impl HistoryView {
                             .style(|_, _| iced::widget::button::Style {
                                 background: None,
                                 border: iced::Border::default(),
-                                text_color: Colors::TEXT_PRIMARY,
+                                text_color: DarkColors::TEXT_PRIMARY,
                                 ..Default::default()
                             })
                             .on_press(HistoryMessage::ViewTransaction(original_idx));
@@ -729,7 +735,7 @@ impl HistoryView {
                         t("Vui lòng chọn ví trước", "Please select a wallet first"),
                         18,
                     )
-                    .style(text_color(Colors::ERROR)),
+                    .style(text_error_color()),
                 )
                 .padding(40)
                 .center_x(Length::Fill),
@@ -767,10 +773,10 @@ impl HistoryView {
         tx: &TxRecord,
         network: Option<WalletNetwork>,
     ) -> (&'static str, Element<'a, HistoryMessage>) {
-        let amount_color = match tx.direction {
-            TxDirection::Incoming => Colors::SUCCESS,
-            TxDirection::Outgoing => Colors::ERROR,
-            TxDirection::SelfTransfer => Colors::TEXT_SECONDARY,
+        let amount_style = match tx.direction {
+            TxDirection::Incoming => text_success_color(),
+            TxDirection::Outgoing => text_error_color(),
+            TxDirection::SelfTransfer => text_secondary_color(),
         };
         let direction_text = match tx.direction {
             TxDirection::Incoming => t("Giao dịch đến", "Incoming Transaction"),
@@ -800,7 +806,7 @@ impl HistoryView {
 
         let modal_content = column![
             text_scaled(direction_text, 18)
-                .style(text_color(amount_color))
+                .style(amount_style)
                 .style(text_primary_color()),
             Space::with_height(16),
             info_row(t("TxID", "TxID"), tx.txid.clone()),

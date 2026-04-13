@@ -2,11 +2,11 @@ use super::structure::KeyboardShortcut;
 
 use crate::ui::i18n::t;
 use iced::{
-    widget::{column, container, row, scrollable, Space},
-    Color, Element, Length,
+    widget::{column, container, row, scrollable, text, Space},
+    Color, Element, Length, Theme,
 };
 
-use crate::ui::theme::{text_color, text_scaled, text_secondary_color, Colors};
+use crate::ui::theme::{get_theme_colors, text_scaled, text_secondary_color};
 
 /// Platform-aware key modifier display (Cmd on macOS, Ctrl elsewhere)
 pub fn ctrl_label() -> &'static str {
@@ -104,34 +104,43 @@ impl KeyboardShortcut {
 
 fn key_badge(key: &str) -> Element<'static, ()> {
     let is_modifier = key == "Ctrl" || key == "⌘" || key == "Shift" || key == "Alt";
-    let text_color_val = if is_modifier {
-        Colors::TEXT_SECONDARY
-    } else {
-        Colors::TEXT_PRIMARY
-    };
-
     let key_owned = key.to_string();
-    container(text_scaled(key_owned, 11).style(text_color(text_color_val)))
-        .style(|_| iced::widget::container::Style {
-            background: Some(iced::Background::Color(Color::from_rgba(
-                0.5, 0.5, 0.5, 0.2,
-            ))),
-            border: iced::border::rounded(4),
-            ..Default::default()
-        })
-        .padding(6)
-        .into()
+    container(text_scaled(key_owned, 11).style(move |theme: &Theme| {
+        let colors = get_theme_colors(theme);
+        let text_color_val = if is_modifier {
+            colors.text_secondary
+        } else {
+            colors.text_primary
+        };
+        text::Style {
+            color: Some(text_color_val),
+        }
+    }))
+    .style(|_| iced::widget::container::Style {
+        background: Some(iced::Background::Color(Color::from_rgba(
+            0.5, 0.5, 0.5, 0.2,
+        ))),
+        border: iced::border::rounded(4),
+        ..Default::default()
+    })
+    .padding(6)
+    .into()
 }
 
 fn shortcut_section_header(vi: &'static str, en: &'static str) -> Element<'static, ()> {
-    container(text_scaled(t(vi, en), 12).style(text_color(Colors::ACCENT_TEAL)))
-        .padding(iced::padding::Padding {
-            top: 8.0,
-            right: 0.0,
-            bottom: 4.0,
-            left: 0.0,
-        })
-        .into()
+    container(text_scaled(t(vi, en), 12).style(move |theme: &Theme| {
+        let colors = get_theme_colors(theme);
+        text::Style {
+            color: Some(colors.accent_teal),
+        }
+    }))
+    .padding(iced::padding::Padding {
+        top: 8.0,
+        right: 0.0,
+        bottom: 4.0,
+        left: 0.0,
+    })
+    .into()
 }
 
 /// Keyboard shortcuts help popup with categorized sections

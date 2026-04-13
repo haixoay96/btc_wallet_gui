@@ -13,8 +13,9 @@ use crate::ui::components::{
 use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, input_style, notice_style, pick_list_menu_style, pick_list_style,
-    primary_button_style, secondary_button_style, selected_button_style, text_color,
-    text_muted_color, text_primary_color, text_scaled, text_secondary_color, Colors, NoticeTone,
+    primary_button_style, secondary_button_style, selected_button_style, text_accent_purple_color,
+    text_accent_teal_color, text_error_color, text_muted_color, text_primary_color, text_scaled,
+    text_secondary_color, NoticeTone,
 };
 use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
@@ -575,7 +576,7 @@ impl SendView {
                     row![
                         text_scaled(Bootstrap::Person.to_string(), 12)
                             .font(BOOTSTRAP_FONT)
-                            .style(text_color(Colors::ACCENT_TEAL)),
+                            .style(text_accent_teal_color()),
                         Space::with_width(4),
                         text_scaled(t("Contact", "Contact"), 11).style(text_primary_color()),
                     ]
@@ -604,11 +605,11 @@ impl SendView {
                 row![
                     text_scaled(Bootstrap::PersonFill.to_string(), 10)
                         .font(BOOTSTRAP_FONT)
-                        .style(text_color(Colors::ACCENT_PURPLE)),
+                        .style(text_accent_purple_color()),
                     Space::with_width(4),
                     text(format!("{}: {}", t("Contact", "Contact"), contact_name))
                         .size(11)
-                        .style(text_color(Colors::ACCENT_TEAL)),
+                        .style(text_accent_teal_color()),
                 ]
                 .align_y(Alignment::Center)
             } else {
@@ -618,7 +619,7 @@ impl SendView {
                 let error_widget: Element<'_, SendMessage> =
                     if let Some(error) = &self.to_address_error {
                         text_scaled(error.as_str(), 12)
-                            .style(text_color(Colors::ERROR))
+                            .style(text_error_color())
                             .into()
                     } else {
                         Space::with_height(0).into()
@@ -680,7 +681,7 @@ impl SendView {
 
         let amount_info: Element<'_, SendMessage> = if let Some(error) = &self.amount_error {
             text_scaled(error.as_str(), 12)
-                .style(text_color(Colors::ERROR))
+                .style(text_error_color())
                 .into()
         } else if let Ok(amount_btc) = self.amount.trim().parse::<f64>() {
             if amount_btc > 0.0 {
@@ -765,7 +766,7 @@ impl SendView {
 
         let fee_info: Element<'_, SendMessage> = if let Some(error) = &self.fee_error {
             text_scaled(error.as_str(), 12)
-                .style(text_color(Colors::ERROR))
+                .style(text_error_color())
                 .into()
         } else if let Ok(fee_btc) = self.fee_amount.trim().parse::<f64>() {
             if fee_btc > 0.0 {

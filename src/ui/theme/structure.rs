@@ -21,6 +21,3 @@ pub enum NoticeTone {
 pub fn color_with_alpha(color: Color, alpha: f32) -> Color {
     Color { a: alpha, ..color }
 }
-
-/// Default Colors type alias - trỏ về DarkColors để tương thích ngược
-pub use super::colors::DarkColors as Colors;

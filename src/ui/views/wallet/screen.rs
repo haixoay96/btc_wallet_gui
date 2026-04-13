@@ -14,8 +14,9 @@ use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, danger_button_style, get_theme_colors, input_style, notice_style,
     pick_list_menu_style, pick_list_style, primary_button_style, secondary_button_style,
-    selected_button_style, text_color, text_muted_color, text_primary_color, text_scaled,
-    text_secondary_color, Colors, NoticeTone,
+    selected_button_style, text_accent_purple_color, text_accent_teal_color, text_error_color,
+    text_muted_color, text_primary_color, text_scaled, text_secondary_color, text_success_color,
+    text_warning_color, NoticeTone,
 };
 
 use super::structure::*;
@@ -1207,7 +1208,7 @@ impl WalletsView {
                     text(Bootstrap::Tags.to_string())
                         .size(14)
                         .font(BOOTSTRAP_FONT)
-                        .style(text_color(Colors::ACCENT_PURPLE)),
+                        .style(text_accent_purple_color()),
                 )
                 .on_press(WalletsMessage::ToggleTagModal(sorted_index))
                 .padding([4, 6])
@@ -1287,7 +1288,7 @@ impl WalletsView {
                         if is_selected {
                             text_scaled(iced_fonts::Bootstrap::Check.to_string(), 16)
                                 .font(iced_fonts::BOOTSTRAP_FONT)
-                                .style(text_color(Colors::SUCCESS))
+                                .style(text_success_color())
                         } else {
                             text("").size(16).font(iced_fonts::BOOTSTRAP_FONT)
                         },
@@ -1297,7 +1298,7 @@ impl WalletsView {
                             button(
                                 text_scaled(iced_fonts::Bootstrap::Exclamation.to_string(), 16)
                                     .font(iced_fonts::BOOTSTRAP_FONT)
-                                    .style(text_color(Colors::WARNING)),
+                                    .style(text_warning_color()),
                             )
                             .on_press(WalletsMessage::ShowBackupWarning(sorted_index))
                             .padding(0)
@@ -1306,7 +1307,7 @@ impl WalletsView {
                             button(
                                 text_scaled(iced_fonts::Bootstrap::ShieldCheck.to_string(), 16)
                                     .font(iced_fonts::BOOTSTRAP_FONT)
-                                    .style(text_color(Colors::SUCCESS)),
+                                    .style(text_success_color()),
                             )
                             .padding(0)
                             .style(crate::ui::theme::flat_icon_button_style())
@@ -1612,7 +1613,7 @@ impl WalletsView {
                             .size(12)
                             .style(text_secondary_color()),
                             Space::with_height(6),
-                            text_scaled(mnemonic_line, 14).style(text_color(Colors::ACCENT_TEAL)),
+                            text_scaled(mnemonic_line, 14).style(text_accent_teal_color()),
                         ]
                         .spacing(2),
                     )
@@ -1751,7 +1752,7 @@ impl WalletsView {
                         t("Backup mnemonic: Đã xác minh", "Mnemonic backup: Verified"),
                         13,
                     )
-                    .style(text_color(Colors::SUCCESS)),
+                    .style(text_success_color()),
                 );
             } else {
                 panel = panel.push(
@@ -1841,7 +1842,7 @@ impl WalletsView {
                     ),
                     13,
                 )
-                .style(text_color(Colors::ERROR)),
+                .style(text_error_color()),
             );
         }
 
@@ -2005,8 +2006,7 @@ fn wallet_addresses_detail<'a>(
                     text_scaled(addr.address.clone(), 12).style(text_primary_color()),
                     Space::with_width(Length::Fill),
                     if is_copied {
-                        text_scaled(t("Đã sao chép", "Copied"), 11)
-                            .style(text_color(Colors::SUCCESS))
+                        text_scaled(t("Đã sao chép", "Copied"), 11).style(text_success_color())
                     } else {
                         text("")
                     },
@@ -2119,8 +2119,7 @@ fn wallet_addresses_detail<'a>(
                     text_scaled(addr.address.clone(), 12).style(text_primary_color()),
                     Space::with_width(Length::Fill),
                     if is_copied {
-                        text_scaled(t("Đã sao chép", "Copied"), 11)
-                            .style(text_color(Colors::SUCCESS))
+                        text_scaled(t("Đã sao chép", "Copied"), 11).style(text_success_color())
                     } else {
                         text("")
                     },

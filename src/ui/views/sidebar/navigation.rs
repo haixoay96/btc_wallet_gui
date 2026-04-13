@@ -1,6 +1,6 @@
 use crate::ui::theme::{
-    secondary_button_style, selected_button_style, sidebar_style, text_color, text_primary_color,
-    text_scaled, text_secondary_color, Colors,
+    secondary_button_style, selected_button_style, sidebar_style, text_accent_purple_color,
+    text_accent_teal_color, text_primary_color, text_scaled, text_secondary_color,
 };
 use iced::{
     widget::{button, column, container, row, Space},
@@ -48,7 +48,7 @@ impl Sidebar {
     }
 
     pub fn view(&self, wallet_count: usize) -> Element<'_, SidebarMessage> {
-        let logo = text_scaled("₿", 48).style(text_color(Colors::ACCENT_PURPLE));
+        let logo = text_scaled("₿", 48).style(text_accent_purple_color());
         let icon_size = 20;
         let title_size = 14;
         let item_padding = 12;
@@ -64,11 +64,11 @@ impl Sidebar {
                     let is_active = self.active == item;
                     let icon = text_scaled(item.icon_char(), icon_size as u16)
                         .font(BOOTSTRAP_FONT)
-                        .style(text_color(if is_active {
-                            Colors::ACCENT_TEAL
+                        .style(if is_active {
+                            text_accent_teal_color()
                         } else {
-                            Colors::TEXT_SECONDARY
-                        }));
+                            text_secondary_color()
+                        });
                     let title =
                         text_scaled(item.title(), title_size as u16).style(text_secondary_color());
 

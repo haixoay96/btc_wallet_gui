@@ -2,7 +2,7 @@
 // Cấu trúc: structure.rs (structs/enums) → colors.rs (palettes) → palette.rs (theme logic) → styles (UI)
 
 mod button_styles;
-mod colors;
+pub mod colors;
 mod container_styles;
 mod input_styles;
 mod palette;
@@ -10,7 +10,7 @@ mod structure;
 mod text_styles;
 
 // Export từ structure
-pub use structure::{Colors, NoticeTone};
+pub use structure::NoticeTone;
 
 // Export từ palette
 pub use palette::{get_theme_colors, set_font_scale, set_high_contrast};
@@ -32,6 +32,7 @@ pub use input_styles::{input_style, pick_list_menu_style, pick_list_style};
 
 // Export text styles
 pub use text_styles::{
-    text_color, text_error_color, text_muted_color, text_primary_color, text_scaled,
-    text_secondary_color, text_success_color, text_warning_color,
+    text_accent_blue_color, text_accent_purple_color, text_accent_teal_color, text_color,
+    text_error_color, text_muted_color, text_primary_color, text_scaled, text_secondary_color,
+    text_success_color, text_warning_color,
 };

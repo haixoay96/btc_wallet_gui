@@ -10,8 +10,8 @@ use crate::ui::components::{modal, warning_box};
 use crate::ui::i18n::t;
 use crate::ui::theme::{
     card_style, pick_list_menu_style, pick_list_style, primary_button_style,
-    secondary_button_style, selected_button_style, text_color, text_muted_color,
-    text_primary_color, text_scaled, text_secondary_color, Colors,
+    secondary_button_style, selected_button_style, text_accent_teal_color, text_error_color,
+    text_muted_color, text_primary_color, text_scaled, text_secondary_color, text_success_color,
 };
 
 use super::structure::*;
@@ -193,7 +193,7 @@ impl ReceiveView {
                                     .style(text_secondary_color()),
                                 Space::with_height(8),
                                 text_scaled(addr.address.clone(), 16)
-                                    .style(text_color(Colors::ACCENT_TEAL)),
+                                    .style(text_accent_teal_color()),
                                 Space::with_height(10),
                                 text_scaled(t(
                                     "Chia sẻ địa chỉ này hoặc mở QR để người gửi quét trực tiếp.",
@@ -248,8 +248,7 @@ impl ReceiveView {
                             .qr_error
                             .as_deref()
                             .unwrap_or(t("Không tạo được QR", "Failed to generate QR"));
-                        content =
-                            content.push(text_scaled(err, 13).style(text_color(Colors::ERROR)));
+                        content = content.push(text_scaled(err, 13).style(text_error_color()));
                     }
                 }
 
@@ -288,7 +287,7 @@ impl ReceiveView {
                             Space::with_width(Length::Fill),
                             if is_selected {
                                 text_scaled(t("Đang chọn", "Selected"), 11)
-                                    .style(text_color(Colors::SUCCESS))
+                                    .style(text_success_color())
                             } else {
                                 text("")
                             },
@@ -314,8 +313,7 @@ impl ReceiveView {
             }
         } else {
             content = content.push(
-                text_scaled(t("Chưa chọn ví", "No wallet selected"), 16)
-                    .style(text_color(Colors::ERROR)),
+                text_scaled(t("Chưa chọn ví", "No wallet selected"), 16).style(text_error_color()),
             );
         }
 
