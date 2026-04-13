@@ -3,7 +3,6 @@ use std::time::Duration;
 use iced::{clipboard, Task};
 
 use crate::app::structure::*;
-use crate::core::error::AppError;
 use crate::infra::storage::Storage;
 use crate::ui::components::backup_reminder::BackupReminderMessage;
 use crate::ui::components::network_status::{DashboardNetworkMessage, NetworkStatus};
@@ -218,11 +217,11 @@ impl App {
                         .spawn();
 
                     if let Err(e) = result {
-                        self.error = Some(AppError::unknown(&format!(
+                        self.add_error_toast(format!(
                             "{}: {}",
                             t("Không thể mở trình duyệt", "Cannot open browser"),
                             e
-                        )));
+                        ));
                     }
                     Task::none()
                 }
@@ -450,10 +449,7 @@ impl App {
                         );
                     }
                     Err(e) => {
-                        self.error = Some(AppError::storage(
-                            "export",
-                            &format!("{}: {}", t("Lỗi export", "Export error"), e),
-                        ));
+                        self.add_error_toast(format!("{}: {}", t("Lỗi export", "Export error"), e));
                     }
                 }
                 Task::none()

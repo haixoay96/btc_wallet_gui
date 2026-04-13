@@ -4,7 +4,7 @@ use iced::{
 };
 
 use crate::app::structure::*;
-use crate::ui::components::{error_card, modal, shortcuts_help_popup};
+use crate::ui::components::{modal, shortcuts_help_popup};
 use crate::ui::i18n::t;
 use crate::ui::theme::{get_theme_colors, screen_background_style, text_color, Colors};
 use crate::ui::views::sidebar::NavItem;
@@ -66,25 +66,6 @@ impl App {
                         .map(AppMessage::SettingsMessage),
                 };
 
-                let error_bar = if let Some(app_error) = &self.error {
-                    let mut detail = app_error.user_message();
-                    if let Some(ctx) = app_error.context() {
-                        detail.push_str(&format!("\n📋 {}", ctx));
-                    }
-                    container(error_card(
-                        app_error.title(),
-                        format!("{}\n\n💡 {}", detail, app_error.suggestion()),
-                        if app_error.is_retryable() {
-                            Some(AppMessage::DismissError)
-                        } else {
-                            None
-                        },
-                    ))
-                    .padding(10)
-                } else {
-                    container(Space::with_height(0))
-                };
-
                 let language_picker = self.language_selector.view(AppMessage::LanguageChanged);
 
                 let header_bar = container(
@@ -109,7 +90,7 @@ impl App {
 
                 let base_content = container(row![
                     sidebar,
-                    column![header_bar, error_bar, main_content,].width(Length::Fill)
+                    column![header_bar, main_content,].width(Length::Fill)
                 ])
                 .width(Length::Fill)
                 .height(Length::Fill)

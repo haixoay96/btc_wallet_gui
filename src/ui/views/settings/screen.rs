@@ -9,9 +9,9 @@ use crate::infra::storage::AppTheme;
 use crate::ui::components::modal;
 use crate::ui::i18n::t;
 use crate::ui::theme::{
-    card_style, danger_button_style, info_style, input_style, notice_style, pick_list_menu_style,
+    card_style, danger_button_style, info_style, input_style, pick_list_menu_style,
     pick_list_style, primary_button_style, secondary_button_style, text_color, text_muted_color,
-    text_primary_color, text_secondary_color, warning_style, Colors, NoticeTone,
+    text_primary_color, text_secondary_color, warning_style, Colors,
 };
 
 use super::structure::*;
@@ -757,24 +757,6 @@ impl SettingsView {
                 .padding(20)
                 .width(Length::Fill),
         );
-
-        // Error/Success messages
-        if let Some(err) = &self.error {
-            content = content.push(
-                container(text(err.as_str()).size(s(13)).style(text_primary_color()))
-                    .style(notice_style(NoticeTone::Error))
-                    .padding(12)
-                    .width(Length::Fill),
-            );
-        }
-        if let Some(succ) = &self.success {
-            content = content.push(
-                container(text(succ.as_str()).size(s(13)).style(text_primary_color()))
-                    .style(notice_style(NoticeTone::Success))
-                    .padding(12)
-                    .width(Length::Fill),
-            );
-        }
 
         let base: Element<'_, SettingsMessage> =
             column![header, scrollable(content).width(Length::Fill),]

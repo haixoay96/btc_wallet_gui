@@ -4,7 +4,6 @@ use iced::Task;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::app::structure::{App, AppMessage, AppState};
-use crate::core::error::AppError;
 use crate::core::wallet::WalletSecretsVault;
 use crate::infra::price_api::BtcPriceData;
 use crate::infra::storage::{
@@ -161,23 +160,17 @@ impl App {
         let result =
             Storage::new().and_then(|storage| storage.save_language_preference(self.language));
         if let Err(err) = result {
-            if self.error.is_none() {
-                let path = match Storage::new() {
-                    Ok(s) => s.file_path().display().to_string(),
-                    Err(_) => "unknown".to_string(),
-                };
-                self.error = Some(AppError::storage_with_path(
-                    "language_preference",
-                    &path,
-                    &format!(
-                        "{}: {err}",
-                        t(
-                            "Không thể lưu cài đặt ngôn ngữ",
-                            "Could not save language preference"
-                        )
-                    ),
-                ));
-            }
+            let _path = match Storage::new() {
+                Ok(s) => s.file_path().display().to_string(),
+                Err(_) => "unknown".to_string(),
+            };
+            self.add_error_toast(format!(
+                "{}: {err}",
+                t(
+                    "Không thể lưu cài đặt ngôn ngữ",
+                    "Could not save language preference"
+                )
+            ));
         }
     }
 
@@ -192,27 +185,20 @@ impl App {
                 let state = match self.persisted_state() {
                     Ok(state) => state,
                     Err(err) => {
-                        self.error = Some(AppError::storage(
-                            "assemble_state",
-                            &format!(
-                                "{}: {err}",
-                                t(
-                                    "Không thể gom dữ liệu ví",
-                                    "Failed to assemble wallet state"
-                                )
-                            ),
+                        self.add_error_toast(format!(
+                            "{}: {err}",
+                            t(
+                                "Không thể gom dữ liệu ví",
+                                "Failed to assemble wallet state"
+                            )
                         ));
                         return false;
                     }
                 };
                 if let Err(err) = storage.save_state(&state, passphrase.expose_secret()) {
-                    self.error = Some(AppError::storage_with_path(
-                        "save_state",
-                        &storage.file_path().display().to_string(),
-                        &format!(
-                            "{}: {err}",
-                            t("Không thể lưu trạng thái", "Failed to save app state")
-                        ),
+                    self.add_error_toast(format!(
+                        "{}: {err}",
+                        t("Không thể lưu trạng thái", "Failed to save app state")
                     ));
                     false
                 } else {
@@ -223,13 +209,9 @@ impl App {
                 }
             }
             Err(err) => {
-                self.error = Some(AppError::storage_with_path(
-                    "init_storage",
-                    &format!("{}", err),
-                    &format!(
-                        "{}: {err}",
-                        t("Không thể khởi tạo storage", "Failed to initialize storage")
-                    ),
+                self.add_error_toast(format!(
+                    "{}: {err}",
+                    t("Không thể khởi tạo storage", "Failed to initialize storage")
                 ));
                 false
             }
@@ -244,7 +226,6 @@ impl App {
         self.wallet_vault.clear();
         self.selected_wallet = 0;
         self.current_page = NavItem::Dashboard;
-        self.error = None;
         self.is_refreshing = false;
         self.is_estimating_fee = false;
         self.is_calculating_max = false;

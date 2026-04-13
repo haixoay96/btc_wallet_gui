@@ -779,15 +779,6 @@ impl WalletsView {
             );
         }
 
-        if let Some(error) = &self.error {
-            scroll_content = scroll_content.push(
-                container(text(error.as_str()).size(13).style(text_primary_color()))
-                    .style(notice_style(NoticeTone::Error))
-                    .padding(10)
-                    .width(Length::Fill),
-            );
-        }
-
         if self.show_create_form {
             let name_input = text_input(t("Tên ví...", "Wallet name..."), &self.create_name)
                 .on_input(WalletsMessage::NameChanged)

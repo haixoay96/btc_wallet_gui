@@ -238,21 +238,24 @@ impl App {
                             )
                             .to_string(),
                         );
-                        self.error = None;
                     }
                     Err(err) => {
-                        self.settings_view.set_error(format!(
+                        let message = format!(
                             "{}: {err}",
                             t("Đổi passphrase thất bại", "Failed to update passphrase")
-                        ));
+                        );
+                        self.settings_view.set_error(message.clone());
+                        self.add_error_toast(message);
                     }
                 }
             }
             Err(err) => {
-                self.settings_view.set_error(format!(
+                let message = format!(
                     "{}: {err}",
                     t("Không thể mở storage", "Could not open storage")
-                ));
+                );
+                self.settings_view.set_error(message.clone());
+                self.add_error_toast(message);
             }
         }
         Task::none()
@@ -303,21 +306,24 @@ impl App {
                         );
                         self.settings_view.set_success(message.clone());
                         self.add_info_toast(message);
-                        self.error = None;
                     }
                     Err(err) => {
-                        self.settings_view.set_error(format!(
+                        let message = format!(
                             "{}: {err}",
                             t("Export backup thất bại", "Backup export failed")
-                        ));
+                        );
+                        self.settings_view.set_error(message.clone());
+                        self.add_error_toast(message);
                     }
                 }
             }
             Err(err) => {
-                self.settings_view.set_error(format!(
+                let message = format!(
                     "{}: {err}",
                     t("Không thể mở storage", "Could not open storage")
-                ));
+                );
+                self.settings_view.set_error(message.clone());
+                self.add_error_toast(message);
             }
         }
 

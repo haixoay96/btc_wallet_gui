@@ -3,7 +3,6 @@ use iced::Task;
 use secrecy::ExposeSecret;
 
 use crate::app::structure::{App, AppMessage, RefreshWalletsResult};
-use crate::core::error::AppError;
 use crate::core::wallet::{Wallet, WalletSecretsRef};
 use crate::ui::components::Toast;
 use crate::ui::i18n::t;
@@ -82,11 +81,11 @@ impl App {
         match result {
             Ok(payload) => {
                 self.wallets = payload.wallets;
-                let save_error: Option<AppError> = if self.save_state() {
-                    None
-                } else {
-                    self.error.clone()
-                };
+                if !self.save_state() {
+                    self.add_error_toast(
+                        t("Không thể lưu trạng thái", "Failed to save state").to_string(),
+                    );
+                }
                 self.update_dashboard();
                 self.dashboard.set_last_synced_label(Some(
                     Local::now().format("%d/%m/%Y %H:%M:%S").to_string(),
@@ -98,38 +97,18 @@ impl App {
                     payload.refreshed_txs,
                     t("giao dịch", "transaction(s)")
                 ));
-                let refresh_error: Option<AppError> = if payload.errors.is_empty() {
-                    None
-                } else {
-                    Some(AppError::api_with_status(
-                        "refresh_errors",
-                        500,
-                        &format!(
-                            "{}: {}",
-                            t("Một số ví làm mới lỗi", "Some wallets failed to refresh"),
-                            payload.errors.join(" | ")
-                        ),
-                    ))
-                };
-                self.error = match (save_error, refresh_error) {
-                    (Some(save_error), Some(refresh_error)) => Some(AppError::unknown(&format!(
-                        "{} | {}",
-                        save_error.user_message(),
-                        refresh_error.user_message()
-                    ))),
-                    (Some(save_error), None) => Some(save_error),
-                    (None, Some(refresh_error)) => Some(refresh_error),
-                    (None, None) => None,
-                };
+                if !payload.errors.is_empty() {
+                    self.add_error_toast(format!(
+                        "{}: {}",
+                        t("Một số ví làm mới lỗi", "Some wallets failed to refresh"),
+                        payload.errors.join(" | ")
+                    ));
+                }
             }
             Err(err) => {
-                self.error = Some(AppError::api_with_status(
-                    "wallet_refresh",
-                    500,
-                    &format!(
-                        "{}: {err}",
-                        t("Làm mới ví thất bại", "Wallet refresh failed")
-                    ),
+                self.add_error_toast(format!(
+                    "{}: {err}",
+                    t("Làm mới ví thất bại", "Wallet refresh failed")
                 ));
             }
         }

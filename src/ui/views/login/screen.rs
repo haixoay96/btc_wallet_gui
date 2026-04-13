@@ -1,5 +1,5 @@
 use iced::{
-    widget::{button, column, container, row, text, text_input, Space},
+    widget::{button, column, container, row, text_input, Space},
     Alignment, Element, Length, Padding,
 };
 
@@ -7,9 +7,9 @@ use crate::ui::components::language_selector::LanguageSelector;
 use crate::ui::components::{calculate_strength, strength_bar};
 use crate::ui::i18n::t;
 use crate::ui::theme::{
-    input_style, muted_button_style, notice_style, primary_button_style, screen_background_style,
+    input_style, muted_button_style, primary_button_style, screen_background_style,
     secondary_button_style, selected_button_style, text_color, text_muted_color,
-    text_primary_color, text_scaled, text_secondary_color, Colors, NoticeTone,
+    text_primary_color, text_scaled, text_secondary_color, Colors,
 };
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
@@ -413,18 +413,6 @@ impl LoginView {
             LoginMode::ImportBackup => t("Khôi phục từ backup", "Restore from backup"),
         };
 
-        let error_text: Element<'_, LoginMessage> = if let Some(error) = &self.error {
-            container(
-                container(text(error.as_str()).style(text_primary_color()).size(14))
-                    .style(notice_style(NoticeTone::Error))
-                    .padding(12),
-            )
-            .width(input_width)
-            .into()
-        } else {
-            Space::with_height(0).into()
-        };
-
         let input_section = column![
             mode_switcher_content,
             Space::with_height(20),
@@ -436,7 +424,6 @@ impl LoginView {
             Space::with_height(12),
             backup_path_input,
             Space::with_height(16),
-            error_text,
             Space::with_height(20),
             button(
                 container(text_scaled(action_label, 16))

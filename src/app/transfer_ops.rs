@@ -1,4 +1,3 @@
-use crate::core::error::AppError;
 use iced::Task;
 
 use crate::core::wallet::{validate_address_for_network, TxBuildOptions};
@@ -29,22 +28,23 @@ impl App {
                 let editing_id = self.send_view.editing_contact_id.clone();
 
                 if name.trim().is_empty() || address.trim().is_empty() {
-                    self.error = Some(AppError::validation(
-                        "contact",
+                    self.add_error_toast(
                         t(
                             "Tên và địa chỉ không được để trống",
                             "Name and address are required",
-                        ),
-                    ));
+                        )
+                        .to_string(),
+                    );
                     return Task::none();
                 }
 
                 // Validate BTC address before saving
                 if let Some(wallet) = self.wallets.get(self.selected_wallet) {
                     if let Err(e) = validate_address_for_network(&address, wallet.network) {
-                        self.error = Some(AppError::validation(
-                            "address",
-                            &format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e),
+                        self.add_error_toast(format!(
+                            "{}: {}",
+                            t("Địa chỉ không hợp lệ", "Invalid address"),
+                            e
                         ));
                         return Task::none();
                     }
@@ -54,9 +54,10 @@ impl App {
                         &address,
                         crate::core::wallet::WalletNetwork::Mainnet,
                     ) {
-                        self.error = Some(AppError::validation(
-                            "address",
-                            &format!("{}: {}", t("Địa chỉ không hợp lệ", "Invalid address"), e),
+                        self.add_error_toast(format!(
+                            "{}: {}",
+                            t("Địa chỉ không hợp lệ", "Invalid address"),
+                            e
                         ));
                         return Task::none();
                     }
@@ -190,13 +191,12 @@ impl App {
         let Some(wallet) = self.wallets.get(self.selected_wallet).cloned() else {
             let message = t("Chưa chọn ví", "No wallet selected").to_string();
             self.send_view.set_error(message.clone());
-            self.error = Some(AppError::unknown(&message));
+            self.add_error_toast(message);
             return Task::none();
         };
 
         self.is_estimating_fee = true;
         self.add_info_toast(t("Đang ước tính phí...", "Estimating fee...").to_string());
-        self.error = None;
 
         Task::perform(
             async move {
@@ -223,13 +223,13 @@ impl App {
         let Some(wallet) = self.wallets.get(self.selected_wallet).cloned() else {
             let message = t("Chưa chọn ví", "No wallet selected").to_string();
             self.send_view.set_error(message.clone());
-            self.error = Some(AppError::unknown(&message));
+            self.add_error_toast(message);
             return Task::none();
         };
         if wallet.balance() <= 0 {
             let message = t("Số dư bằng 0", "Balance is zero").to_string();
             self.send_view.set_error(message.clone());
-            self.error = Some(AppError::unknown(&message));
+            self.add_error_toast(message);
             return Task::none();
         }
 
@@ -237,7 +237,6 @@ impl App {
         self.add_info_toast(
             t("Đang tính số lượng tối đa...", "Calculating max amount...").to_string(),
         );
-        self.error = None;
 
         Task::perform(
             async move {
@@ -261,13 +260,13 @@ impl App {
         let Some(wallet) = self.wallets.get(self.selected_wallet).cloned() else {
             let message = t("Chưa chọn ví", "No wallet selected").to_string();
             self.send_view.set_error(message.clone());
-            self.error = Some(AppError::unknown(&message));
+            self.add_error_toast(message);
             return Task::none();
         };
         let Some(secrets) = self.wallet_secret_by_index(self.selected_wallet) else {
             let message = t("Thiếu secret của ví", "Wallet secret is missing").to_string();
             self.send_view.set_error(message.clone());
-            self.error = Some(AppError::unknown(&message));
+            self.add_error_toast(message);
             return Task::none();
         };
 
@@ -293,13 +292,16 @@ impl App {
 
         if let Err(err) = validate_address_for_network(&request.to_address, wallet.network) {
             self.send_view.set_error(err.clone());
-            self.error = Some(AppError::validation("address", &err));
+            self.add_error_toast(format!(
+                "{}: {}",
+                t("Địa chỉ không hợp lệ", "Invalid address"),
+                err
+            ));
             return Task::none();
         }
 
         self.is_sending = true;
         self.add_info_toast(t("Đang gửi giao dịch...", "Sending transaction...").to_string());
-        self.error = None;
 
         let wallet_id = wallet.account_xpub.clone();
         Task::perform(
@@ -348,17 +350,12 @@ impl App {
                     "{}: {fee} sat",
                     t("Phí ước tính", "Estimated fee")
                 ));
-                self.error = None;
             }
             Err(err) => {
                 self.send_view.set_error(err.clone());
-                self.error = Some(AppError::api_with_status(
-                    "fee_estimation",
-                    500,
-                    &format!(
-                        "{}: {err}",
-                        t("Ước tính phí thất bại", "Fee estimation failed")
-                    ),
+                self.add_error_toast(format!(
+                    "{}: {err}",
+                    t("Ước tính phí thất bại", "Fee estimation failed")
                 ));
             }
         }
@@ -383,20 +380,15 @@ impl App {
                     fee,
                     t("phí", "fee")
                 ));
-                self.error = None;
             }
             Err(err) => {
                 self.send_view.set_error(err.clone());
-                self.error = Some(AppError::api_with_status(
-                    "max_amount",
-                    500,
-                    &format!(
-                        "{}: {err}",
-                        t(
-                            "Không thể tính số lượng tối đa",
-                            "Cannot calculate max amount"
-                        )
-                    ),
+                self.add_error_toast(format!(
+                    "{}: {err}",
+                    t(
+                        "Không thể tính số lượng tối đa",
+                        "Cannot calculate max amount"
+                    )
                 ));
             }
         }
@@ -426,7 +418,7 @@ impl App {
                     return Task::none();
                 }
 
-                let save_succeeded = self.save_state();
+                let _save_succeeded = self.save_state();
                 self.update_dashboard();
 
                 let short_txid = short_txid(&payload.txid);
@@ -447,19 +439,12 @@ impl App {
                 self.send_view.set_success(send_message.clone());
                 self.send_view.clear_form();
                 self.add_info_toast(send_message);
-                if save_succeeded {
-                    self.error = None;
-                }
             }
             Err(err) => {
                 self.send_view.set_error(err.clone());
-                self.error = Some(AppError::api_with_status(
-                    "send_transaction",
-                    500,
-                    &format!(
-                        "{}: {err}",
-                        t("Gửi giao dịch thất bại", "Send transaction failed")
-                    ),
+                self.add_error_toast(format!(
+                    "{}: {err}",
+                    t("Gửi giao dịch thất bại", "Send transaction failed")
                 ));
             }
         }

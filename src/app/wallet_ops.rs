@@ -1,4 +1,3 @@
-use crate::core::error::AppError;
 use anyhow::anyhow;
 use iced::{clipboard, Task};
 use secrecy::{ExposeSecret, SecretString};
@@ -197,7 +196,7 @@ impl App {
             Ok(bundle) => match self.insert_wallet_runtime(bundle.wallet, bundle.secrets) {
                 Ok(selected_wallet) => {
                     self.selected_wallet = selected_wallet;
-                    let save_succeeded = self.save_state();
+                    let _save_succeeded = self.save_state();
                     self.update_dashboard();
                     self.wallets_view = WalletsView::new();
                     self.wallets_view.set_info(t(
@@ -209,19 +208,16 @@ impl App {
                         t("Đã tạo ví thành công", "Wallet created successfully"),
                         t("Cần backup mnemonic.", "Mnemonic backup is required.")
                     ));
-                    if save_succeeded {
-                        self.error = None;
-                    }
                 }
                 Err(message) => {
                     self.wallets_view.set_error(message.clone());
-                    self.error = Some(AppError::crypto("wallet_operation", &message));
+                    self.add_error_toast(message);
                 }
             },
             Err(err) => {
                 let message = format!("{}: {err}", t("Tạo ví thất bại", "Failed to create wallet"));
                 self.wallets_view.set_error(message.clone());
-                self.error = Some(AppError::crypto("wallet_operation", &message));
+                self.add_error_toast(message);
             }
         }
         Task::none()
@@ -237,7 +233,7 @@ impl App {
             Ok(bundle) => match self.insert_wallet_runtime(bundle.wallet, bundle.secrets) {
                 Ok(selected_wallet) => {
                     self.selected_wallet = selected_wallet;
-                    let save_succeeded = self.save_state();
+                    let _save_succeeded = self.save_state();
                     self.update_dashboard();
                     self.wallets_view = WalletsView::new();
                     self.wallets_view.set_info(t(
@@ -249,13 +245,10 @@ impl App {
                         t("Đã import ví", "Imported wallet"),
                         t("từ mnemonic", "from mnemonic")
                     ));
-                    if save_succeeded {
-                        self.error = None;
-                    }
                 }
                 Err(message) => {
                     self.wallets_view.set_error(message.clone());
-                    self.error = Some(AppError::crypto("wallet_operation", &message));
+                    self.add_error_toast(message);
                 }
             },
             Err(err) => {
@@ -264,7 +257,7 @@ impl App {
                     t("Import mnemonic thất bại", "Mnemonic import failed")
                 );
                 self.wallets_view.set_error(message.clone());
-                self.error = Some(AppError::crypto("wallet_operation", &message));
+                self.add_error_toast(message);
             }
         }
         Task::none()
@@ -281,7 +274,7 @@ impl App {
             Ok(bundle) => match self.insert_wallet_runtime(bundle.wallet, bundle.secrets) {
                 Ok(selected_wallet) => {
                     self.selected_wallet = selected_wallet;
-                    let save_succeeded = self.save_state();
+                    let _save_succeeded = self.save_state();
                     self.update_dashboard();
                     self.wallets_view = WalletsView::new();
                     self.wallets_view.set_info(t(
@@ -293,13 +286,10 @@ impl App {
                         t("Đã import ví", "Imported wallet"),
                         t("từ SLIP-0039", "from SLIP-0039")
                     ));
-                    if save_succeeded {
-                        self.error = None;
-                    }
                 }
                 Err(message) => {
                     self.wallets_view.set_error(message.clone());
-                    self.error = Some(AppError::crypto("wallet_operation", &message));
+                    self.add_error_toast(message);
                 }
             },
             Err(err) => {
@@ -308,7 +298,7 @@ impl App {
                     t("Import SLIP-0039 thất bại", "SLIP-0039 import failed")
                 );
                 self.wallets_view.set_error(message.clone());
-                self.error = Some(AppError::crypto("wallet_operation", &message));
+                self.add_error_toast(message);
             }
         }
         Task::none()
@@ -372,7 +362,7 @@ impl App {
                         match self.insert_wallet_runtime(bundle.wallet, bundle.secrets) {
                             Ok(selected_wallet) => {
                                 self.selected_wallet = selected_wallet;
-                                let save_succeeded = self.save_state();
+                                let _save_succeeded = self.save_state();
                                 self.update_dashboard();
                                 self.wallets_view = WalletsView::new();
                                 self.wallets_view.set_info(t(
@@ -384,13 +374,10 @@ impl App {
                                     t("Đã import ví", "Imported wallet"),
                                     source_label
                                 ));
-                                if save_succeeded {
-                                    self.error = None;
-                                }
                             }
                             Err(message) => {
                                 self.wallets_view.set_error(message.clone());
-                                self.error = Some(AppError::crypto("wallet_operation", &message));
+                                self.add_error_toast(message);
                             }
                         }
                     }
@@ -403,7 +390,7 @@ impl App {
                             )
                         );
                         self.wallets_view.set_error(message.clone());
-                        self.error = Some(AppError::crypto("wallet_operation", &message));
+                        self.add_error_toast(message);
                     }
                 }
             }
@@ -416,7 +403,7 @@ impl App {
                     )
                 );
                 self.wallets_view.set_error(message.clone());
-                self.error = Some(AppError::crypto("wallet_operation", &message));
+                self.add_error_toast(message);
             }
         }
 
@@ -432,7 +419,6 @@ impl App {
                 t("Đã chọn ví", "Selected wallet"),
                 self.wallets[index].name
             ));
-            self.error = None;
         }
         Task::none()
     }
@@ -453,57 +439,41 @@ impl App {
                 self.selected_wallet = self.wallets.len() - 1;
             }
 
-            let save_succeeded = self.save_state();
+            let _save_succeeded = self.save_state();
             self.update_dashboard();
             self.add_info_toast(format!("{} '{name}'", t("Đã xóa ví", "Deleted wallet")));
-            if save_succeeded {
-                self.error = None;
-            }
         }
         Task::none()
     }
 
     pub fn handle_derive_addresses(&mut self, count: u32) -> Task<AppMessage> {
         let Some(secrets) = self.wallet_secret_by_index(self.selected_wallet) else {
-            self.error = Some(AppError::crypto(
-                "wallet_secret",
-                t("Thiếu secret của ví", "Wallet secret is missing"),
-            ));
+            self.add_error_toast(t("Thiếu secret của ví", "Wallet secret is missing").to_string());
             return Task::none();
         };
 
         if let Some(wallet) = self.wallets.get_mut(self.selected_wallet) {
             match wallet.derive_next_addresses(secrets.as_ref(), count) {
                 Ok(addresses) => {
-                    let save_succeeded = self.save_state();
+                    let _save_succeeded = self.save_state();
                     self.add_success_toast(format!(
                         "{} {}",
                         t("Đã tạo", "Derived"),
                         address_count_text(addresses.len())
                     ));
-                    if save_succeeded {
-                        self.error = None;
-                    }
                 }
                 Err(err) => {
-                    self.error = Some(AppError::api_with_status(
-                        "address_derivation",
-                        500,
-                        &format!(
-                            "{}: {err}",
-                            t(
-                                "Không thể tạo địa chỉ mới",
-                                "Could not derive new addresses"
-                            )
-                        ),
+                    self.add_error_toast(format!(
+                        "{}: {err}",
+                        t(
+                            "Không thể tạo địa chỉ mới",
+                            "Could not derive new addresses"
+                        )
                     ));
                 }
             }
         } else {
-            self.error = Some(AppError::validation(
-                "wallet",
-                t("Chưa chọn ví", "No wallet selected"),
-            ));
+            self.add_error_toast(t("Chưa chọn ví", "No wallet selected").to_string());
         }
         Task::none()
     }
@@ -556,7 +526,6 @@ impl App {
             "{} '{wallet_name}'",
             t("Đã mở khóa mnemonic cho ví", "Mnemonic unlocked for wallet")
         ));
-        self.error = None;
         self.schedule_revealed_mnemonic_timeout()
     }
 
@@ -634,7 +603,7 @@ impl App {
                     wallet.mnemonic_backed_up = true;
                 }
 
-                let save_succeeded = self.save_state();
+                self.save_state();
                 self.wallets_view.mark_backup_verified(wallet_index);
                 self.add_success_toast(format!(
                     "{} '{wallet_name}'",
@@ -643,9 +612,6 @@ impl App {
                         "Wallet passed mnemonic backup test",
                     )
                 ));
-                if save_succeeded {
-                    self.error = None;
-                }
             }
             Err(wrong_positions) => {
                 self.wallets_view.set_error(format!(
@@ -710,16 +676,17 @@ impl App {
                 );
                 self.wallets_view.set_info(message.clone());
                 self.add_info_toast(message);
-                self.error = None;
             }
             Err(err) => {
-                self.wallets_view.set_error(format!(
+                let message = format!(
                     "{}: {err}",
                     t(
                         "Export mnemonic PDF thất bại",
                         "Failed to export mnemonic PDF"
                     )
-                ));
+                );
+                self.wallets_view.set_error(message.clone());
+                self.add_error_toast(message);
             }
         }
         Task::none()
@@ -787,16 +754,17 @@ impl App {
                 );
                 self.wallets_view.set_info(message.clone());
                 self.add_info_toast(message);
-                self.error = None;
             }
             Err(err) => {
-                self.wallets_view.set_error(format!(
+                let message = format!(
                     "{}: {err}",
                     t(
                         "Export mnemonic mã hóa thất bại",
                         "Failed to export encrypted mnemonic",
                     )
-                ));
+                );
+                self.wallets_view.set_error(message.clone());
+                self.add_error_toast(message);
             }
         }
 
@@ -879,13 +847,14 @@ impl App {
                 );
                 self.wallets_view.set_info(message.clone());
                 self.add_info_toast(message);
-                self.error = None;
             }
             Err(err) => {
-                self.wallets_view.set_error(format!(
+                let message = format!(
                     "{}: {err}",
                     t("Export SLIP-0039 thất bại", "Failed to export SLIP-0039")
-                ));
+                );
+                self.wallets_view.set_error(message.clone());
+                self.add_error_toast(message);
             }
         }
         Task::none()

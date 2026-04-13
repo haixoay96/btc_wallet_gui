@@ -1,6 +1,5 @@
 pub mod backup_reminder;
 pub mod contact_picker;
-pub mod error_card;
 pub mod help_content;
 pub mod keyboard_help;
 pub mod language_selector;
@@ -17,7 +16,6 @@ pub mod unit_selector;
 pub mod wallet_picker;
 
 // Re-export all component types
-pub use error_card::error_card;
 pub use keyboard_help::shortcuts_help_popup;
 pub use modal::modal;
 pub use skeleton::{skeleton_transactions, skeleton_wallet_cards};

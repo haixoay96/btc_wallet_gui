@@ -873,26 +873,6 @@ impl SendView {
             Space::with_height(0).into()
         };
 
-        let error_text: Element<'_, SendMessage> = if let Some(error) = &self.error {
-            container(text_scaled(error.as_str(), 14).style(text_primary_color()))
-                .style(notice_style(NoticeTone::Error))
-                .padding(12)
-                .width(Length::Fill)
-                .into()
-        } else {
-            Space::with_height(0).into()
-        };
-
-        let success_text: Element<'_, SendMessage> = if let Some(success) = &self.success {
-            container(text_scaled(success.as_str(), 14).style(text_primary_color()))
-                .style(notice_style(NoticeTone::Success))
-                .padding(12)
-                .width(Length::Fill)
-                .into()
-        } else {
-            Space::with_height(0).into()
-        };
-
         let mut content = column![
             wallet_selector,
             Space::with_height(spacing / 2),
@@ -916,9 +896,6 @@ impl SendView {
             Space::with_height(spacing),
             advanced_toggle,
             advanced_section,
-            Space::with_height(spacing),
-            error_text,
-            success_text,
             Space::with_height(spacing),
             // Help topics section
             text_scaled(t("Trợ giúp", "Help"), 14).style(text_primary_color()),
