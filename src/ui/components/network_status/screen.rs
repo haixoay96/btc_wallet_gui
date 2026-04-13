@@ -2,7 +2,7 @@ use crate::ui::components::network_status::structure::{DashboardNetworkMessage, 
 use crate::ui::i18n::t;
 use crate::ui::theme::{text_color, text_secondary_color, Colors};
 use iced::widget::{button, container, row, text, Space};
-use iced::{widget::tooltip, Alignment, Element};
+use iced::{widget::tooltip, Alignment, Element, Length};
 use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
 
 impl NetworkStatus {
@@ -50,7 +50,8 @@ pub fn network_status_indicator(
 
     if is_clickable {
         let btn = button(content)
-            .padding([6, 10])
+            .padding([8, 12])
+            .height(Length::Fixed(36.0))
             .style(crate::ui::theme::secondary_button_style())
             .on_press(DashboardNetworkMessage::CheckConnection);
 
@@ -63,8 +64,12 @@ pub fn network_status_indicator(
             .gap(4)
             .style(crate::ui::theme::card_style()),
         )
+        .height(Length::Fixed(36.0))
         .into()
     } else {
-        container(content).into()
+        container(content)
+            .height(Length::Fixed(36.0))
+            .align_y(iced::Alignment::Center)
+            .into()
     }
 }

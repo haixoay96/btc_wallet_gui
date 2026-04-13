@@ -186,7 +186,8 @@ impl DashboardView {
         };
 
         let mut refresh_button = button(text_scaled(refresh_label, 16))
-            .padding(12)
+            .padding([8, 16])
+            .height(Length::Fixed(36.0))
             .style(primary_button_style());
         if !is_refreshing {
             refresh_button = refresh_button.on_press(DashboardMessage::Refresh);
