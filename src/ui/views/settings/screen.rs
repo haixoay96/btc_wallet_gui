@@ -365,7 +365,12 @@ impl SettingsView {
         let main_padding = if compact_mode { 16 } else { 32 };
         let main_spacing = if compact_mode { 12 } else { 20 };
 
-        let mut content = column![title]
+        // Header (Pinned at top)
+        let header = container(title)
+            .padding(s(main_padding))
+            .width(Length::Fill);
+
+        let mut content = column![]
             .spacing((main_spacing as f64 * scale) as f32)
             .padding(s(main_padding));
 
@@ -854,10 +859,12 @@ impl SettingsView {
             );
         }
 
-        let base: Element<'_, SettingsMessage> = scrollable(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into();
+        let base: Element<'_, SettingsMessage> =
+            column![header, scrollable(content).width(Length::Fill),]
+                .spacing(0)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into();
 
         if self.show_clear_data_confirm {
             let clear_content = column![
