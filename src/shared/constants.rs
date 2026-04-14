@@ -1,5 +1,6 @@
-/// Maximum number of unused addresses to scan before considering a wallet fully synced
-pub const DEFAULT_GAP_LIMIT: u32 = 5;
+/// Maximum number of unused addresses to scan before considering a wallet fully synced.
+/// BIP-44/84 standard gap limit is 20.
+pub const DEFAULT_GAP_LIMIT: u32 = 20;
 
 /// Minimum value (in satoshis) for a valid transaction output
 pub const DUST_LIMIT_SAT: u64 = 546;

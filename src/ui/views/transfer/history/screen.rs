@@ -813,7 +813,7 @@ impl HistoryView {
                 .style(amount_style)
                 .style(text_primary_color()),
             Space::new().height(16),
-            info_row(t("TxID", "TxID"), tx.txid.clone()),
+            info_row(t("TxID", "TxID"), crate::shared::text::short_txid(&tx.txid)),
             Space::new().height(8),
             info_row(
                 t("Thời gian", "Time"),
