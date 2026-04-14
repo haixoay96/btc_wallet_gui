@@ -9,7 +9,7 @@ iced_fonts = { version = "0.3", features = ["bootstrap", "advanced_text"] }
 anyhow = "1.0"
 argon2 = "0.5"
 base64 = "0.22"
-bip39 = { version = "2.1", features = ["rand", "serde"] }
+bip39 = { version = "2.2", features = ["rand", "serde"] }
 bitcoin = { version = "0.32", features = ["serde"] }
 chacha20poly1305 = "0.10"
 chrono = "0.4"
@@ -17,8 +17,8 @@ dark-light = "2.0"
 directories = "6.0"
 getrandom = "0.3"
 qrcode = "0.14"
-printpdf = "0.7"
-reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+printpdf = "0.8"
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "json", "rustls"] }
 rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }
 secrecy = "0.10"
 serde = { version = "1.0", features = ["derive"] }

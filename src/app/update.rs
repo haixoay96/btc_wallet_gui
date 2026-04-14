@@ -297,78 +297,211 @@ impl App {
                                             .unwrap_or(None)
                                             .and_then(
                                                 |path| {
-                                                    use printpdf::{BuiltinFont, Mm, PdfDocument};
-                                                    let (doc, page, layer) = PdfDocument::new(
-                                                        "Transaction History",
-                                                        Mm(210.0),
-                                                        Mm(297.0),
-                                                        "History Layer",
-                                                    );
-                                                    let current_layer =
-                                                        doc.get_page(page).get_layer(layer);
-                                                    let font_regular = doc
-                                                        .add_builtin_font(BuiltinFont::Helvetica)
-                                                        .ok()?;
-                                                    let font_bold = doc
-                                                        .add_builtin_font(
-                                                            BuiltinFont::HelveticaBold,
-                                                        )
-                                                        .ok()?;
-                                                    current_layer.use_text(
-                                                        format!(
+                                                    use printpdf::{
+                                                        BuiltinFont, Color, Mm, Op, PdfDocument,
+                                                        PdfPage, PdfSaveOptions, Point, Pt, Rgb,
+                                                        TextItem,
+                                                    };
+
+                                                    fn mm_to_pt(mm: f32) -> Pt {
+                                                        Pt(mm / 25.4 * 72.0)
+                                                    }
+
+                                                    fn text_at(
+                                                        x_mm: f32,
+                                                        y_mm: f32,
+                                                        size: f32,
+                                                        font: BuiltinFont,
+                                                        text: &str,
+                                                    ) -> Vec<Op>
+                                                    {
+                                                        vec![
+                                                            Op::SaveGraphicsState,
+                                                            Op::StartTextSection,
+                                                            Op::SetTextCursor {
+                                                                pos: Point {
+                                                                    x: mm_to_pt(x_mm),
+                                                                    y: mm_to_pt(y_mm),
+                                                                },
+                                                            },
+                                                            Op::SetFontSizeBuiltinFont {
+                                                                size: Pt(size),
+                                                                font,
+                                                            },
+                                                            Op::WriteTextBuiltinFont {
+                                                                items: vec![TextItem::Text(
+                                                                    text.to_string(),
+                                                                )],
+                                                                font,
+                                                            },
+                                                            Op::EndTextSection,
+                                                            Op::RestoreGraphicsState,
+                                                        ]
+                                                    }
+
+                                                    // Column positions (mm from left)
+                                                    const COL_DATE: f32 = 10.0;
+                                                    const COL_TIME: f32 = 35.0;
+                                                    const COL_TYPE: f32 = 58.0;
+                                                    const COL_AMOUNT: f32 = 75.0;
+                                                    const COL_CONF: f32 = 115.0;
+                                                    const COL_TXID: f32 = 135.0;
+
+                                                    let mut doc =
+                                                        PdfDocument::new("Transaction History");
+                                                    let mut ops: Vec<Op> = Vec::new();
+
+                                                    ops.push(Op::SetFillColor {
+                                                        col: Color::Rgb(Rgb {
+                                                            r: 0.0,
+                                                            g: 0.0,
+                                                            b: 0.0,
+                                                            icc_profile: None,
+                                                        }),
+                                                    });
+
+                                                    // Title
+                                                    ops.extend(text_at(
+                                                        COL_DATE,
+                                                        285.0,
+                                                        18.0,
+                                                        BuiltinFont::HelveticaBold,
+                                                        &format!(
                                                             "Bitcoin Wallet - {}",
                                                             wallet_clone.name
                                                         ),
-                                                        18.0,
-                                                        Mm(15.0),
-                                                        Mm(280.0),
-                                                        &font_bold,
-                                                    );
-                                                    let mut y_pos = 260.0;
+                                                    ));
+
+                                                    // Header row
+                                                    let mut y_pos = 270.0;
+                                                    ops.extend(text_at(
+                                                        COL_DATE, y_pos, 9.0,
+                                                        BuiltinFont::HelveticaBold, "Date",
+                                                    ));
+                                                    ops.extend(text_at(
+                                                        COL_TIME, y_pos, 9.0,
+                                                        BuiltinFont::HelveticaBold, "Time",
+                                                    ));
+                                                    ops.extend(text_at(
+                                                        COL_TYPE, y_pos, 9.0,
+                                                        BuiltinFont::HelveticaBold, "Type",
+                                                    ));
+                                                    ops.extend(text_at(
+                                                        COL_AMOUNT, y_pos, 9.0,
+                                                        BuiltinFont::HelveticaBold, "Amount BTC",
+                                                    ));
+                                                    ops.extend(text_at(
+                                                        COL_CONF, y_pos, 9.0,
+                                                        BuiltinFont::HelveticaBold, "Conf",
+                                                    ));
+                                                    ops.extend(text_at(
+                                                        COL_TXID, y_pos, 9.0,
+                                                        BuiltinFont::HelveticaBold, "TxID",
+                                                    ));
+
+                                                    // Separator line
+                                                    y_pos -= 5.0;
+                                                    ops.extend(text_at(
+                                                        COL_DATE, y_pos, 7.0,
+                                                        BuiltinFont::Helvetica,
+                                                        "--- --- ---- ---------- ---- ------------------------",
+                                                    ));
+
+                                                    // Data rows
+                                                    y_pos -= 7.0;
                                                     for tx in &wallet_clone.history {
                                                         if y_pos < 15.0 {
                                                             break;
                                                         }
-                                                        let date_str =
+
+                                                        let (date_str, time_str) =
                                                             if let Some(ts) = tx.block_time {
-                                                                let dt =
-                                                                chrono::DateTime::from_timestamp(
+                                                                let dt = chrono::DateTime::from_timestamp(
                                                                     ts as i64, 0,
                                                                 )
                                                                 .unwrap_or_default();
-                                                                dt.format("%d/%m/%Y").to_string()
+                                                                (
+                                                                    dt.format("%d/%m/%Y").to_string(),
+                                                                    dt.format("%H:%M").to_string(),
+                                                                )
                                                             } else {
-                                                                "Pending".to_string()
+                                                                ("Pending".to_string(), "--:--".to_string())
                                                             };
+
+                                                        let type_str = match tx.direction {
+                                                            crate::core::wallet::TxDirection::Incoming => "IN",
+                                                            crate::core::wallet::TxDirection::Outgoing => "OUT",
+                                                            crate::core::wallet::TxDirection::SelfTransfer => "SELF",
+                                                        };
+
                                                         let amount_btc =
                                                             tx.amount_sat as f64 / 100_000_000.0;
-                                                        current_layer.use_text(
-                                                            date_str,
-                                                            8.0,
-                                                            Mm(15.0),
-                                                            Mm(y_pos),
-                                                            &font_regular,
-                                                        );
-                                                        current_layer.use_text(
-                                                            format!("{:.8}", amount_btc),
-                                                            8.0,
-                                                            Mm(65.0),
-                                                            Mm(y_pos),
-                                                            &font_regular,
-                                                        );
-                                                        current_layer.use_text(
-                                                            &tx.txid[..16.min(tx.txid.len())],
-                                                            8.0,
-                                                            Mm(115.0),
-                                                            Mm(y_pos),
-                                                            &font_regular,
-                                                        );
+
+                                                        let txid_short = if tx.txid.len() > 12 {
+                                                            format!("{}..{}", &tx.txid[..6], &tx.txid[tx.txid.len() - 4..])
+                                                        } else {
+                                                            tx.txid.clone()
+                                                        };
+
+                                                        ops.extend(text_at(
+                                                            COL_DATE, y_pos, 7.5,
+                                                            BuiltinFont::Helvetica, &date_str,
+                                                        ));
+                                                        ops.extend(text_at(
+                                                            COL_TIME, y_pos, 7.5,
+                                                            BuiltinFont::Helvetica, &time_str,
+                                                        ));
+                                                        ops.extend(text_at(
+                                                            COL_TYPE, y_pos, 7.5,
+                                                            BuiltinFont::Helvetica, type_str,
+                                                        ));
+                                                        ops.extend(text_at(
+                                                            COL_AMOUNT, y_pos, 7.5,
+                                                            BuiltinFont::Helvetica,
+                                                            &format!("{:.8}", amount_btc),
+                                                        ));
+                                                        ops.extend(text_at(
+                                                            COL_CONF, y_pos, 7.5,
+                                                            BuiltinFont::Helvetica,
+                                                            &tx.confirmations.to_string(),
+                                                        ));
+                                                        ops.extend(text_at(
+                                                            COL_TXID, y_pos, 7.5,
+                                                            BuiltinFont::Helvetica, &txid_short,
+                                                        ));
+
                                                         y_pos -= 10.0;
                                                     }
+
+                                                    // Footer: total count
+                                                    y_pos -= 5.0;
+                                                    if y_pos > 20.0 {
+                                                        ops.extend(text_at(
+                                                            COL_DATE,
+                                                            y_pos,
+                                                            7.0,
+                                                            BuiltinFont::Helvetica,
+                                                            &format!(
+                                                                "Total: {} transactions",
+                                                                wallet_clone.history.len()
+                                                            ),
+                                                        ));
+                                                    }
+
+                                                    let page =
+                                                        PdfPage::new(Mm(210.0), Mm(297.0), ops);
+                                                    doc.pages.push(page);
+
+                                                    let mut warnings = Vec::new();
                                                     if let Ok(file) = std::fs::File::create(&path) {
                                                         let mut writer =
                                                             std::io::BufWriter::new(file);
-                                                        doc.save(&mut writer).ok()
+                                                        doc.save_writer(
+                                                            &mut writer,
+                                                            &PdfSaveOptions::default(),
+                                                            &mut warnings,
+                                                        );
+                                                        Some(())
                                                     } else {
                                                         None
                                                     }

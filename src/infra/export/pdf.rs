@@ -4,11 +4,43 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use printpdf::{BuiltinFont, Mm, PdfDocument};
+use printpdf::{
+    BuiltinFont, Color, Mm, Op, PdfDocument, PdfPage, PdfSaveOptions, Point, Pt, Rgb, TextItem,
+};
 
 use super::structure::Slip39PdfExport;
 
-// ─── PDF Export ──────────────────────────────────────────────────────────
+/// Helper: mm to points
+fn mm_to_pt(mm: f32) -> Pt {
+    Pt(mm / 25.4 * 72.0)
+}
+
+/// Helper: create text ops with automatic position reset.
+/// Each text block is wrapped in BT/ET (text object) which resets text position,
+/// and q/Q (graphics state) to ensure clean state. Without BT/ET, text operators
+/// don't work properly in PDF.
+fn text_at(x_mm: f32, y_mm: f32, size: f32, font: BuiltinFont, text: &str) -> Vec<Op> {
+    vec![
+        Op::SaveGraphicsState,
+        Op::StartTextSection,
+        Op::SetTextCursor {
+            pos: Point {
+                x: mm_to_pt(x_mm),
+                y: mm_to_pt(y_mm),
+            },
+        },
+        Op::SetFontSizeBuiltinFont {
+            size: Pt(size),
+            font,
+        },
+        Op::WriteTextBuiltinFont {
+            items: vec![TextItem::Text(text.to_string())],
+            font,
+        },
+        Op::EndTextSection,
+        Op::RestoreGraphicsState,
+    ]
+}
 
 pub fn export_mnemonic_to_pdf(
     path: &Path,
@@ -18,70 +50,73 @@ pub fn export_mnemonic_to_pdf(
 ) -> Result<(), String> {
     use crate::ui::i18n::t;
 
-    let (doc, page, layer) =
-        PdfDocument::new("Mnemonic Backup", Mm(210.0), Mm(297.0), "Mnemonic Layer");
-    let current_layer = doc.get_page(page).get_layer(layer);
+    let mut doc = PdfDocument::new("Mnemonic Backup");
+    let mut ops: Vec<Op> = Vec::new();
 
-    let font_regular = doc
-        .add_builtin_font(BuiltinFont::Helvetica)
-        .map_err(|err| {
-            format!(
-                "{}: {err}",
-                t("Không tải được font PDF", "Could not load PDF font")
-            )
-        })?;
-    let font_bold = doc
-        .add_builtin_font(BuiltinFont::HelveticaBold)
-        .map_err(|err| {
-            format!(
-                "{}: {err}",
-                t("Không tải được font PDF", "Could not load PDF font")
-            )
-        })?;
+    // Set fill color to black for text visibility
+    ops.push(Op::SetFillColor {
+        col: Color::Rgb(Rgb {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            icc_profile: None,
+        }),
+    });
 
-    current_layer.use_text(
-        "Bitcoin Wallet - Mnemonic Backup",
+    // Title
+    ops.extend(text_at(
         18.0,
-        Mm(18.0),
-        Mm(280.0),
-        &font_bold,
-    );
-    current_layer.use_text(
-        format!("Wallet: {wallet_name}"),
-        12.0,
-        Mm(18.0),
-        Mm(268.0),
-        &font_regular,
-    );
-    current_layer.use_text(
-        format!("Network: {network}"),
-        12.0,
-        Mm(18.0),
-        Mm(260.0),
-        &font_regular,
-    );
-    current_layer.use_text(
-        "Keep this file offline and private. Anyone with these words can spend your funds.",
-        10.0,
-        Mm(18.0),
-        Mm(250.0),
-        &font_regular,
-    );
+        280.0,
+        18.0,
+        BuiltinFont::HelveticaBold,
+        "Bitcoin Wallet - Mnemonic Backup",
+    ));
 
+    // Wallet name
+    ops.extend(text_at(
+        18.0,
+        268.0,
+        12.0,
+        BuiltinFont::Helvetica,
+        &format!("Wallet: {wallet_name}"),
+    ));
+
+    // Network
+    ops.extend(text_at(
+        18.0,
+        260.0,
+        12.0,
+        BuiltinFont::Helvetica,
+        &format!("Network: {network}"),
+    ));
+
+    // Warning
+    ops.extend(text_at(
+        18.0,
+        250.0,
+        10.0,
+        BuiltinFont::Helvetica,
+        "Keep this file offline and private. Anyone with these words can spend your funds.",
+    ));
+
+    // Mnemonic words - two columns
     let words: Vec<&str> = mnemonic.split_whitespace().collect();
     for (idx, word) in words.iter().enumerate() {
         let row = idx / 2;
         let col = idx % 2;
         let x = if col == 0 { 18.0 } else { 110.0 };
         let y = 236.0 - (row as f32 * 10.0);
-        current_layer.use_text(
-            format!("{:02}. {}", idx + 1, word),
+        ops.extend(text_at(
+            x,
+            y,
             12.0,
-            Mm(x),
-            Mm(y),
-            &font_regular,
-        );
+            BuiltinFont::Helvetica,
+            &format!("{:02}. {}", idx + 1, word),
+        ));
     }
+
+    let page = PdfPage::new(Mm(210.0), Mm(297.0), ops);
+    doc.pages.push(page);
 
     let file = File::create(path).map_err(|err| {
         format!(
@@ -91,12 +126,8 @@ pub fn export_mnemonic_to_pdf(
         )
     })?;
     let mut writer = BufWriter::new(file);
-    doc.save(&mut writer).map_err(|err| {
-        format!(
-            "{}: {err}",
-            t("Không ghi được nội dung PDF", "Could not write PDF content")
-        )
-    })?;
+    let mut warnings = Vec::new();
+    doc.save_writer(&mut writer, &PdfSaveOptions::default(), &mut warnings);
 
     Ok(())
 }
@@ -127,8 +158,6 @@ pub fn export_slip39_shares_to_pdf_directory(
 
     Ok(export_dir)
 }
-
-// ─── Private helpers ─────────────────────────────────────────────────────
 
 fn create_unique_export_directory(
     base_directory: &Path,
@@ -185,68 +214,70 @@ fn export_slip39_share_to_pdf(
 ) -> Result<(), String> {
     use crate::ui::i18n::t;
 
-    let (doc, page, layer) = PdfDocument::new(
-        "SLIP-0039 Share Backup",
-        Mm(210.0),
-        Mm(297.0),
-        "Share Layer",
-    );
-    let current_layer = doc.get_page(page).get_layer(layer);
+    let mut doc = PdfDocument::new("SLIP-0039 Share Backup");
+    let mut ops: Vec<Op> = Vec::new();
 
-    let font_regular = doc
-        .add_builtin_font(BuiltinFont::Helvetica)
-        .map_err(|err| {
-            format!(
-                "{}: {err}",
-                t("Không tải được font PDF", "Could not load PDF font")
-            )
-        })?;
-    let font_bold = doc
-        .add_builtin_font(BuiltinFont::HelveticaBold)
-        .map_err(|err| {
-            format!(
-                "{}: {err}",
-                t("Không tải được font PDF", "Could not load PDF font")
-            )
-        })?;
+    ops.push(Op::SetFillColor {
+        col: Color::Rgb(Rgb {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            icc_profile: None,
+        }),
+    });
 
-    current_layer.use_text(
-        "Bitcoin Wallet - SLIP-0039 Share",
+    // Title
+    ops.extend(text_at(
         18.0,
-        Mm(18.0),
-        Mm(280.0),
-        &font_bold,
-    );
-    current_layer.use_text(
-        format!("Wallet: {}", export.wallet_name),
+        280.0,
+        18.0,
+        BuiltinFont::HelveticaBold,
+        "Bitcoin Wallet - SLIP-0039 Share",
+    ));
+
+    // Wallet name
+    ops.extend(text_at(
+        18.0,
+        268.0,
         12.0,
-        Mm(18.0),
-        Mm(268.0),
-        &font_regular,
-    );
-    current_layer.use_text(
-        format!("Network: {}", export.network),
+        BuiltinFont::Helvetica,
+        &format!("Wallet: {}", export.wallet_name),
+    ));
+
+    // Network
+    ops.extend(text_at(
+        18.0,
+        260.0,
         12.0,
-        Mm(18.0),
-        Mm(260.0),
-        &font_regular,
-    );
-    current_layer.use_text(
-        format!("Scheme: {}-of-{}", export.threshold, export.share_count),
+        BuiltinFont::Helvetica,
+        &format!("Network: {}", export.network),
+    ));
+
+    // Scheme
+    ops.extend(text_at(
+        18.0,
+        252.0,
         12.0,
-        Mm(18.0),
-        Mm(252.0),
-        &font_regular,
-    );
-    current_layer.use_text(
-        format!("Share: {share_index}/{share_total}"),
+        BuiltinFont::Helvetica,
+        &format!("Scheme: {}-of-{}", export.threshold, export.share_count),
+    ));
+
+    // Share number
+    ops.extend(text_at(
+        18.0,
+        244.0,
         12.0,
-        Mm(18.0),
-        Mm(244.0),
-        &font_regular,
-    );
-    current_layer.use_text(
-        format!(
+        BuiltinFont::Helvetica,
+        &format!("Share: {share_index}/{share_total}"),
+    ));
+
+    // SLIP39 passphrase status
+    ops.extend(text_at(
+        18.0,
+        236.0,
+        11.0,
+        BuiltinFont::Helvetica,
+        &format!(
             "SLIP39 passphrase: {}",
             if export.has_slip39_passphrase {
                 "SET (required for restore)"
@@ -254,33 +285,35 @@ fn export_slip39_share_to_pdf(
                 "EMPTY"
             }
         ),
-        11.0,
-        Mm(18.0),
-        Mm(236.0),
-        &font_regular,
-    );
-    current_layer.use_text(
-        "Keep this PDF offline. Whoever has enough shares can recover your wallet.",
-        10.0,
-        Mm(18.0),
-        Mm(228.0),
-        &font_regular,
-    );
+    ));
 
+    // Warning
+    ops.extend(text_at(
+        18.0,
+        228.0,
+        10.0,
+        BuiltinFont::Helvetica,
+        "Keep this PDF offline. Whoever has enough shares can recover your wallet.",
+    ));
+
+    // Share words - two columns
     let words: Vec<&str> = share_phrase.split_whitespace().collect();
     for (idx, word) in words.iter().enumerate() {
         let row = idx / 2;
         let col = idx % 2;
         let x = if col == 0 { 18.0 } else { 110.0 };
         let y = 214.0 - (row as f32 * 10.0);
-        current_layer.use_text(
-            format!("{:02}. {}", idx + 1, word),
+        ops.extend(text_at(
+            x,
+            y,
             12.0,
-            Mm(x),
-            Mm(y),
-            &font_regular,
-        );
+            BuiltinFont::Helvetica,
+            &format!("{:02}. {}", idx + 1, word),
+        ));
     }
+
+    let page = PdfPage::new(Mm(210.0), Mm(297.0), ops);
+    doc.pages.push(page);
 
     let file = File::create(path).map_err(|err| {
         format!(
@@ -290,12 +323,8 @@ fn export_slip39_share_to_pdf(
         )
     })?;
     let mut writer = BufWriter::new(file);
-    doc.save(&mut writer).map_err(|err| {
-        format!(
-            "{}: {err}",
-            t("Không ghi được nội dung PDF", "Could not write PDF content")
-        )
-    })?;
+    let mut warnings = Vec::new();
+    doc.save_writer(&mut writer, &PdfSaveOptions::default(), &mut warnings);
 
     Ok(())
 }
