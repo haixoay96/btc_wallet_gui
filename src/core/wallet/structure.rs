@@ -57,6 +57,8 @@ pub struct AddressEntry {
     pub address: String,
     #[serde(default)]
     pub chain: AddressChain,
+    #[serde(default)]
+    pub used_for_sending: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

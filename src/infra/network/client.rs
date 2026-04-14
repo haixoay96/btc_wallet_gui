@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use reqwest::blocking::Client;
 
-use super::structure::{ApiAddressUtxo, ApiTx};
+use super::structure::{AddressStats, ApiAddressUtxo, ApiTx};
 use crate::core::wallet::WalletNetwork;
 
 /// Default Esplora API endpoint
@@ -103,6 +103,18 @@ impl EsploraClient {
             .with_context(|| format!("Không parse được UTXO của {address}"))
     }
 
+    pub fn fetch_address_stats(&self, address: &str) -> Result<AddressStats> {
+        let url = format!("{}/address/{address}", &self.base_url);
+        self.client
+            .get(&url)
+            .send()
+            .with_context(|| format!("Không gọi được API address stats: {url}"))?
+            .error_for_status()
+            .with_context(|| format!("Lỗi response API address stats: {url}"))?
+            .json()
+            .with_context(|| format!("Không parse được stats của {address}"))
+    }
+
     pub fn fetch_fee_rate_sat_vb(&self) -> Result<f64> {
         let url = format!("{}/fee-estimates", &self.base_url);
 
@@ -177,16 +189,20 @@ impl EsploraClient {
 
 #[cfg(test)]
 mod tests {
-    use super::{WalletNetwork, ESPLORA_CONFIRMED_PAGE_SIZE};
+    use super::{ESPLORA_CONFIRMED_PAGE_SIZE, WalletNetwork};
 
     #[test]
     fn blockstream_base_url_stays_network_specific() {
-        assert!(WalletNetwork::Mainnet
-            .blockstream_base_url()
-            .ends_with("/api"));
-        assert!(WalletNetwork::Testnet
-            .blockstream_base_url()
-            .contains("/testnet/api"));
+        assert!(
+            WalletNetwork::Mainnet
+                .blockstream_base_url()
+                .ends_with("/api")
+        );
+        assert!(
+            WalletNetwork::Testnet
+                .blockstream_base_url()
+                .contains("/testnet/api")
+        );
         assert_eq!(ESPLORA_CONFIRMED_PAGE_SIZE, 25);
     }
 }

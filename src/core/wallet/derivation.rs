@@ -52,6 +52,7 @@ impl Wallet {
                 index,
                 address: address.to_string(),
                 chain,
+                used_for_sending: false,
             });
             *next_index += 1;
             new_addresses.push(address.to_string());

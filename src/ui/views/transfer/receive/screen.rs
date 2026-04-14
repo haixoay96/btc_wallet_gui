@@ -1,17 +1,18 @@
 use iced::{
-    widget::{button, column, container, image, pick_list, row, scrollable, text, Space},
     Alignment, Element, Length,
+    widget::{Space, button, column, container, image, pick_list, row, scrollable, text},
 };
-use qrcode::{types::Color as QrColor, QrCode};
+use qrcode::{QrCode, types::Color as QrColor};
 
 use crate::core::wallet::{AddressChain, Wallet};
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::ui::components::{modal, warning_box};
 use crate::ui::i18n::t;
 use crate::ui::theme::{
-    card_style, pick_list_menu_style, pick_list_style, primary_button_style,
+    card_style, get_theme_colors, pick_list_menu_style, pick_list_style, primary_button_style,
     secondary_button_style, selected_button_style, text_accent_teal_color, text_error_color,
     text_muted_color, text_primary_color, text_scaled, text_secondary_color, text_success_color,
+    text_warning_color,
 };
 
 use super::structure::*;
@@ -280,19 +281,56 @@ impl ReceiveView {
                     let mut list = column![];
                     for (i, addr) in receive_addresses.iter().enumerate() {
                         let is_selected = i == selected_index;
-                        let row_content = row![
+                        let is_used = addr.used_for_sending;
+
+                        let mut row_content = row![
                             text_scaled(format!("#{}", addr.index), 12).style(text_muted_color()),
                             Space::new().width(8),
-                            text_scaled(addr.address.clone(), 12).style(text_primary_color()),
-                            Space::new().width(Length::Fill),
-                            if is_selected {
-                                text_scaled(t("Đang chọn", "Selected"), 11)
-                                    .style(text_success_color())
+                            text_scaled(addr.address.clone(), 12).style(if is_used {
+                                text_warning_color()
                             } else {
-                                text("")
-                            },
+                                text_primary_color()
+                            }),
                         ]
                         .align_y(Alignment::Center);
+
+                        // Warning badge for addresses that have been used to send BTC
+                        if is_used {
+                            row_content = row_content.push(Space::new().width(6));
+                            row_content = row_content.push(
+                                container(
+                                    text_scaled(t("⚠ Đã gửi", "⚠ Used"), 10)
+                                        .style(text_warning_color()),
+                                )
+                                .padding(2)
+                                .style(|theme: &iced::Theme| {
+                                    let colors = get_theme_colors(theme);
+                                    iced::widget::container::Style {
+                                        background: Some(iced::Background::Color(
+                                            iced::Color::from_rgba(
+                                                colors.warning.r,
+                                                colors.warning.g,
+                                                colors.warning.b,
+                                                0.12,
+                                            ),
+                                        )),
+                                        border: iced::Border {
+                                            radius: 4.0.into(),
+                                            width: 1.0,
+                                            color: colors.warning,
+                                        },
+                                        ..Default::default()
+                                    }
+                                }),
+                            );
+                        }
+
+                        row_content = row_content.push(Space::new().width(Length::Fill));
+                        row_content = row_content.push(if is_selected {
+                            text_scaled(t("Đang chọn", "Selected"), 11).style(text_success_color())
+                        } else {
+                            text("")
+                        });
 
                         list = list.push(
                             button(container(row_content).width(Length::Fill))

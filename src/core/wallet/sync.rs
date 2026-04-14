@@ -4,8 +4,8 @@ use anyhow::Result;
 
 use super::network::AddressChain;
 use super::structure::{AddressEntry, TxDirection, TxRecord, Wallet};
-use crate::core::wallet::secrets::WalletSecrets;
 use crate::core::wallet::DEFAULT_GAP_LIMIT;
+use crate::core::wallet::secrets::WalletSecrets;
 use crate::infra::network::ApiTx;
 use crate::infra::network::EsploraClient;
 
@@ -51,6 +51,13 @@ impl Wallet {
             .map(|entry| entry.address.clone())
             .collect::<HashSet<_>>();
 
+        // Đánh dấu address đã từng dùng để gửi tiền
+        for entry in &mut addresses {
+            if let Ok(stats) = esplora.fetch_address_stats(&entry.address) {
+                entry.used_for_sending = stats.chain_stats.spent_txo_count > 0;
+            }
+        }
+
         self.addresses = addresses;
         self.next_external_index = next_external_index;
         self.next_internal_index = next_internal_index;
@@ -95,6 +102,7 @@ impl Wallet {
                 index,
                 address: address_string,
                 chain,
+                used_for_sending: false,
             });
             txs.extend(address_txs);
 
