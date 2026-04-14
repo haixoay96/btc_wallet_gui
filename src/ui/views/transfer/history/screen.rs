@@ -11,10 +11,10 @@ use crate::ui::theme::{
 use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
 use chrono::DateTime;
 use iced::{
-    widget::{button, column, container, pick_list, row, scrollable, text, text_input, Space},
     Alignment, Color, Element, Length,
+    widget::{Space, button, column, container, pick_list, row, scrollable, text, text_input},
 };
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::bootstrap::advanced_text;
 
 use super::structure::*;
 
@@ -244,7 +244,7 @@ impl HistoryView {
 
         let wallet_selector = column![
             text_scaled(t("Từ ví", "From Wallet"), 14).style(text_secondary_color()),
-            Space::with_height(4),
+            Space::new().height(4),
             pick_list(wallet_options, selected_wallet_option, |choice| {
                 HistoryMessage::SelectWallet(choice.index)
             })
@@ -282,7 +282,7 @@ impl HistoryView {
                 } else {
                     secondary_button_style()
                 }),
-            Space::with_width(8),
+            Space::new().width(8),
             button(text_scaled(t("Nhận", "Incoming"), 12))
                 .on_press(HistoryMessage::FilterIncoming)
                 .padding(8)
@@ -291,7 +291,7 @@ impl HistoryView {
                 } else {
                     secondary_button_style()
                 }),
-            Space::with_width(8),
+            Space::new().width(8),
             button(text_scaled(t("Gửi", "Outgoing"), 12))
                 .on_press(HistoryMessage::FilterOutgoing)
                 .padding(8)
@@ -300,7 +300,7 @@ impl HistoryView {
                 } else {
                     secondary_button_style()
                 }),
-            Space::with_width(8),
+            Space::new().width(8),
             button(text_scaled(t("Chờ xác nhận", "Pending"), 12))
                 .on_press(HistoryMessage::FilterPending)
                 .padding(8)
@@ -309,7 +309,7 @@ impl HistoryView {
                 } else {
                     secondary_button_style()
                 }),
-            Space::with_width(8),
+            Space::new().width(8),
             button(text_scaled(t("Tự chuyển", "Self transfer"), 12))
                 .on_press(HistoryMessage::FilterSelfTransfer)
                 .padding(8)
@@ -318,12 +318,12 @@ impl HistoryView {
                 } else {
                     secondary_button_style()
                 }),
-            Space::with_width(Length::Fill),
+            Space::new().width(Length::Fill),
             refresh_button,
         ];
 
         content = content.push(filter_row);
-        content = content.push(Space::with_height(8));
+        content = content.push(Space::new().height(8));
 
         // Advanced Filter Row (Date & Amount)
         let date_from_input = text_input("DD/MM/YYYY (Từ)", &self.date_from)
@@ -357,18 +357,18 @@ impl HistoryView {
         let advanced_filter_row = row![
             text_scaled(t("Ngày:", "Date:"), 12).style(text_secondary_color()),
             date_from_input,
-            Space::with_width(8),
+            Space::new().width(8),
             date_to_input,
-            Space::with_width(16),
+            Space::new().width(16),
             text_scaled(t("Tiền:", "Amt:"), 12).style(text_secondary_color()),
             amount_min_input,
-            Space::with_width(8),
+            Space::new().width(8),
             amount_max_input,
         ]
         .align_y(Alignment::Center);
 
         content = content.push(advanced_filter_row);
-        content = content.push(Space::with_height(8));
+        content = content.push(Space::new().height(8));
 
         // Search & Export Row
         let search_input = text_input(t("Tìm kiếm txid...", "Search txid..."), &self.search_query)
@@ -383,7 +383,7 @@ impl HistoryView {
                 .on_press(HistoryMessage::ExportCsv)
                 .padding(6)
                 .style(secondary_button_style()),
-            Space::with_width(6),
+            Space::new().width(6),
             button(text_scaled(t("Xuất PDF", "Export PDF"), 11))
                 .on_press(HistoryMessage::ExportPdf)
                 .padding(6)
@@ -391,14 +391,14 @@ impl HistoryView {
         ];
 
         let search_export_row =
-            row![search_input, Space::with_width(8), export_row,].align_y(Alignment::Center);
+            row![search_input, Space::new().width(8), export_row,].align_y(Alignment::Center);
 
         content = content.push(search_export_row);
-        content = content.push(Space::with_height(8));
+        content = content.push(Space::new().height(8));
 
         if let Some(wallet) = wallet {
             if is_refreshing {
-                content = content.push(Space::with_height(16));
+                content = content.push(Space::new().height(16));
                 content = content.push(skeleton_transactions(5).map(|_| HistoryMessage::Refresh));
             } else {
                 // Filtering Logic
@@ -496,7 +496,7 @@ impl HistoryView {
 
                 // Display Info
                 if total_items == 0 {
-                    content = content.push(Space::with_height(40));
+                    content = content.push(Space::new().height(40));
                     content = content.push(
                         container(
                             text_scaled(t("Không có giao dịch", "No transactions found"), 16)
@@ -506,7 +506,7 @@ impl HistoryView {
                         .center_x(Length::Fill),
                     );
                 } else {
-                    content = content.push(Space::with_height(8));
+                    content = content.push(Space::new().height(8));
                     content = content.push(row![
                         text(format!(
                             "{} {} ",
@@ -515,7 +515,7 @@ impl HistoryView {
                         ))
                         .size(14)
                         .style(text_secondary_color()),
-                        Space::with_width(Length::Fill),
+                        Space::new().width(Length::Fill),
                         text(format!(
                             "{} {}/{} ",
                             t("Trang", "Page"),
@@ -529,7 +529,7 @@ impl HistoryView {
                         .size(12)
                         .style(text_muted_color())
                     ]);
-                    content = content.push(Space::with_height(8));
+                    content = content.push(Space::new().height(8));
 
                     let mut tx_list = column![];
 
@@ -547,9 +547,9 @@ impl HistoryView {
                             TxDirection::SelfTransfer => t("TỰ", "SELF"),
                         };
                         let direction_icon = match tx.direction {
-                            TxDirection::Incoming => Bootstrap::ArrowDownRight.to_string(),
-                            TxDirection::Outgoing => Bootstrap::ArrowUpRight.to_string(),
-                            TxDirection::SelfTransfer => Bootstrap::ArrowLeftRight.to_string(),
+                            TxDirection::Incoming => advanced_text::arrow_down_right().0,
+                            TxDirection::Outgoing => advanced_text::arrow_up_right().0,
+                            TxDirection::SelfTransfer => advanced_text::arrow_left_right().0,
                         };
                         let amount_style_icon = match tx.direction {
                             TxDirection::Incoming => text_success_color(),
@@ -583,11 +583,10 @@ impl HistoryView {
                                 row![
                                     text(direction_icon.clone())
                                         .size(14)
-                                        .font(BOOTSTRAP_FONT)
                                         .style(amount_style_icon),
-                                    Space::with_width(12),
+                                    Space::new().width(12),
                                     text_scaled(txid_short, 14).style(text_primary_color()),
-                                    Space::with_width(Length::Fill),
+                                    Space::new().width(Length::Fill),
                                     text(format!(
                                         "{}{}",
                                         amount_sign,
@@ -597,26 +596,25 @@ impl HistoryView {
                                     .style(amount_style_text),
                                 ]
                                 .align_y(Alignment::Center),
-                                Space::with_height(4),
+                                Space::new().height(4),
                                 row![
                                     {
                                         let (icon_str, _, status_color, _) =
                                             confirmation_status(tx);
                                         let icon_bootstrap = if icon_str == "check" {
-                                            Bootstrap::Check.to_string()
+                                            advanced_text::check().0
                                         } else if icon_str == "check-circle" {
-                                            Bootstrap::CheckCircle.to_string()
+                                            advanced_text::check_circle().0
                                         } else if icon_str == "hourglass" {
-                                            Bootstrap::Hourglass.to_string()
+                                            advanced_text::hourglass().0
                                         } else {
-                                            Bootstrap::Clock.to_string()
+                                            advanced_text::clock().0
                                         };
                                         text(icon_bootstrap)
-                                            .font(BOOTSTRAP_FONT)
                                             .size(11)
                                             .style(text_color(status_color))
                                     },
-                                    Space::with_width(4),
+                                    Space::new().width(4),
                                     {
                                         let (_, status_text, status_color, est_time) =
                                             confirmation_status(tx);
@@ -627,7 +625,7 @@ impl HistoryView {
                                         ]
                                         .spacing(1)
                                     },
-                                    Space::with_width(Length::Fill),
+                                    Space::new().width(Length::Fill),
                                     if let Some(block_time) = tx.block_time {
                                         text_scaled(format_timestamp(block_time), 11)
                                             .style(text_muted_color())
@@ -644,6 +642,7 @@ impl HistoryView {
                                 1.0, 1.0, 1.0, 0.02,
                             ))),
                             border: iced::border::rounded(8),
+                            snap: false,
                             ..Default::default()
                         })
                         .padding(12)
@@ -660,7 +659,7 @@ impl HistoryView {
                             .on_press(HistoryMessage::ViewTransaction(original_idx));
 
                         tx_list = tx_list.push(clickable_row);
-                        tx_list = tx_list.push(Space::with_height(8));
+                        tx_list = tx_list.push(Space::new().height(8));
                     }
 
                     content = content.push(scrollable(tx_list).height(Length::Fill));
@@ -718,11 +717,11 @@ impl HistoryView {
                         .padding(4)
                         .text_size(11);
 
-                        content = content.push(Space::with_height(8));
+                        content = content.push(Space::new().height(8));
                         content = content.push(
                             row![
                                 page_controls,
-                                Space::with_width(Length::Fill),
+                                Space::new().width(Length::Fill),
                                 text_scaled(t("Hiển thị:", "Show:"), 11)
                                     .style(text_secondary_color()),
                                 items_picker
@@ -733,7 +732,7 @@ impl HistoryView {
                 }
             }
         } else {
-            content = content.push(Space::with_height(40));
+            content = content.push(Space::new().height(40));
             content = content.push(
                 container(
                     text_scaled(
@@ -803,7 +802,7 @@ impl HistoryView {
                     .style(text_secondary_color())
                     .width(Length::Fixed(100.0)),
                 text_scaled(value, 13).style(text_primary_color()),
-                Space::with_width(Length::Fill),
+                Space::new().width(Length::Fill),
             ]
             .spacing(8)
             .into()
@@ -813,9 +812,9 @@ impl HistoryView {
             text_scaled(direction_text, 18)
                 .style(amount_style)
                 .style(text_primary_color()),
-            Space::with_height(16),
+            Space::new().height(16),
             info_row(t("TxID", "TxID"), tx.txid.clone()),
-            Space::with_height(8),
+            Space::new().height(8),
             info_row(
                 t("Thời gian", "Time"),
                 tx.block_time.map(format_timestamp).unwrap_or_else(|| t(
@@ -824,27 +823,27 @@ impl HistoryView {
                 )
                 .to_string())
             ),
-            Space::with_height(8),
+            Space::new().height(8),
             info_row(t("Số tiền", "Amount"), format_btc_and_sat(tx.amount_sat)),
-            Space::with_height(8),
+            Space::new().height(8),
             info_row(
                 t("Phí", "Fee"),
                 tx.fee_sat
                     .map(|f| format_btc_and_sat(f as i64))
                     .unwrap_or_else(|| "N/A".to_string())
             ),
-            Space::with_height(8),
+            Space::new().height(8),
             info_row(t("Trạng thái", "Status"), {
                 let (_, status_text, _, est_time) = confirmation_status(tx);
                 format!("{} - {}", status_text, est_time)
             }),
-            Space::with_height(16),
+            Space::new().height(16),
             row![
                 button(text_scaled(t("Sao chép TxID", "Copy TxID"), 12))
                     .on_press(HistoryMessage::CopyTxid(tx.txid.clone()))
                     .padding(8)
                     .style(secondary_button_style()),
-                Space::with_width(8),
+                Space::new().width(8),
                 button(text_scaled(t("Block Explorer", "Block Explorer"), 12))
                     .on_press(HistoryMessage::OpenExplorer(explorer_url))
                     .padding(8)
@@ -859,8 +858,8 @@ impl HistoryView {
     }
 }
 
-fn muted_button_style(
-) -> impl Fn(&iced::Theme, iced::widget::button::Status) -> iced::widget::button::Style {
+fn muted_button_style()
+-> impl Fn(&iced::Theme, iced::widget::button::Status) -> iced::widget::button::Style {
     |_, _| iced::widget::button::Style {
         background: None,
         border: iced::Border::default(),

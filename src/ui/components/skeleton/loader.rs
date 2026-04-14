@@ -1,8 +1,8 @@
 use super::structure::SkeletonType;
 
 use iced::{
-    widget::{column, container, Space},
     Color, Element, Theme,
+    widget::{Space, column, container},
 };
 
 use crate::ui::theme::{card_style, get_theme_colors};
@@ -20,6 +20,7 @@ fn skeleton_bg_style() -> impl Fn(&Theme) -> iced::widget::container::Style {
                 0.15,
             ))),
             border: iced::border::rounded(4),
+            snap: false,
             ..Default::default()
         }
     }
@@ -30,7 +31,7 @@ pub fn skeleton(skeleton_type: SkeletonType, size: (f32, f32)) -> Element<'stati
     match skeleton_type {
         SkeletonType::Text => {
             let (width, height) = size;
-            container(Space::with_width(width).height(height))
+            container(Space::new().width(width).height(height))
                 .style(skeleton_bg_style())
                 .into()
         }
@@ -38,9 +39,9 @@ pub fn skeleton(skeleton_type: SkeletonType, size: (f32, f32)) -> Element<'stati
             let (width, height) = size;
             container(column![
                 skeleton(SkeletonType::Text, (width * 0.4, 20.0)),
-                Space::with_height(10),
+                Space::new().height(10),
                 skeleton(SkeletonType::Text, (width * 0.7, 30.0)),
-                Space::with_height(10),
+                Space::new().height(10),
                 skeleton(SkeletonType::Text, (width * 0.5, 14.0)),
             ])
             .style(card_style())
@@ -57,7 +58,7 @@ pub fn skeleton_list(count: usize, item_height: f32, spacing: f32) -> Element<'s
     let mut items = column![];
     for _ in 0..count {
         items = items.push(skeleton(SkeletonType::Text, (300.0, item_height)));
-        items = items.push(Space::with_height(spacing));
+        items = items.push(Space::new().height(spacing));
     }
     items.into()
 }
@@ -67,7 +68,7 @@ pub fn skeleton_wallet_cards(count: usize) -> Element<'static, ()> {
     let mut items = column![];
     for _ in 0..count {
         items = items.push(skeleton(SkeletonType::Card, (400.0, 120.0)));
-        items = items.push(Space::with_height(12));
+        items = items.push(Space::new().height(12));
     }
     items.into()
 }

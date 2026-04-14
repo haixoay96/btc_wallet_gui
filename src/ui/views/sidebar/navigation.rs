@@ -3,10 +3,9 @@ use crate::ui::theme::{
     text_accent_teal_color, text_primary_color, text_scaled, text_secondary_color,
 };
 use iced::{
-    widget::{button, column, container, row, Space},
     Alignment, Element, Length, Padding,
+    widget::{Space, button, column, container, row},
 };
-use iced_fonts::BOOTSTRAP_FONT;
 
 use super::structure::{NavItem, Sidebar, SidebarEvent, SidebarMessage};
 
@@ -62,9 +61,8 @@ impl Sidebar {
                 .into_iter()
                 .map(|item| {
                     let is_active = self.active == item;
-                    let icon = text_scaled(item.icon_char(), icon_size as u16)
-                        .font(BOOTSTRAP_FONT)
-                        .style(if is_active {
+                    let icon =
+                        text_scaled(item.icon_char(), icon_size as u16).style(if is_active {
                             text_accent_teal_color()
                         } else {
                             text_secondary_color()
@@ -80,14 +78,14 @@ impl Sidebar {
                         .padding(Padding::from([2, 6]));
                         row![
                             icon,
-                            Space::with_width(8),
+                            Space::new().width(8),
                             title,
-                            Space::with_width(8),
+                            Space::new().width(8),
                             badge
                         ]
                         .align_y(Alignment::Center)
                     } else {
-                        row![icon, Space::with_width(12), title].align_y(Alignment::Center)
+                        row![icon, Space::new().width(12), title].align_y(Alignment::Center)
                     };
 
                     let style = if is_active {
@@ -108,7 +106,7 @@ impl Sidebar {
         .padding(Padding::from(16))
         .into();
 
-        let content = column![logo_container, Space::with_height(20), nav_items];
+        let content = column![logo_container, Space::new().height(20), nav_items];
 
         container(content)
             .width(220)

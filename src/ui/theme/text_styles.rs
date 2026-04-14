@@ -9,7 +9,7 @@ pub fn text_scaled<T: std::fmt::Display>(
     base_size: u16,
 ) -> iced::widget::Text<'static> {
     let scale = get_font_scale();
-    let scaled_size = (base_size as f64 * scale).round() as u16;
+    let scaled_size = (base_size as f64 * scale).round() as f32;
     text(content.to_string()).size(scaled_size)
 }
 

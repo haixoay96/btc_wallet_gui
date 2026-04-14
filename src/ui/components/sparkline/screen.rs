@@ -1,6 +1,6 @@
 use crate::ui::components::sparkline::structure::BalancePoint;
 use crate::ui::theme::{card_style, text_muted_color};
-use iced::widget::{column, container, row, text, tooltip, Space};
+use iced::widget::{Space, column, container, row, text, tooltip};
 use iced::{Color, Element, Length};
 
 /// Render sparkline as a row of mini bars (bottom-up)
@@ -39,8 +39,8 @@ pub fn sparkline_view<Message: Clone + 'static>(
         // Bottom-up: spacer pushes bar to bottom
         let spacer_h = (bar_max_height - bar_h).max(0.0);
         let bar_content = column![
-            Space::with_height(spacer_h),
-            container(Space::with_height(bar_h))
+            Space::new().height(spacer_h),
+            container(Space::new().height(bar_h))
                 .width(Length::Fixed(12.0))
                 .style(move |_theme: &iced::Theme| iced::widget::container::Style {
                     background: Some(iced::Background::Color(iced::Color {
@@ -54,6 +54,7 @@ pub fn sparkline_view<Message: Clone + 'static>(
                         width: 0.0,
                         color: iced::Color::TRANSPARENT,
                     },
+                    snap: false,
                     ..Default::default()
                 }),
         ];
@@ -72,12 +73,14 @@ pub fn sparkline_view<Message: Clone + 'static>(
 
         bars = bars.push(bar_with_tooltip);
         if i < points.len() - 1 {
-            bars = bars.push(Space::with_width(gap));
+            bars = bars.push(Space::new().width(gap));
         }
     }
 
-    column![container(bars)
-        .height(Length::Fixed(bar_max_height))
-        .width(Length::Fill),]
+    column![
+        container(bars)
+            .height(Length::Fixed(bar_max_height))
+            .width(Length::Fill),
+    ]
     .into()
 }

@@ -1,10 +1,10 @@
 use iced::{
-    widget::{
-        button, column, container, pick_list, row, scrollable, slider, text, text_input, Space,
-    },
     Alignment, Element, Length,
+    widget::{
+        Space, button, column, container, pick_list, row, scrollable, slider, text, text_input,
+    },
 };
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::{bootstrap, bootstrap::advanced_text};
 
 use crate::infra::storage::AppTheme;
 use crate::ui::components::modal;
@@ -323,7 +323,7 @@ impl SettingsView {
         // The parameter is from App which is updated AFTER event handling
         // self.font_scale is updated IMMEDIATELY in update() for real-time feedback
         let scale = self.font_scale;
-        let s = |size: u16| -> u16 { (size as f64 * scale).round() as u16 };
+        let s = |size: u16| -> f32 { (size as f64 * scale).round() as f32 };
         let title = text(t("Cài đặt", "Settings"))
             .size(s(32))
             .style(text_primary_color());
@@ -348,7 +348,7 @@ impl SettingsView {
                 text(t("Giao diện", "Appearance"))
                     .size(s(18))
                     .style(text_primary_color()),
-                Space::with_height(8),
+                Space::new().height(8),
                 pick_list(
                     theme_options,
                     Some(current_theme),
@@ -369,23 +369,23 @@ impl SettingsView {
                 text(t("Dữ liệu", "Data Storage"))
                     .size(s(18))
                     .style(text_primary_color()),
-                Space::with_height(4),
+                Space::new().height(4),
                 row![
                     text(t("Thư mục:", "Folder:"))
                         .size(s(12))
                         .style(text_secondary_color()),
-                    Space::with_width(8),
+                    Space::new().width(8),
                     text(&self.data_folder_path)
                         .size(s(11))
                         .style(text_muted_color()),
                 ]
                 .align_y(Alignment::Center),
-                Space::with_height(4),
+                Space::new().height(4),
                 row![
                     text(t("Dung lượng:", "Size:"))
                         .size(s(12))
                         .style(text_secondary_color()),
-                    Space::with_width(8),
+                    Space::new().width(8),
                     text(&self.data_folder_size)
                         .size(s(12))
                         .style(text_accent_teal_color()),
@@ -404,18 +404,18 @@ impl SettingsView {
                 text(t("Trợ năng", "Accessibility"))
                     .size(s(18))
                     .style(text_primary_color()),
-                Space::with_height(12),
+                Space::new().height(12),
                 row![
                     text(t("Cỡ chữ:", "Font Size:"))
                         .size(s(12))
                         .style(text_secondary_color()),
-                    Space::with_width(8),
+                    Space::new().width(8),
                     text(format!("{}%", font_scale_percent))
                         .size(s(13))
                         .style(text_accent_teal_color()),
                 ]
                 .align_y(Alignment::Center),
-                Space::with_height(8),
+                Space::new().height(8),
                 slider(
                     0.8_f64..=1.5_f64,
                     self.font_scale,
@@ -424,12 +424,12 @@ impl SettingsView {
                 .step(0.05_f64)
                 .height(20)
                 .width(Length::Fill),
-                Space::with_height(12),
+                Space::new().height(12),
                 row![
                     text(t("Tương phản cao", "High Contrast"))
                         .size(s(13))
                         .style(text_primary_color()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     button(
                         text(if self.high_contrast {
                             t("Bật", "ON")
@@ -459,11 +459,11 @@ impl SettingsView {
                 text(t("Mạng lưới", "Network"))
                     .size(s(18))
                     .style(text_primary_color()),
-                Space::with_height(12),
+                Space::new().height(12),
                 text(t("Esplora Endpoint", "Esplora Endpoint"))
                     .size(s(12))
                     .style(text_secondary_color()),
-                Space::with_height(4),
+                Space::new().height(4),
                 text_input(
                     t("Nhập URL Esplora...", "Enter Esplora URL..."),
                     &self.esplora_endpoint
@@ -472,12 +472,12 @@ impl SettingsView {
                 .padding(10)
                 .size(s(13))
                 .style(input_style()),
-                Space::with_height(8),
+                Space::new().height(8),
                 row![
                     text(t("Timeout:", "Timeout:"))
                         .size(s(12))
                         .style(text_secondary_color()),
-                    Space::with_width(8),
+                    Space::new().width(8),
                     pick_list(
                         vec![5u64, 10, 15, 30],
                         Some(self.timeout_secs),
@@ -485,7 +485,7 @@ impl SettingsView {
                     )
                     .padding(8)
                     .style(pick_list_style()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     button(
                         text(if self.testing_connection {
                             t("Đang test...", "Testing...")
@@ -499,15 +499,14 @@ impl SettingsView {
                     .style(secondary_button_style()),
                 ]
                 .align_y(Alignment::Center),
-                Space::with_height(4),
+                Space::new().height(4),
                 if self.testing_connection {
                     let testing_status: Element<'_, SettingsMessage> = container(
                         row![
-                            text(Bootstrap::ArrowClockwise.to_string())
+                            bootstrap::arrow_clockwise()
                                 .size(s(11))
-                                .font(BOOTSTRAP_FONT)
                                 .style(text_accent_teal_color()),
-                            Space::with_width(4),
+                            Space::new().width(4),
                             text(t("Đang kiểm tra...", "Testing connection..."))
                                 .size(s(11))
                                 .style(text_accent_teal_color()),
@@ -518,9 +517,9 @@ impl SettingsView {
                     testing_status
                 } else if let Some(result) = &self.connection_test_result {
                     let icon = if result.contains(t("Block height", "Block height")) {
-                        Bootstrap::Wifi
+                        advanced_text::wifi().0
                     } else {
-                        Bootstrap::WifiOff
+                        advanced_text::wifi_off().0
                     };
                     let icon_style = if result.contains(t("Block height", "Block height")) {
                         text_success_color()
@@ -529,11 +528,8 @@ impl SettingsView {
                     };
                     let result_status: Element<'_, SettingsMessage> = container(
                         row![
-                            text(icon.to_string())
-                                .size(s(11))
-                                .font(BOOTSTRAP_FONT)
-                                .style(icon_style),
-                            Space::with_width(4),
+                            text(icon).size(s(11)).style(icon_style),
+                            Space::new().width(4),
                             text(result).size(s(11)).style(text_muted_color()),
                         ]
                         .align_y(Alignment::Center),
@@ -541,7 +537,7 @@ impl SettingsView {
                     .into();
                     result_status
                 } else {
-                    Space::with_height(s(11)).into()
+                    Space::new().height(s(11)).into()
                 }
             ])
             .style(card_style())
@@ -555,12 +551,12 @@ impl SettingsView {
                 text(t("Nâng cao", "Advanced"))
                     .size(s(18))
                     .style(text_primary_color()),
-                Space::with_height(12),
+                Space::new().height(12),
                 row![
                     text(t("Debug logging", "Debug logging"))
                         .size(s(13))
                         .style(text_primary_color()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     button(
                         text(if self.debug_logging {
                             t("Bật", "ON")
@@ -578,12 +574,12 @@ impl SettingsView {
                     }),
                 ]
                 .align_y(Alignment::Center),
-                Space::with_height(8),
+                Space::new().height(8),
                 row![
                     text(t("Tự động refresh", "Auto-refresh"))
                         .size(s(13))
                         .style(text_primary_color()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     button(
                         text(if self.auto_refresh {
                             t("Bật", "ON")
@@ -618,7 +614,7 @@ impl SettingsView {
                 text(t("Bảo mật", "Security"))
                     .size(s(18))
                     .style(text_primary_color()),
-                Space::with_height(12),
+                Space::new().height(12),
                 change_passphrase_btn,
             ])
             .style(card_style())
@@ -633,7 +629,7 @@ impl SettingsView {
                         text(t("Passphrase hiện tại", "Current Passphrase"))
                             .size(s(12))
                             .style(text_secondary_color()),
-                        Space::with_height(4),
+                        Space::new().height(4),
                         text_input(
                             t("Nhập passphrase hiện tại...", "Enter current passphrase..."),
                             &self.current_passphrase
@@ -645,12 +641,12 @@ impl SettingsView {
                         .style(input_style())
                     ]
                     .spacing(2),
-                    Space::with_height(12),
+                    Space::new().height(12),
                     column![
                         text(t("Passphrase mới", "New Passphrase"))
                             .size(s(12))
                             .style(text_secondary_color()),
-                        Space::with_height(4),
+                        Space::new().height(4),
                         text_input(
                             t("Nhập passphrase mới...", "Enter new passphrase..."),
                             &self.new_passphrase
@@ -662,12 +658,12 @@ impl SettingsView {
                         .style(input_style())
                     ]
                     .spacing(2),
-                    Space::with_height(12),
+                    Space::new().height(12),
                     column![
                         text(t("Xác nhận passphrase mới", "Confirm New Passphrase"))
                             .size(s(12))
                             .style(text_secondary_color()),
-                        Space::with_height(4),
+                        Space::new().height(4),
                         text_input(
                             t("Xác nhận passphrase mới...", "Confirm new passphrase..."),
                             &self.confirm_passphrase
@@ -679,7 +675,7 @@ impl SettingsView {
                         .style(input_style())
                     ]
                     .spacing(2),
-                    Space::with_height(12),
+                    Space::new().height(12),
                     button(text(t("Cập nhật passphrase", "Update Passphrase")).size(s(14)))
                         .on_press(SettingsMessage::SubmitPassphraseChange)
                         .padding(12)
@@ -697,14 +693,14 @@ impl SettingsView {
                 text(t("Xuất backup", "Export Backup"))
                     .size(s(18))
                     .style(text_primary_color()),
-                Space::with_height(8),
+                Space::new().height(8),
                 text(t(
                     "Backup sẽ được mã hóa bằng passphrase hiện tại",
                     "Backup will be encrypted with the current passphrase"
                 ))
                 .size(s(12))
                 .style(text_secondary_color()),
-                Space::with_height(10),
+                Space::new().height(10),
                 button(text(t("Xuất backup ví", "Export Wallet Backup")).size(s(14)))
                     .on_press(SettingsMessage::ExportWallet)
                     .padding(12)
@@ -729,7 +725,7 @@ impl SettingsView {
             text(t("Vùng nguy hiểm", "Danger Zone"))
                 .size(s(16))
                 .style(text_error_color()),
-            Space::with_height(16),
+            Space::new().height(16),
             row![clear_data_button, reset_settings_btn,]
                 .spacing(10)
                 .align_y(Alignment::Center),
@@ -739,7 +735,7 @@ impl SettingsView {
         if self.show_clear_data_confirm {
             clear_data_col = clear_data_col.push(
                 column![
-                    Space::with_height(12),
+                    Space::new().height(12),
                     text(t("Thao tác này sẽ xóa toàn bộ ví khỏi máy hiện tại.", "This action will remove every wallet from the current device.")).size(s(13)).style(text_error_color()),
                     text(t("Bạn sẽ cần app backup hoặc các secret backup riêng của từng ví để khôi phục lại sau này.", "You will need the app backup or each wallet's own secret backup to restore later.")).size(s(12)).style(text_secondary_color()),
                 ].spacing(4),
@@ -766,7 +762,7 @@ impl SettingsView {
             text(t("Thông tin", "Information"))
                 .size(s(16))
                 .style(text_primary_color()),
-            Space::with_height(16),
+            Space::new().height(16),
             row![tour_btn, about_btn]
                 .spacing(10)
                 .align_y(Alignment::Center),
@@ -775,7 +771,7 @@ impl SettingsView {
 
         if self.show_about {
             info_col = info_col
-                .push(Space::with_height(12))
+                .push(Space::new().height(12))
                 .push(
                     text("Bitcoin Wallet GUI v0.1.0")
                         .size(s(12))
@@ -809,7 +805,7 @@ impl SettingsView {
                 ))
                 .size(s(14))
                 .style(text_primary_color()),
-                Space::with_height(8),
+                Space::new().height(8),
                 text_input(
                     t("Nhập passphrase hiện tại...", "Enter current passphrase..."),
                     &self.clear_data_passphrase
@@ -818,14 +814,14 @@ impl SettingsView {
                 .secure(true)
                 .padding(12)
                 .size(s(14)),
-                Space::with_height(12),
+                Space::new().height(12),
                 container(
                     row![
                         button(text(t("Hủy", "Cancel")).size(s(14)))
                             .on_press(SettingsMessage::CancelClearData)
                             .padding(10)
                             .style(secondary_button_style()),
-                        Space::with_width(10),
+                        Space::new().width(10),
                         button(text(t("Xóa toàn bộ ngay", "Delete Everything")).size(s(14)))
                             .on_press(SettingsMessage::ConfirmClearData)
                             .padding(10)

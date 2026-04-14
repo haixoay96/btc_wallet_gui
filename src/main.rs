@@ -8,7 +8,7 @@ mod ui;
 mod utils;
 
 use app::App;
-use iced::{window, Size};
+use iced::{Size, window};
 use iced_fonts::BOOTSTRAP_FONT_BYTES;
 
 pub fn main() -> iced::Result {
@@ -20,7 +20,8 @@ pub fn main() -> iced::Result {
     };
     utils::logging::init(debug_enabled);
 
-    iced::application(App::title, App::update, App::view)
+    iced::application(App::new, App::update, App::view)
+        .title(App::title)
         .subscription(App::subscription)
         .window_size(Size::new(1200.0, 800.0))
         .window(window::Settings {
@@ -30,5 +31,5 @@ pub fn main() -> iced::Result {
         })
         .theme(|state: &App| state.current_theme())
         .font(BOOTSTRAP_FONT_BYTES)
-        .run_with(App::new)
+        .run()
 }

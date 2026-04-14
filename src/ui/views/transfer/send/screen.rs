@@ -1,24 +1,24 @@
 use iced::{
-    widget::{button, column, container, pick_list, row, scrollable, text, text_input, Space},
     Alignment, Element, Length,
+    widget::{Space, button, column, container, pick_list, row, scrollable, text, text_input},
 };
 
 use crate::core::contact::AddressBook;
-use crate::core::wallet::{validate_bitcoin_address, ChangeStrategy, InputSource, Wallet};
+use crate::core::wallet::{ChangeStrategy, InputSource, Wallet, validate_bitcoin_address};
 use crate::ui::components::help_content::send_screen_topics;
 use crate::ui::components::wallet_picker::{selected_wallet_choice, wallet_choices};
 use crate::ui::components::{
-    contact_form_view, contact_picker_view, help_topic_panel, info_box, modal, BtcUnit,
+    BtcUnit, contact_form_view, contact_picker_view, help_topic_panel, info_box, modal,
 };
 use crate::ui::i18n::t;
 use crate::ui::theme::{
-    card_style, input_style, notice_style, pick_list_menu_style, pick_list_style,
+    NoticeTone, card_style, input_style, notice_style, pick_list_menu_style, pick_list_style,
     primary_button_style, secondary_button_style, selected_button_style, text_accent_purple_color,
     text_accent_teal_color, text_error_color, text_muted_color, text_primary_color, text_scaled,
-    text_secondary_color, NoticeTone,
+    text_secondary_color,
 };
 use crate::utils::{format_btc_with_spaces, format_number_with_spaces};
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::bootstrap;
 
 use super::structure::*;
 
@@ -502,13 +502,13 @@ impl SendView {
         }
 
         // Header (Pinned at top)
-        let header = row![title, Space::with_width(Length::Fill), send_btn,]
+        let header = row![title, Space::new().width(Length::Fill), send_btn,]
             .align_y(Alignment::Center)
             .padding(content_padding);
 
         let wallet_selector = column![
             text_scaled(t("Từ ví", "From Wallet"), 14).style(text_secondary_color()),
-            Space::with_height(4),
+            Space::new().height(4),
             pick_list(wallet_options, selected_wallet_option, |choice| {
                 SendMessage::SelectWallet(choice.index)
             })
@@ -532,7 +532,7 @@ impl SendView {
                     ))
                     .size(14)
                     .style(text_primary_color()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     text(format!(
                         "{}: {}",
                         t("Mạng", "Network"),
@@ -556,10 +556,10 @@ impl SendView {
 
         let to_label = row![
             text_scaled(t("Địa chỉ nhận", "To Address"), 14).style(text_secondary_color()),
-            Space::with_width(8),
+            Space::new().width(8),
             button(
-                text_scaled(Bootstrap::QuestionCircle.to_string(), 12)
-                    .font(iced_fonts::BOOTSTRAP_FONT)
+                bootstrap::question_circle()
+                    .size(12)
                     .style(text_muted_color())
             )
             .on_press(SendMessage::ToggleAddressHelp)
@@ -571,13 +571,11 @@ impl SendView {
         let to_input = column![
             row![
                 to_label,
-                Space::with_width(Length::Fill),
+                Space::new().width(Length::Fill),
                 button(
                     row![
-                        text_scaled(Bootstrap::Person.to_string(), 12)
-                            .font(BOOTSTRAP_FONT)
-                            .style(text_accent_teal_color()),
-                        Space::with_width(4),
+                        bootstrap::person().size(12).style(text_accent_teal_color()),
+                        Space::new().width(4),
                         text_scaled(t("Contact", "Contact"), 11).style(text_primary_color()),
                     ]
                     .align_y(Alignment::Center),
@@ -591,7 +589,7 @@ impl SendView {
                 }),
             ]
             .align_y(Alignment::Center),
-            Space::with_height(4),
+            Space::new().height(4),
             text_input(
                 t("Nhập địa chỉ nhận...", "Enter recipient address..."),
                 &self.to_address
@@ -603,10 +601,10 @@ impl SendView {
             // Show matched contact label if exists
             if let Some(contact_name) = &self.matched_contact_name {
                 row![
-                    text_scaled(Bootstrap::PersonFill.to_string(), 10)
-                        .font(BOOTSTRAP_FONT)
+                    bootstrap::person_fill()
+                        .size(10)
                         .style(text_accent_purple_color()),
-                    Space::with_width(4),
+                    Space::new().width(4),
                     text(format!("{}: {}", t("Contact", "Contact"), contact_name))
                         .size(11)
                         .style(text_accent_teal_color()),
@@ -622,7 +620,7 @@ impl SendView {
                             .style(text_error_color())
                             .into()
                     } else {
-                        Space::with_height(0).into()
+                        Space::new().height(0).into()
                     };
                 error_widget
             }
@@ -637,7 +635,7 @@ impl SendView {
                   "Supports BTC mainnet (bc1..., 1..., 3...) and testnet (tb1..., m/n/2...). Make sure the address matches the wallet network.")
             ).map(|_| SendMessage::ToggleAddressHelp)
         } else {
-            Space::with_height(0).into()
+            Space::new().height(0).into()
         };
 
         let max_label = if is_calculating_max {
@@ -656,10 +654,10 @@ impl SendView {
             text(t("Số lượng (BTC)", "Amount (BTC)"))
                 .size(14)
                 .style(text_secondary_color()),
-            Space::with_width(8),
+            Space::new().width(8),
             button(
-                text_scaled(Bootstrap::QuestionCircle.to_string(), 12)
-                    .font(iced_fonts::BOOTSTRAP_FONT)
+                bootstrap::question_circle()
+                    .size(12)
                     .style(text_muted_color())
             )
             .on_press(SendMessage::ShowAmountHelp)
@@ -674,7 +672,7 @@ impl SendView {
                 .padding(12)
                 .size(14)
                 .style(input_style()),
-            Space::with_width(8),
+            Space::new().width(8),
             max_button,
         ]
         .align_y(Alignment::Center);
@@ -695,7 +693,7 @@ impl SendView {
                     text(format!("≈ {} {}", display, self.unit.symbol()))
                         .size(12)
                         .style(text_muted_color()),
-                    Space::with_width(8),
+                    Space::new().width(8),
                     pick_list(BtcUnit::all(), Some(self.unit), SendMessage::ChangeUnit)
                         .width(Length::Fixed(80.0))
                         .padding(4)
@@ -705,10 +703,10 @@ impl SendView {
                 .align_y(Alignment::Center)
                 .into()
             } else {
-                Space::with_height(0).into()
+                Space::new().height(0).into()
             }
         } else {
-            Space::with_height(0).into()
+            Space::new().height(0).into()
         };
 
         // Amount help box - i18n support
@@ -719,7 +717,7 @@ impl SendView {
                   "Enter the BTC amount you want to send. Example: 0.001 BTC = 100,000 satoshis. Transaction fee will be deducted separately.")
             ).map(|_| SendMessage::AmountChanged(self.amount.clone()))
         } else {
-            Space::with_height(0).into()
+            Space::new().height(0).into()
         };
 
         let estimate_label = if is_estimating_fee {
@@ -738,10 +736,10 @@ impl SendView {
             text(t("Phí (BTC)", "Fee (BTC)"))
                 .size(14)
                 .style(text_secondary_color()),
-            Space::with_width(8),
+            Space::new().width(8),
             button(
-                text_scaled(Bootstrap::QuestionCircle.to_string(), 12)
-                    .font(iced_fonts::BOOTSTRAP_FONT)
+                bootstrap::question_circle()
+                    .size(12)
                     .style(text_muted_color())
             )
             .on_press(SendMessage::ShowFeeHelp)
@@ -759,7 +757,7 @@ impl SendView {
             .padding(12)
             .size(14)
             .style(input_style()),
-            Space::with_width(8),
+            Space::new().width(8),
             estimate_btn,
         ]
         .align_y(Alignment::Center);
@@ -780,7 +778,7 @@ impl SendView {
                     text(format!("{} {}", display, self.unit.symbol()))
                         .size(12)
                         .style(text_muted_color()),
-                    Space::with_width(8),
+                    Space::new().width(8),
                     pick_list(BtcUnit::all(), Some(self.unit), SendMessage::ChangeUnit)
                         .width(Length::Fixed(80.0))
                         .padding(4)
@@ -790,10 +788,10 @@ impl SendView {
                 .align_y(Alignment::Center)
                 .into()
             } else {
-                Space::with_height(0).into()
+                Space::new().height(0).into()
             }
         } else {
-            Space::with_height(0).into()
+            Space::new().height(0).into()
         };
 
         // Fee help box - i18n support
@@ -804,7 +802,7 @@ impl SendView {
                   "Transaction fee in BTC. Higher fee = faster confirmation. Click 'Auto estimate' to get current fee rates.")
             ).map(|_| SendMessage::FeeAmountChanged(self.fee_amount.clone()))
         } else {
-            Space::with_height(0).into()
+            Space::new().height(0).into()
         };
 
         let advanced_toggle = button(text_scaled(
@@ -831,7 +829,7 @@ impl SendView {
                         "Advanced options are only needed when you want to control specific inputs/change.",
                     ), 12)
                     .style(text_secondary_color()),
-                    Space::with_height(spacing / 2),
+                    Space::new().height(spacing / 2),
                     column![
                         text(t(
                             "Chỉ số địa chỉ nguồn (phân tách bởi dấu phẩy)",
@@ -839,7 +837,7 @@ impl SendView {
                         ))
                         .size(12)
                         .style(text_secondary_color()),
-                        Space::with_height(spacing / 2),
+                        Space::new().height(spacing / 2),
                         text_input(t("Ví dụ: 0,1,4", "Example: 0,1,4"), &self.from_address)
                             .on_input(SendMessage::FromAddressChanged)
                             .padding(10)
@@ -847,7 +845,7 @@ impl SendView {
                             .style(input_style())
                     ]
                     .spacing(spacing / 2),
-                    Space::with_height(spacing / 2),
+                    Space::new().height(spacing / 2),
                     column![
                         text(t(
                             "Chỉ số địa chỉ trả lại (để trống = tạo mới)",
@@ -855,7 +853,7 @@ impl SendView {
                         ))
                         .size(12)
                         .style(text_secondary_color()),
-                        Space::with_height(spacing / 2),
+                        Space::new().height(spacing / 2),
                         text_input(t("Ví dụ: 2", "Example: 2"), &self.change_address)
                             .on_input(SendMessage::ChangeAddressChanged)
                             .padding(10)
@@ -871,36 +869,36 @@ impl SendView {
             .width(Length::Fill)
             .into()
         } else {
-            Space::with_height(0).into()
+            Space::new().height(0).into()
         };
 
         let mut content = column![
             wallet_selector,
-            Space::with_height(spacing / 2),
+            Space::new().height(spacing / 2),
             balance_text,
-            Space::with_height(spacing),
+            Space::new().height(spacing),
             to_input,
-            Space::with_height(spacing),
+            Space::new().height(spacing),
             address_help,
-            Space::with_height(spacing),
+            Space::new().height(spacing),
             amount_label,
             amount_input_row,
             amount_info,
-            Space::with_height(spacing),
+            Space::new().height(spacing),
             amount_help,
-            Space::with_height(spacing),
+            Space::new().height(spacing),
             fee_label,
             fee_row,
             fee_info,
-            Space::with_height(spacing),
+            Space::new().height(spacing),
             fee_help,
-            Space::with_height(spacing),
+            Space::new().height(spacing),
             advanced_toggle,
             advanced_section,
-            Space::with_height(spacing),
+            Space::new().height(spacing),
             // Help topics section
             text_scaled(t("Trợ giúp", "Help"), 14).style(text_primary_color()),
-            Space::with_height(spacing / 2),
+            Space::new().height(spacing / 2),
         ]
         .spacing(0)
         .padding(content_padding);
@@ -932,7 +930,7 @@ impl SendView {
                 SendMessage::ToggleHelpTopic(topic.id.to_string()),
             );
             content = content.push(panel);
-            content = content.push(Space::with_height(spacing));
+            content = content.push(Space::new().height(spacing));
         }
 
         let mut base_content: Element<'_, SendMessage> =
@@ -1019,7 +1017,7 @@ impl SendView {
                     13
                 )
                 .style(text_secondary_color()),
-                Space::with_height(16),
+                Space::new().height(16),
                 summary_row(t("Từ ví", "From Wallet"), source_label),
                 summary_row(t("Đến", "To"), self.to_address.clone()),
                 summary_row(
@@ -1055,9 +1053,9 @@ impl SendView {
                     .padding(10)
                     .width(Length::Fill)
                 } else {
-                    container(Space::with_height(0))
+                    container(Space::new().height(0))
                 },
-                Space::with_height(16),
+                Space::new().height(16),
                 text_input(
                     t(
                         "Nhập passphrase để xác nhận...",
@@ -1071,14 +1069,14 @@ impl SendView {
                 .padding(12)
                 .size(14)
                 .style(input_style()),
-                Space::with_height(16),
+                Space::new().height(16),
                 container(
                     row![
                         button(text_scaled(t("Hủy", "Cancel"), 14))
                             .on_press(SendMessage::CancelSend)
                             .padding(10)
                             .style(secondary_button_style()),
-                        Space::with_width(10),
+                        Space::new().width(10),
                         button(text_scaled(
                             t("Broadcast giao dịch", "Broadcast transaction"),
                             14
@@ -1111,7 +1109,7 @@ impl SendView {
 fn summary_row<'a>(label: &'a str, value: String) -> Element<'a, SendMessage> {
     row![
         text_scaled(label, 13).style(text_secondary_color()),
-        Space::with_width(Length::Fill),
+        Space::new().width(Length::Fill),
         text_scaled(value, 13).style(text_primary_color()),
     ]
     .align_y(Alignment::Center)

@@ -3,8 +3,8 @@ use secrecy::SecretString;
 use crate::core::error::AppError;
 use crate::core::wallet::{Wallet, WalletSecretsVault};
 use crate::infra::storage::{AddressBook, AppTheme};
-use crate::ui::components::language_selector::LanguageSelector;
 use crate::ui::components::ToastManager;
+use crate::ui::components::language_selector::LanguageSelector;
 use crate::ui::i18n::AppLanguage;
 use crate::ui::views::{
     dashboard::{DashboardMessage, DashboardView},
@@ -107,6 +107,7 @@ pub enum AppMessage {
     KeyboardSubmitForm,
     KeyboardSaveState,
     KeyboardFocusSearch,
+    KeyboardNoOp,
     AutoRefreshConfirmations,
     OnboardingMessage(OnboardingMessage),
 }

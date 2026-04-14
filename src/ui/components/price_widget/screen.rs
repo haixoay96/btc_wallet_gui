@@ -4,9 +4,9 @@ use crate::ui::theme::{
     card_style, text_accent_teal_color, text_error_color, text_muted_color, text_primary_color,
     text_secondary_color, text_success_color,
 };
-use iced::widget::{button, column, container, row, text, Space};
+use iced::widget::{Space, button, column, container, row, text};
 use iced::{Alignment, Element, Length};
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::{bootstrap, bootstrap::advanced_text};
 
 /// Render the BTC price widget
 pub fn price_widget_view(
@@ -21,11 +21,10 @@ pub fn price_widget_view(
         text(t("Giá BTC", "BTC Price"))
             .size(14)
             .style(text_secondary_color()),
-        Space::with_width(Length::Fill),
+        Space::new().width(Length::Fill),
         button(
-            text(Bootstrap::ArrowClockwise.to_string())
+            bootstrap::arrow_clockwise()
                 .size(12)
-                .font(BOOTSTRAP_FONT)
                 .style(text_accent_teal_color()),
         )
         .on_press(PriceWidgetMessage::RefreshPrice)
@@ -36,19 +35,18 @@ pub fn price_widget_view(
     .width(Length::Fill);
 
     content = content.push(title_row);
-    content = content.push(Space::with_height(8));
+    content = content.push(Space::new().height(8));
 
     // Price display
     if let Some(price_data) = &price {
         let formatted_price = format_price_usd(price_data.price_usd);
 
-        // Bootstrap icon for change direction (rendered with BOOTSTRAP_FONT)
+        // Bootstrap icon for change direction
         let change_icon = if price_data.change_24h >= 0.0 {
-            Bootstrap::ArrowUp
+            advanced_text::arrow_up().0
         } else {
-            Bootstrap::ArrowDown
-        }
-        .to_string();
+            advanced_text::arrow_down().0
+        };
 
         // BTC price row: price + icon + percentage
         let icon_style = if price_data.change_24h >= 0.0 {
@@ -63,12 +61,9 @@ pub fn price_widget_view(
         };
         let price_row = row![
             text(formatted_price).size(20).style(text_primary_color()),
-            Space::with_width(8),
-            text(change_icon)
-                .size(13)
-                .font(BOOTSTRAP_FONT)
-                .style(icon_style),
-            Space::with_width(2),
+            Space::new().width(8),
+            text(change_icon).size(13).style(icon_style),
+            Space::new().width(2),
             text(format!("{:.2}% (24h)", price_data.change_24h.abs()))
                 .size(13)
                 .style(text_style),
@@ -84,7 +79,7 @@ pub fn price_widget_view(
             t("Tổng balance", "Total balance"),
             balance_usd
         );
-        content = content.push(Space::with_height(4));
+        content = content.push(Space::new().height(4));
         content = content.push(text(balance_text).size(12).style(text_muted_color()));
     } else {
         // Error / unavailable state

@@ -1,13 +1,13 @@
 use crate::ui::components::tooltip::HelpTopic;
 
-use iced_fonts::Bootstrap;
+use iced_fonts::bootstrap::advanced_text;
 
 /// Send Screen help topics
 pub fn send_screen_topics() -> Vec<HelpTopic> {
     vec![
         HelpTopic::new(
             "send_fee_estimation",
-            Bootstrap::Calculator,
+            advanced_text::calculator().0,
             "Ước tính phí giao dịch",
             "Fee Estimation",
             "Phí cao hơn = giao dịch được xác nhận nhanh hơn. Phí được ước tính dựa trên tình trạng mạng lưới hiện tại.",
@@ -19,7 +19,7 @@ pub fn send_screen_topics() -> Vec<HelpTopic> {
         ),
         HelpTopic::new(
             "send_input_strategy",
-            Bootstrap::Grid,
+            advanced_text::grid().0,
             "Chiến lược chọn UTXO",
             "Input Strategy",
             "Tự động chọn UTXOs tối ưu để giảm phí giao dịch và bảo vệ quyền riêng tư.",
@@ -31,7 +31,7 @@ pub fn send_screen_topics() -> Vec<HelpTopic> {
         ),
         HelpTopic::new(
             "send_change_address",
-            Bootstrap::Shuffle,
+            advanced_text::shuffle().0,
             "Địa chỉ tiền thừa (Change)",
             "Change Address",
             "Địa chỉ trả lại Bitcoin thừa sau giao dịch. Đây là cơ chế bình thường của Bitcoin.",

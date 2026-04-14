@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use iced::{clipboard, Task};
+use iced::{Task, clipboard};
 
 use crate::app::structure::*;
 use crate::infra::storage::Storage;
@@ -515,6 +515,11 @@ impl App {
                         |_| AppMessage::DismissStatus,
                     );
                 }
+                Task::none()
+            }
+
+            AppMessage::KeyboardNoOp => {
+                // No-op for unhandled keyboard events
                 Task::none()
             }
 

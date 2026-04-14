@@ -1,22 +1,22 @@
 use iced::{
-    widget::{
-        button, column, container, mouse_area, pick_list, row, scrollable, text, text_input,
-        tooltip, Space,
-    },
     Alignment, Background, Color, Element, Length,
+    widget::{
+        Space, button, column, container, mouse_area, pick_list, row, scrollable, text, text_input,
+        tooltip,
+    },
 };
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::bootstrap;
 
 use crate::core::wallet::{AddressChain, Wallet, WalletNetwork};
 use crate::ui::components::info_box;
 use crate::ui::components::modal;
 use crate::ui::i18n::t;
 use crate::ui::theme::{
-    card_style, danger_button_style, get_theme_colors, input_style, notice_style,
+    NoticeTone, card_style, danger_button_style, get_theme_colors, input_style, notice_style,
     pick_list_menu_style, pick_list_style, primary_button_style, secondary_button_style,
     selected_button_style, text_accent_purple_color, text_accent_teal_color, text_error_color,
     text_muted_color, text_primary_color, text_scaled, text_secondary_color, text_success_color,
-    text_warning_color, NoticeTone,
+    text_warning_color,
 };
 
 use super::structure::*;
@@ -750,9 +750,9 @@ impl WalletsView {
         // Header (Pinned at top)
         let header = row![
             title,
-            Space::with_width(Length::Fill),
+            Space::new().width(Length::Fill),
             create_toggle_btn,
-            Space::with_width(btn_spacing),
+            Space::new().width(btn_spacing),
             import_toggle_btn,
         ]
         .align_y(Alignment::Center)
@@ -766,7 +766,7 @@ impl WalletsView {
                 container(
                     row![
                         text_scaled(info.as_str(), 13).style(text_primary_color()),
-                        Space::with_width(Length::Fill),
+                        Space::new().width(Length::Fill),
                         button(text_scaled(t("Đóng", "Close"), 12))
                             .on_press(WalletsMessage::DismissWalletNotice)
                             .padding(4)
@@ -818,11 +818,11 @@ impl WalletsView {
                         "A new wallet will generate a 12-word mnemonic and prompt immediate backup.",
                     ), 12)
                     .style(text_secondary_color()),
-                    Space::with_height(12),
+                    Space::new().height(12),
                     name_input,
-                    Space::with_height(8),
+                    Space::new().height(8),
                     row![network_testnet, network_mainnet].spacing(8),
-                    Space::with_height(12),
+                    Space::new().height(12),
                     create_btn,
                 ]
                 .spacing(8),
@@ -896,7 +896,7 @@ impl WalletsView {
 
             let mut form_content = column![
                 text_scaled(t("Import ví", "Import Wallet"), 18).style(text_primary_color()),
-                Space::with_height(8),
+                Space::new().height(8),
                 text_scaled(
                     t(
                         "Khôi phục từng ví riêng lẻ vào app hiện tại.",
@@ -905,7 +905,7 @@ impl WalletsView {
                     12
                 )
                 .style(text_secondary_color()),
-                Space::with_height(12),
+                Space::new().height(12),
                 row![mode_bip39, mode_slip39, mode_encrypted].spacing(8),
             ]
             .spacing(8);
@@ -923,7 +923,7 @@ impl WalletsView {
             } else {
                 form_content = form_content
                     .push(import_name_input)
-                    .push(Space::with_height(8))
+                    .push(Space::new().height(8))
                     .push(row![network_testnet, network_mainnet].spacing(8));
             }
 
@@ -949,9 +949,9 @@ impl WalletsView {
                     .style(primary_button_style());
 
                     form_content = form_content
-                        .push(Space::with_height(8))
+                        .push(Space::new().height(8))
                         .push(import_mnemonic_input)
-                        .push(Space::with_height(12))
+                        .push(Space::new().height(12))
                         .push(import_btn);
                 }
                 ImportMode::Slip39 => {
@@ -1021,7 +1021,7 @@ impl WalletsView {
                     .style(primary_button_style());
 
                     form_content = form_content
-                        .push(Space::with_height(8))
+                        .push(Space::new().height(8))
                         .push(passphrase_input)
                         .push(
                             container(shares_form)
@@ -1030,7 +1030,7 @@ impl WalletsView {
                                 .width(Length::Fill),
                         )
                         .push(row![add_share_btn, remove_share_btn].spacing(8))
-                        .push(Space::with_height(6))
+                        .push(Space::new().height(6))
                         .push(import_btn);
                 }
                 ImportMode::Encrypted => {
@@ -1077,7 +1077,7 @@ impl WalletsView {
                     .style(primary_button_style());
 
                     form_content = form_content
-                        .push(Space::with_height(8))
+                        .push(Space::new().height(8))
                         .push(browse_button)
                         .push(encrypted_path_input)
                         .push(passphrase_input)
@@ -1088,7 +1088,7 @@ impl WalletsView {
                             ), 12)
                             .style(text_secondary_color()),
                         )
-                        .push(Space::with_height(6))
+                        .push(Space::new().height(6))
                         .push(import_btn);
                 }
             }
@@ -1108,7 +1108,7 @@ impl WalletsView {
                     text(t("Sắp xếp theo:", "Sort by:"))
                         .size(14)
                         .style(text_secondary_color()),
-                    Space::with_width(12),
+                    Space::new().width(12),
                     pick_list(
                         vec![
                             WalletSortField::Balance,
@@ -1122,15 +1122,14 @@ impl WalletsView {
                     .padding(8)
                     .style(pick_list_style())
                     .menu_style(pick_list_menu_style()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     button(
-                        text(if self.sort_ascending {
-                            Bootstrap::ArrowUp.to_string()
+                        if self.sort_ascending {
+                            bootstrap::arrow_up()
                         } else {
-                            Bootstrap::ArrowDown.to_string()
-                        })
-                        .size(12)
-                        .font(BOOTSTRAP_FONT),
+                            bootstrap::arrow_down()
+                        }
+                        .size(12),
                     )
                     .on_press(WalletsMessage::ToggleSortDirection)
                     .padding([8, 12])
@@ -1143,7 +1142,7 @@ impl WalletsView {
             .width(Length::Fill);
 
             scroll_content = scroll_content.push(sort_controls);
-            scroll_content = scroll_content.push(Space::with_height(12));
+            scroll_content = scroll_content.push(Space::new().height(12));
 
             // Search Input
             let search_input =
@@ -1154,7 +1153,7 @@ impl WalletsView {
                     .style(crate::ui::theme::input_style());
 
             scroll_content = scroll_content.push(search_input);
-            scroll_content = scroll_content.push(Space::with_height(12));
+            scroll_content = scroll_content.push(Space::new().height(12));
 
             // Prepare sorted indices and filter by search query
             let mut sorted_indices: Vec<usize> = (0..wallets.len()).collect();
@@ -1204,15 +1203,10 @@ impl WalletsView {
                 let balance_usd = btc_price_usd.map(|p| balance_btc * p);
 
                 // Tag button to open tag modal
-                let tag_btn = button(
-                    text(Bootstrap::Tags.to_string())
-                        .size(14)
-                        .font(BOOTSTRAP_FONT)
-                        .style(text_accent_purple_color()),
-                )
-                .on_press(WalletsMessage::ToggleTagModal(sorted_index))
-                .padding([4, 6])
-                .style(secondary_button_style());
+                let tag_btn = button(bootstrap::tags().size(14).style(text_accent_purple_color()))
+                    .on_press(WalletsMessage::ToggleTagModal(sorted_index))
+                    .padding([4, 6])
+                    .style(secondary_button_style());
 
                 // Render existing tags as small text badges
                 let mut tags_display = row![].spacing(4).align_y(Alignment::Center);
@@ -1241,6 +1235,7 @@ impl WalletsView {
                                     width: 0.0,
                                     color: Color::TRANSPARENT,
                                 },
+                                snap: false,
                                 ..Default::default()
                             }),
                     );
@@ -1266,7 +1261,7 @@ impl WalletsView {
                         column![
                             row![
                                 text_scaled(wallet.name.as_str(), 16).style(text_primary_color()),
-                                Space::with_width(8),
+                                Space::new().width(8),
                                 tags_display,
                             ]
                             .align_y(Alignment::Center),
@@ -1283,21 +1278,19 @@ impl WalletsView {
                             .style(text_secondary_color()),
                         ]
                         .spacing(4),
-                        Space::with_width(Length::Fill),
+                        Space::new().width(Length::Fill),
                         // Selection checkmark
                         if is_selected {
-                            text_scaled(iced_fonts::Bootstrap::Check.to_string(), 16)
-                                .font(iced_fonts::BOOTSTRAP_FONT)
-                                .style(text_success_color())
+                            bootstrap::check().size(16).style(text_success_color())
                         } else {
-                            text("").size(16).font(iced_fonts::BOOTSTRAP_FONT)
+                            text("").size(16)
                         },
-                        Space::with_width(4),
+                        Space::new().width(4),
                         // Backup status icon
                         if needs_backup {
                             button(
-                                text_scaled(iced_fonts::Bootstrap::Exclamation.to_string(), 16)
-                                    .font(iced_fonts::BOOTSTRAP_FONT)
+                                bootstrap::exclamation()
+                                    .size(16)
                                     .style(text_warning_color()),
                             )
                             .on_press(WalletsMessage::ShowBackupWarning(sorted_index))
@@ -1305,8 +1298,8 @@ impl WalletsView {
                             .style(crate::ui::theme::flat_icon_button_style())
                         } else {
                             button(
-                                text_scaled(iced_fonts::Bootstrap::ShieldCheck.to_string(), 16)
-                                    .font(iced_fonts::BOOTSTRAP_FONT)
+                                bootstrap::shield_check()
+                                    .size(16)
                                     .style(text_success_color()),
                             )
                             .padding(0)
@@ -1332,9 +1325,9 @@ impl WalletsView {
                     container(
                         row![
                             select_btn,
-                            Space::with_width(8),
+                            Space::new().width(8),
                             tag_btn,
-                            Space::with_width(4),
+                            Space::new().width(4),
                             delete_btn
                         ]
                         .align_y(Alignment::Center),
@@ -1342,7 +1335,7 @@ impl WalletsView {
                     .style(card_style())
                     .padding(12),
                 );
-                wallet_list = wallet_list.push(Space::with_height(8));
+                wallet_list = wallet_list.push(Space::new().height(8));
             }
 
             // Show "No results" message if search query is active but no wallets match
@@ -1366,7 +1359,7 @@ impl WalletsView {
                     column![
                         text_scaled(t("Danh sách ví", "Your Wallets"), 18)
                             .style(text_primary_color()),
-                        Space::with_height(12),
+                        Space::new().height(12),
                         wallet_list,
                     ]
                     .spacing(0),
@@ -1377,15 +1370,15 @@ impl WalletsView {
             );
 
             if let Some(selected_wallet) = wallets.get(selected) {
-                scroll_content = scroll_content.push(Space::with_height(12));
+                scroll_content = scroll_content.push(Space::new().height(12));
                 scroll_content = scroll_content.push(wallet_summary_card(selected_wallet));
-                scroll_content = scroll_content.push(Space::with_height(12));
+                scroll_content = scroll_content.push(Space::new().height(12));
                 scroll_content = scroll_content.push(
                     container(
                         column![
                             text_scaled(t("Danh sách địa chỉ", "Addresses"), 18)
                                 .style(text_primary_color()),
-                            Space::with_height(12),
+                            Space::new().height(12),
                             wallet_addresses_detail(
                                 selected_wallet,
                                 self.copied_address.as_deref(),
@@ -1399,7 +1392,7 @@ impl WalletsView {
                     .padding(16)
                     .width(Length::Fill),
                 );
-                scroll_content = scroll_content.push(Space::with_height(12));
+                scroll_content = scroll_content.push(Space::new().height(12));
                 scroll_content = scroll_content.push(self.backup_panel(
                     selected,
                     selected_wallet,
@@ -1438,7 +1431,7 @@ impl WalletsView {
                 text(format!("{} '{wallet_name}'?", t("Xóa ví", "Delete wallet")))
                     .size(16)
                     .style(text_primary_color()),
-                Space::with_height(12),
+                Space::new().height(12),
                 text_input(
                     t(
                         "Nhập passphrase để xác nhận...",
@@ -1451,14 +1444,14 @@ impl WalletsView {
                 .secure(true)
                 .padding(12)
                 .size(14),
-                Space::with_height(16),
+                Space::new().height(16),
                 container(
                     row![
                         button(text_scaled(t("Hủy", "Cancel"), 14))
                             .on_press(WalletsMessage::CancelDelete)
                             .padding(10)
                             .style(secondary_button_style()),
-                        Space::with_width(12),
+                        Space::new().width(12),
                         button(text_scaled(t("Xóa", "Delete"), 14))
                             .on_press(WalletsMessage::ConfirmDelete(index))
                             .padding(10)
@@ -1612,7 +1605,7 @@ impl WalletsView {
                             ))
                             .size(12)
                             .style(text_secondary_color()),
-                            Space::with_height(6),
+                            Space::new().height(6),
                             text_scaled(mnemonic_line, 14).style(text_accent_teal_color()),
                         ]
                         .spacing(2),
@@ -1780,14 +1773,16 @@ impl WalletsView {
                 );
 
                 if test_active {
-                    let mut test_form = column![text_scaled(
-                        t(
-                            "Nhập đúng các từ theo vị trí để xác nhận backup",
-                            "Enter the correct words at positions to verify backup",
-                        ),
-                        12
-                    )
-                    .style(text_secondary_color()),]
+                    let mut test_form = column![
+                        text_scaled(
+                            t(
+                                "Nhập đúng các từ theo vị trí để xác nhận backup",
+                                "Enter the correct words at positions to verify backup",
+                            ),
+                            12
+                        )
+                        .style(text_secondary_color()),
+                    ]
                     .spacing(8);
 
                     for (field_index, position) in
@@ -1897,7 +1892,7 @@ fn wallet_summary_card<'a>(wallet: &'a Wallet) -> Element<'a, WalletsMessage> {
     container(
         column![
             text_scaled(t("Wallet Summary", "Wallet Summary"), 18).style(text_primary_color()),
-            Space::with_height(10),
+            Space::new().height(10),
             row![
                 summary_metric(t("Tên ví", "Wallet"), wallet.name.clone()),
                 summary_metric(
@@ -1906,13 +1901,13 @@ fn wallet_summary_card<'a>(wallet: &'a Wallet) -> Element<'a, WalletsMessage> {
                 ),
             ]
             .spacing(12),
-            Space::with_height(10),
+            Space::new().height(10),
             row![
                 summary_metric(t("Mạng", "Network"), wallet.network.as_str().to_string()),
                 summary_metric(t("Số dư", "Balance"), format!("{balance_btc:.8} BTC")),
             ]
             .spacing(12),
-            Space::with_height(10),
+            Space::new().height(10),
             row![
                 summary_metric(
                     t("Tổng địa chỉ", "Total Addresses"),
@@ -1977,7 +1972,7 @@ fn wallet_addresses_detail<'a>(
                     ))
                     .size(12)
                     .style(text_secondary_color()),
-                    Space::with_width(Length::Fill)
+                    Space::new().width(Length::Fill)
                 ]
                 .align_y(Alignment::Center),
             )
@@ -1989,7 +1984,7 @@ fn wallet_addresses_detail<'a>(
 
     // External addresses list
     if show_external {
-        external_section = external_section.push(Space::with_height(8));
+        external_section = external_section.push(Space::new().height(8));
         if external_addresses.is_empty() {
             external_section = external_section.push(
                 text_scaled(t("Chưa có địa chỉ nhận", "No receiving addresses"), 12)
@@ -2002,9 +1997,9 @@ fn wallet_addresses_detail<'a>(
 
                 let row_content = row![
                     text_scaled(format!("#{}", addr.index), 12).style(text_muted_color()),
-                    Space::with_width(8),
+                    Space::new().width(8),
                     text_scaled(addr.address.clone(), 12).style(text_primary_color()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     if is_copied {
                         text_scaled(t("Đã sao chép", "Copied"), 11).style(text_success_color())
                     } else {
@@ -2022,7 +2017,7 @@ fn wallet_addresses_detail<'a>(
                 );
 
                 if i < external_addresses.len() - 1 {
-                    external_list = external_list.push(Space::with_height(4));
+                    external_list = external_list.push(Space::new().height(4));
                 }
             }
             external_section =
@@ -2040,9 +2035,9 @@ fn wallet_addresses_detail<'a>(
         column![external_section.spacing(0)].width(Length::Fill)
     } else {
         column![
-            Space::with_height(Length::Fill),
+            Space::new().height(Length::Fill),
             external_section.spacing(0),
-            Space::with_height(Length::Fill)
+            Space::new().height(Length::Fill)
         ]
         .width(Length::Fill)
         .height(external_container_height)
@@ -2064,11 +2059,12 @@ fn wallet_addresses_detail<'a>(
                     },
                     text_color: None,
                     shadow: iced::Shadow::default(),
+                    snap: false,
                 }
             })
             .padding(12),
     );
-    col = col.push(Space::with_height(12));
+    col = col.push(Space::new().height(12));
 
     // Internal addresses section container
     let mut internal_section = column![];
@@ -2090,7 +2086,7 @@ fn wallet_addresses_detail<'a>(
                     ))
                     .size(12)
                     .style(text_secondary_color()),
-                    Space::with_width(Length::Fill)
+                    Space::new().width(Length::Fill)
                 ]
                 .align_y(Alignment::Center),
             )
@@ -2102,7 +2098,7 @@ fn wallet_addresses_detail<'a>(
 
     // Internal addresses list
     if show_internal {
-        internal_section = internal_section.push(Space::with_height(8));
+        internal_section = internal_section.push(Space::new().height(8));
         if internal_addresses.is_empty() {
             internal_section = internal_section.push(
                 text_scaled(t("Chưa có địa chỉ đổi", "No change addresses"), 12)
@@ -2115,9 +2111,9 @@ fn wallet_addresses_detail<'a>(
 
                 let row_content = row![
                     text_scaled(format!("#{}", addr.index), 12).style(text_muted_color()),
-                    Space::with_width(8),
+                    Space::new().width(8),
                     text_scaled(addr.address.clone(), 12).style(text_primary_color()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     if is_copied {
                         text_scaled(t("Đã sao chép", "Copied"), 11).style(text_success_color())
                     } else {
@@ -2135,7 +2131,7 @@ fn wallet_addresses_detail<'a>(
                 );
 
                 if i < internal_addresses.len() - 1 {
-                    internal_list = internal_list.push(Space::with_height(4));
+                    internal_list = internal_list.push(Space::new().height(4));
                 }
             }
             internal_section =
@@ -2153,9 +2149,9 @@ fn wallet_addresses_detail<'a>(
         column![internal_section.spacing(0)].width(Length::Fill)
     } else {
         column![
-            Space::with_height(Length::Fill),
+            Space::new().height(Length::Fill),
             internal_section.spacing(0),
-            Space::with_height(Length::Fill)
+            Space::new().height(Length::Fill)
         ]
         .width(Length::Fill)
         .height(internal_container_height)
@@ -2177,6 +2173,7 @@ fn wallet_addresses_detail<'a>(
                     },
                     text_color: None,
                     shadow: iced::Shadow::default(),
+                    snap: false,
                 }
             })
             .padding(12),
@@ -2189,7 +2186,7 @@ fn summary_metric<'a>(label: &'a str, value: String) -> Element<'a, WalletsMessa
     container(
         column![
             text_scaled(label, 12).style(text_secondary_color()),
-            Space::with_height(4),
+            Space::new().height(4),
             text_scaled(value, 14).style(text_primary_color()),
         ]
         .spacing(0),
@@ -2244,8 +2241,8 @@ fn optional_trimmed_value(raw: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::{
-        optional_trimmed_value, parse_u8_field, test_positions, ImportMode, WalletsEvent,
-        WalletsMessage, WalletsView,
+        ImportMode, WalletsEvent, WalletsMessage, WalletsView, optional_trimmed_value,
+        parse_u8_field, test_positions,
     };
 
     #[test]
@@ -2274,14 +2271,16 @@ mod tests {
         let mut view = WalletsView::new();
         view.import_mode = ImportMode::Encrypted;
 
-        assert!(view
-            .update(WalletsMessage::ImportWalletFromEncrypted)
-            .is_none());
+        assert!(
+            view.update(WalletsMessage::ImportWalletFromEncrypted)
+                .is_none()
+        );
 
         view.import_encrypted_path = "backup.enc".to_string();
-        assert!(view
-            .update(WalletsMessage::ImportWalletFromEncrypted)
-            .is_none());
+        assert!(
+            view.update(WalletsMessage::ImportWalletFromEncrypted)
+                .is_none()
+        );
 
         view.import_encrypted_passphrase = "secret".to_string();
         view.import_name = "  Cold Wallet  ".to_string();

@@ -1,6 +1,6 @@
 use iced::{
-    widget::{button, column, container, mouse_area, row, stack, text, Space},
     Alignment, Element, Length,
+    widget::{Space, button, column, container, mouse_area, row, stack, text},
 };
 
 use crate::ui::theme::{
@@ -8,7 +8,7 @@ use crate::ui::theme::{
     text_secondary_color,
 };
 
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::{BOOTSTRAP_FONT, bootstrap::advanced_text};
 
 /// Subtle close button style for modals
 fn close_button_style() -> impl Fn(&iced::Theme, button::Status) -> button::Style {
@@ -40,6 +40,7 @@ fn close_button_style() -> impl Fn(&iced::Theme, button::Status) -> button::Styl
             text_color,
             border: iced::Border::default(),
             shadow: iced::Shadow::default(),
+            snap: false,
         }
     }
 }
@@ -68,7 +69,7 @@ pub fn modal<'a, Message: 'a + Clone>(
     let overlay = if close_on_backdrop {
         container(
             mouse_area(
-                container(Space::with_width(Length::Fill))
+                container(Space::new().width(Length::Fill))
                     .width(Length::Fill)
                     .height(Length::Fill),
             )
@@ -78,7 +79,7 @@ pub fn modal<'a, Message: 'a + Clone>(
         .width(Length::Fill)
         .height(Length::Fill)
     } else {
-        container(Space::with_width(Length::Fill))
+        container(Space::new().width(Length::Fill))
             .style(popup_overlay_style())
             .width(Length::Fill)
             .height(Length::Fill)
@@ -91,9 +92,9 @@ pub fn modal<'a, Message: 'a + Clone>(
     // 2. Header với nút đóng X
     let header = row![
         text(title).size(title_size).style(text_primary_color()),
-        Space::with_width(Length::Fill),
+        Space::new().width(Length::Fill),
         button(
-            text(Bootstrap::X.to_string())
+            text(advanced_text::x().0)
                 .size(if compact { 14 } else { 16 })
                 .font(BOOTSTRAP_FONT)
                 .style(text_secondary_color())
@@ -106,7 +107,7 @@ pub fn modal<'a, Message: 'a + Clone>(
 
     // 3. Card nội dung - Width cố định, căn giữa
     let popup_card = container(
-        column![header, Space::with_height(spacing), content]
+        column![header, Space::new().height(spacing), content]
             .spacing(0)
             .width(Length::Fill),
     )
@@ -116,18 +117,18 @@ pub fn modal<'a, Message: 'a + Clone>(
 
     // 4. Wrapper căn giữa: Space -> Card -> Space (tỉ lệ 1:0:3 => cách top 25%)
     let centered_wrapper = row![
-        Space::with_width(Length::Fill),
+        Space::new().width(Length::Fill),
         container(
             column![
-                Space::with_height(Length::FillPortion(1)),
+                Space::new().height(Length::FillPortion(1)),
                 popup_card,
-                Space::with_height(Length::FillPortion(3)),
+                Space::new().height(Length::FillPortion(3)),
             ]
             .spacing(0)
             .height(Length::Fill),
         )
         .width(Length::Shrink),
-        Space::with_width(Length::Fill),
+        Space::new().width(Length::Fill),
     ]
     .width(Length::Fill)
     .height(Length::Fill)

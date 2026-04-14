@@ -1,15 +1,15 @@
 use super::structure::HelpTopic;
 
 use iced::{
-    widget::{column, container, mouse_area, row, text, Space},
     Color, Element, Length,
+    widget::{Space, column, container, mouse_area, row, text},
 };
 
 use crate::ui::theme::{
     text_accent_blue_color, text_accent_teal_color, text_muted_color, text_primary_color,
     text_secondary_color, text_warning_color,
 };
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::{bootstrap, bootstrap::advanced_text};
 
 /// Info box with icon and text - supports i18n via String
 pub fn info_box(title: impl Into<String>, description: impl Into<String>) -> Element<'static, ()> {
@@ -18,14 +18,13 @@ pub fn info_box(title: impl Into<String>, description: impl Into<String>) -> Ele
 
     container(
         row![
-            text(Bootstrap::InfoCircle.to_string())
+            bootstrap::info_circle()
                 .size(16)
-                .font(BOOTSTRAP_FONT)
                 .style(text_accent_blue_color()),
-            Space::with_width(8),
+            Space::new().width(8),
             column![
                 text(title).size(13).style(text_primary_color()),
-                Space::with_height(2),
+                Space::new().height(2),
                 text(description).size(11).style(text_secondary_color()),
             ]
             .spacing(0),
@@ -37,6 +36,7 @@ pub fn info_box(title: impl Into<String>, description: impl Into<String>) -> Ele
             0.4, 0.7, 1.0, 0.1,
         ))),
         border: iced::border::rounded(8),
+        snap: false,
         ..Default::default()
     })
     .padding(12)
@@ -54,14 +54,13 @@ pub fn warning_box(
 
     container(
         row![
-            text(Bootstrap::ExclamationTriangle.to_string())
+            bootstrap::exclamation_triangle()
                 .size(16)
-                .font(BOOTSTRAP_FONT)
                 .style(text_warning_color()),
-            Space::with_width(8),
+            Space::new().width(8),
             column![
                 text(title).size(13).style(text_primary_color()),
-                Space::with_height(2),
+                Space::new().height(2),
                 text(description).size(11).style(text_secondary_color()),
             ]
             .spacing(0),
@@ -73,6 +72,7 @@ pub fn warning_box(
             1.0, 0.75, 0.0, 0.1,
         ))),
         border: iced::border::rounded(8),
+        snap: false,
         ..Default::default()
     })
     .padding(12)
@@ -85,7 +85,7 @@ pub fn warning_box(
 impl HelpTopic {
     pub fn new(
         id: &'static str,
-        icon: Bootstrap,
+        icon: String,
         title_vi: &'static str,
         title_en: &'static str,
         description_vi: &'static str,
@@ -113,7 +113,7 @@ impl HelpTopic {
 /// Render a help topic as an inline expandable panel
 pub fn help_topic_panel<'a, Message: Clone + 'a>(
     _topic_id: &str,
-    icon: Bootstrap,
+    icon: String,
     title: &'a str,
     description: &'a str,
     detail: Option<&'a str>,
@@ -121,25 +121,19 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
     on_toggle: Message,
 ) -> Element<'a, Message> {
     let icon_char = if is_expanded {
-        Bootstrap::ChevronUp.to_string()
+        advanced_text::chevron_up().0
     } else {
-        Bootstrap::ChevronDown.to_string()
+        advanced_text::chevron_down().0
     };
 
     let header: Element<'_, Message> = row![
-        text(icon.to_string())
-            .size(14)
-            .font(BOOTSTRAP_FONT)
-            .style(text_accent_teal_color()),
-        Space::with_width(6),
+        text(icon).size(14).style(text_accent_teal_color()),
+        Space::new().width(6),
         text(title)
             .size(12)
             .style(text_primary_color())
             .width(Length::Fill),
-        text(icon_char)
-            .size(10)
-            .font(BOOTSTRAP_FONT)
-            .style(text_secondary_color()),
+        text(icon_char).size(10).style(text_secondary_color()),
     ]
     .align_y(iced::Alignment::Center)
     .into();
@@ -160,15 +154,16 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
                     0.2, 0.2, 0.25, 0.3,
                 ))),
                 border: iced::border::rounded(4),
+                snap: false,
                 ..Default::default()
             })
             .padding(8)
             .into();
 
-        let mut body = column![Space::with_height(6), desc_container,];
+        let mut body = column![Space::new().height(6), desc_container,];
 
         if let Some(detail_text) = detail {
-            body = body.push(Space::with_height(6));
+            body = body.push(Space::new().height(6));
             body = body.push(
                 text(detail_text)
                     .size(10)
@@ -188,6 +183,7 @@ pub fn help_topic_panel<'a, Message: Clone + 'a>(
     container(content)
         .style(|_| iced::widget::container::Style {
             border: iced::border::rounded(6),
+            snap: false,
             ..Default::default()
         })
         .padding(iced::padding::Padding {

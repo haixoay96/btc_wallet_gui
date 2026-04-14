@@ -2,8 +2,8 @@ use super::structure::KeyboardShortcut;
 
 use crate::ui::i18n::t;
 use iced::{
-    widget::{column, container, row, scrollable, text, Space},
     Color, Element, Length, Theme,
+    widget::{Space, column, container, row, scrollable, text},
 };
 
 use crate::ui::theme::{get_theme_colors, text_scaled, text_secondary_color};
@@ -121,6 +121,7 @@ fn key_badge(key: &str) -> Element<'static, ()> {
             0.5, 0.5, 0.5, 0.2,
         ))),
         border: iced::border::rounded(4),
+        snap: false,
         ..Default::default()
     })
     .padding(6)
@@ -174,7 +175,7 @@ pub fn shortcuts_help_popup() -> Element<'static, ()> {
     }
 
     scrollable(
-        column![Space::with_height(8), content, Space::with_height(8),]
+        column![Space::new().height(8), content, Space::new().height(8),]
             .spacing(0)
             .width(Length::Fill),
     )
@@ -192,7 +193,7 @@ fn shortcut_row(shortcut: &KeyboardShortcut) -> Element<'static, ()> {
 
     let item = row![
         keys_row,
-        Space::with_width(16),
+        Space::new().width(16),
         text_scaled(t(shortcut.description_vi, shortcut.description_en), 12)
             .style(text_secondary_color()),
     ]

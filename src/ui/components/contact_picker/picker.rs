@@ -1,6 +1,6 @@
 use iced::{
-    widget::{button, column, container, row, scrollable, text, text_input, Space},
     Element, Length,
+    widget::{Space, button, column, container, row, scrollable, text, text_input},
 };
 
 use crate::ui::i18n::t;
@@ -11,7 +11,7 @@ use crate::ui::theme::{
     text_accent_purple_color, text_accent_teal_color, text_error_color, text_muted_color,
     text_primary_color, text_secondary_color, text_success_color,
 };
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::{BOOTSTRAP_FONT, bootstrap::advanced_text};
 
 /// Contact picker for Send screen
 /// Shows a list of contacts that can be selected to fill the address field
@@ -28,11 +28,11 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
 
     let search_box = container(
         row![
-            text(Bootstrap::Search.to_string())
+            text(advanced_text::search().0)
                 .size(14)
                 .font(BOOTSTRAP_FONT)
                 .style(text_secondary_color()),
-            Space::with_width(6),
+            Space::new().width(6),
             text_input(t("Tìm kiếm contact...", "Search contacts..."), search_query)
                 .on_input(on_search_changed)
                 .padding(8)
@@ -52,6 +52,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                 0.15,
             ))),
             border: iced::border::rounded(8),
+            snap: false,
             ..Default::default()
         }
     })
@@ -64,17 +65,17 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
 
     let mut content = column![
         row![
-            text(Bootstrap::Person.to_string())
+            text(advanced_text::person().0)
                 .size(16)
                 .font(BOOTSTRAP_FONT)
                 .style(text_accent_teal_color()),
-            Space::with_width(6),
+            Space::new().width(6),
             text(t("Contact", "Contact"))
                 .size(14)
                 .style(text_primary_color()),
-            Space::with_width(Length::Fill),
+            Space::new().width(Length::Fill),
             button(
-                text(Bootstrap::Plus.to_string())
+                text(advanced_text::plus().0)
                     .size(14)
                     .font(BOOTSTRAP_FONT)
                     .style(text_primary_color()),
@@ -84,7 +85,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
             .style(primary_button_style()),
         ]
         .align_y(iced::Alignment::Center),
-        Space::with_height(8),
+        Space::new().height(8),
         search_box,
     ]
     .spacing(8);
@@ -118,11 +119,11 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
         let mut contact_list = column![];
         for contact in contacts {
             let contact_item = row![
-                text(Bootstrap::PersonFill.to_string())
+                text(advanced_text::person_fill().0)
                     .size(14)
                     .font(BOOTSTRAP_FONT)
                     .style(text_accent_purple_color()),
-                Space::with_width(8),
+                Space::new().width(8),
                 column![
                     text(&contact.name).size(13).style(text_primary_color()),
                     text(&contact.address)
@@ -130,7 +131,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                         .style(text_secondary_color()),
                 ]
                 .spacing(2),
-                Space::with_width(Length::Fill),
+                Space::new().width(Length::Fill),
                 if !contact.note.is_empty() {
                     container(text(&contact.note).size(9).style(text_muted_color()))
                         .style(|theme: &iced::Theme| {
@@ -143,16 +144,17 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                                     0.15,
                                 ))),
                                 border: iced::border::rounded(8),
+                                snap: false,
                                 ..Default::default()
                             }
                         })
                         .padding([2, 6])
                 } else {
-                    container(Space::with_width(0))
+                    container(Space::new().width(0))
                 },
-                Space::with_width(4),
+                Space::new().width(4),
                 button(
-                    text(Bootstrap::Pencil.to_string())
+                    text(advanced_text::pencil().0)
                         .size(10)
                         .font(BOOTSTRAP_FONT)
                         .style(text_accent_teal_color()),
@@ -161,7 +163,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                 .padding([4, 6])
                 .style(secondary_button_style()),
                 button(
-                    text(Bootstrap::Trash.to_string())
+                    text(advanced_text::trash().0)
                         .size(11)
                         .font(BOOTSTRAP_FONT)
                         .style(text_error_color()),
@@ -180,7 +182,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                     .style(secondary_button_style())
                     .width(Length::Fill),
             );
-            contact_list = contact_list.push(Space::with_height(4));
+            contact_list = contact_list.push(Space::new().height(4));
         }
 
         content = content.push(scrollable(contact_list).height(Length::Fill));
@@ -197,6 +199,7 @@ pub fn contact_picker_view<'a, Message: Clone + 'a>(
                     0.95,
                 ))),
                 border: iced::border::rounded(12),
+                snap: false,
                 ..Default::default()
             }
         })
@@ -251,7 +254,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
     let delete_button = if is_editing {
         on_delete.map(|delete_msg| {
             button(
-                text(Bootstrap::Trash.to_string())
+                text(advanced_text::trash().0)
                     .size(12)
                     .font(BOOTSTRAP_FONT)
                     .style(text_error_color()),
@@ -266,7 +269,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
 
     let mut buttons = row![
         save_button,
-        Space::with_width(8),
+        Space::new().width(8),
         button(text(t("Hủy", "Cancel")).size(12))
             .on_press(on_cancel)
             .padding(10)
@@ -274,7 +277,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
     ];
 
     if let Some(del_btn) = delete_button {
-        buttons = buttons.push(Space::with_width(8));
+        buttons = buttons.push(Space::new().width(8));
         buttons = buttons.push(del_btn);
     }
 
@@ -283,21 +286,21 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
     container(
         column![
             row![
-                text(Bootstrap::PersonPlus.to_string())
+                text(advanced_text::person_plus().0)
                     .size(16)
                     .font(BOOTSTRAP_FONT)
                     .style(text_accent_teal_color()),
-                Space::with_width(6),
+                Space::new().width(6),
                 text(title).size(14).style(text_primary_color()),
             ]
             .align_y(iced::Alignment::Center),
-            Space::with_height(12),
+            Space::new().height(12),
             column![
                 row![
                     text(t("Tên", "Name"))
                         .size(12)
                         .style(text_secondary_color()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     text(t(
                         "(Ctrl+Shift+V để dán tiếng Việt)",
                         "(Ctrl+Shift+V to paste Vietnamese)"
@@ -306,7 +309,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                     .style(text_muted_color()),
                 ]
                 .align_y(iced::Alignment::Center),
-                Space::with_height(4),
+                Space::new().height(4),
                 text_input(
                     t("VD: Ví cá nhân, Binance...", "e.g. Alice, Binance..."),
                     name
@@ -317,20 +320,20 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 .style(input_style()),
             ]
             .spacing(4),
-            Space::with_height(8),
+            Space::new().height(8),
             column![
                 row![
                     text(t("Địa chỉ BTC", "BTC Address"))
                         .size(12)
                         .style(text_secondary_color()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     if address_error.is_some() && !address.trim().is_empty() {
-                        text(Bootstrap::ExclamationTriangle.to_string())
+                        text(advanced_text::exclamation_triangle().0)
                             .size(10)
                             .font(BOOTSTRAP_FONT)
                             .style(text_error_color())
                     } else if is_address_valid {
-                        text(Bootstrap::CheckCircle.to_string())
+                        text(advanced_text::check_circle().0)
                             .size(10)
                             .font(BOOTSTRAP_FONT)
                             .style(text_success_color())
@@ -339,7 +342,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                     },
                 ]
                 .align_y(iced::Alignment::Center),
-                Space::with_height(4),
+                Space::new().height(4),
                 text_input(t("VD: bc1q...", "e.g. bc1q..."), address)
                     .on_input(on_address_changed)
                     .padding(8)
@@ -354,13 +357,13 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 },
             ]
             .spacing(4),
-            Space::with_height(8),
+            Space::new().height(8),
             column![
                 row![
                     text(t("Ghi chú (tùy chọn)", "Note (optional)"))
                         .size(12)
                         .style(text_secondary_color()),
-                    Space::with_width(Length::Fill),
+                    Space::new().width(Length::Fill),
                     text(t(
                         "(Ctrl+Shift+V để dán tiếng Việt)",
                         "(Ctrl+Shift+V to paste Vietnamese)"
@@ -369,7 +372,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                     .style(text_muted_color()),
                 ]
                 .align_y(iced::Alignment::Center),
-                Space::with_height(4),
+                Space::new().height(4),
                 text_input(
                     t(
                         "VD: Ví cá nhân, Exchange...",
@@ -383,7 +386,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 .style(input_style()),
             ]
             .spacing(4),
-            Space::with_height(12),
+            Space::new().height(12),
             buttons,
         ]
         .spacing(4),
@@ -398,6 +401,7 @@ pub fn contact_form_view<'a, Message: Clone + 'a>(
                 0.98,
             ))),
             border: iced::border::rounded(12),
+            snap: false,
             ..Default::default()
         }
     })

@@ -9,11 +9,11 @@ use crate::infra::price_api::BtcPriceData;
 use crate::infra::storage::{
     AddressBook, AppTheme, PersistedState, RuntimeState, Storage, UserProfile,
 };
+use crate::ui::components::ToastManager;
 use crate::ui::components::language_selector::LanguageSelector;
 use crate::ui::components::network_status::DashboardNetworkMessage;
 use crate::ui::components::price_widget::structure::PriceWidgetMessage;
-use crate::ui::components::ToastManager;
-use crate::ui::i18n::{set_current_language, t, AppLanguage};
+use crate::ui::i18n::{AppLanguage, set_current_language, t};
 use crate::ui::views::{
     dashboard::{DashboardMessage, DashboardView},
     history::HistoryView,

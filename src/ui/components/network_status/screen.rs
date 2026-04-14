@@ -3,18 +3,17 @@ use crate::ui::i18n::t;
 use crate::ui::theme::{
     text_error_color, text_secondary_color, text_success_color, text_warning_color,
 };
-use iced::widget::{button, container, row, text, Space};
-use iced::{widget::tooltip, Alignment, Element, Length};
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced::widget::{Space, button, container, row, text};
+use iced::{Alignment, Element, Length, widget::tooltip};
+use iced_fonts::{BOOTSTRAP_FONT, bootstrap::advanced_text};
 
 impl NetworkStatus {
     pub fn icon_char(&self) -> String {
         match self {
-            NetworkStatus::Connected { .. } => Bootstrap::Wifi,
-            NetworkStatus::Disconnected => Bootstrap::WifiOff,
-            NetworkStatus::Checking => Bootstrap::ArrowClockwise,
+            NetworkStatus::Connected { .. } => advanced_text::wifi().0,
+            NetworkStatus::Disconnected => advanced_text::wifi_off().0,
+            NetworkStatus::Checking => advanced_text::arrow_clockwise().0,
         }
-        .to_string()
     }
 
     pub fn label(&self) -> String {
@@ -47,7 +46,7 @@ pub fn network_status_indicator(
 
     let label = text(status.label()).size(11).style(text_secondary_color());
 
-    let content = row![icon, Space::with_width(4), label].align_y(Alignment::Center);
+    let content = row![icon, Space::new().width(4), label].align_y(Alignment::Center);
 
     if is_clickable {
         let btn = button(content)

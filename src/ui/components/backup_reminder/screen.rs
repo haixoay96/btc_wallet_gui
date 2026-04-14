@@ -44,15 +44,15 @@ pub fn backup_reminder_banner(
             ]
             .align_y(Alignment::Center)
             .spacing(8),
-            Space::with_height(4),
+            Space::new().height(4),
             text_scaled(detail, 12).style(text_secondary_color()),
-            Space::with_height(8),
+            Space::new().height(8),
             row![
                 button(text_scaled(t("Backup ngay", "Backup Now"), 12))
                     .on_press(BackupReminderMessage::NavigateToWallets)
                     .padding([6, 12])
                     .style(crate::ui::theme::primary_button_style()),
-                Space::with_width(8),
+                Space::new().width(8),
                 button(text_scaled(t("Nhắc tôi sau", "Remind me later"), 12))
                     .on_press(BackupReminderMessage::DismissReminder)
                     .padding([6, 12])

@@ -23,16 +23,15 @@ impl NavItem {
     }
 
     pub fn icon_char(self) -> String {
-        use iced_fonts::Bootstrap;
+        use iced_fonts::bootstrap::advanced_text;
         match self {
-            Self::Dashboard => Bootstrap::Speedometer,
-            Self::Wallets => Bootstrap::Wallet,
-            Self::Send => Bootstrap::BoxArrowUp,
-            Self::Receive => Bootstrap::BoxArrowDown,
-            Self::History => Bootstrap::ClockHistory,
-            Self::Settings => Bootstrap::Gear,
+            Self::Dashboard => advanced_text::speedometer().0,
+            Self::Wallets => advanced_text::wallet().0,
+            Self::Send => advanced_text::box_arrow_up().0,
+            Self::Receive => advanced_text::box_arrow_down().0,
+            Self::History => advanced_text::clock().0,
+            Self::Settings => advanced_text::gear().0,
         }
-        .to_string()
     }
 
     pub fn title(self) -> &'static str {

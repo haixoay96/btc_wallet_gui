@@ -1,8 +1,6 @@
-use iced_fonts::Bootstrap;
-
 pub struct HelpTopic {
     pub id: String,
-    pub icon: Bootstrap,
+    pub icon: String,
     pub title_vi: &'static str,
     pub title_en: &'static str,
     pub description_vi: &'static str,

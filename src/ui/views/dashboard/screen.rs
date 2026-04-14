@@ -1,21 +1,21 @@
 use crate::ui::components::backup_reminder::backup_reminder_banner;
-use crate::ui::components::network_status::{network_status_indicator, NetworkStatus};
+use crate::ui::components::network_status::{NetworkStatus, network_status_indicator};
 use crate::ui::components::price_widget::price_widget_view;
 use crate::ui::components::skeleton_wallet_cards;
-use crate::ui::components::sparkline::{sparkline_view, BalancePoint};
+use crate::ui::components::sparkline::{BalancePoint, sparkline_view};
 use crate::ui::i18n::t;
 use crate::ui::theme::colors::DarkColors;
 use crate::ui::theme::{
-    card_style, notice_style, primary_button_style, secondary_button_style,
+    NoticeTone, card_style, notice_style, primary_button_style, secondary_button_style,
     text_accent_purple_color, text_error_color, text_muted_color, text_primary_color, text_scaled,
-    text_secondary_color, text_success_color, text_warning_color, NoticeTone,
+    text_secondary_color, text_success_color, text_warning_color,
 };
 use crate::ui::views::sidebar::NavItem;
 use iced::{
-    widget::{button, column, container, row, scrollable, text, Space},
     Alignment, Element, Length,
+    widget::{Space, button, column, container, row, scrollable},
 };
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::bootstrap;
 
 use super::structure::{RecentTxItem, *};
 
@@ -87,15 +87,15 @@ impl DashboardView {
         // Build balance card with optional sparkline
         let mut balance_content = column![
             text_scaled(t("Tổng số dư", "Total Balance"), 14).style(text_secondary_color()),
-            Space::with_height(4),
+            Space::new().height(4),
             text_scaled(format!("{:.8} BTC", total_btc), 32).style(text_primary_color()),
-            Space::with_height(2),
+            Space::new().height(2),
             text_scaled(format!("{} sat", self.total_balance), 14).style(text_muted_color()),
         ];
 
         // Add sparkline if we have data
         if !self.balance_history.is_empty() {
-            balance_content = balance_content.push(Space::with_height(8));
+            balance_content = balance_content.push(Space::new().height(8));
             let sparkline_widget =
                 sparkline_view(&self.balance_history, DarkColors::ACCENT_TEAL, 0.1);
             balance_content = balance_content.push(sparkline_widget);
@@ -109,9 +109,9 @@ impl DashboardView {
             column![
                 text_scaled(t("Số dư đã xác nhận", "Confirmed Balance"), 14)
                     .style(text_secondary_color()),
-                Space::with_height(4),
+                Space::new().height(4),
                 text_scaled(format!("{:.8} BTC", confirmed_btc), 24).style(text_success_color()),
-                Space::with_height(2),
+                Space::new().height(2),
                 text_scaled(format!("{} sat", self.confirmed_balance), 14)
                     .style(text_muted_color()),
             ]
@@ -124,9 +124,9 @@ impl DashboardView {
             column![
                 text_scaled(t("Số dư chờ xác nhận", "Pending Balance"), 14)
                     .style(text_secondary_color()),
-                Space::with_height(4),
+                Space::new().height(4),
                 text_scaled(format!("{:.8} BTC", pending_btc), 24).style(text_warning_color()),
-                Space::with_height(2),
+                Space::new().height(2),
                 text_scaled(format!("{} sat", self.pending_balance), 14).style(text_muted_color()),
             ]
             .padding(card_padding),
@@ -137,7 +137,7 @@ impl DashboardView {
         let wallets_card = container(
             column![
                 text_scaled(t("Tổng số ví", "Total Wallets"), 14).style(text_secondary_color()),
-                Space::with_height(4),
+                Space::new().height(4),
                 text_scaled(format!("{}", self.wallet_count), 24).style(text_accent_purple_color()),
             ]
             .padding(card_padding),
@@ -149,7 +149,7 @@ impl DashboardView {
             column![
                 text_scaled(t("Ví cần backup", "Wallets Needing Backup"), 14)
                     .style(text_secondary_color()),
-                Space::with_height(4),
+                Space::new().height(4),
                 text_scaled(format!("{}", self.backup_needed_wallets), 24).style(
                     if self.backup_needed_wallets == 0 {
                         text_primary_color()
@@ -196,20 +196,20 @@ impl DashboardView {
         // Header (pinned, not scrollable)
         let header = row![
             title,
-            Space::with_width(Length::Fill),
+            Space::new().width(Length::Fill),
             network_indicator,
-            Space::with_width(8),
+            Space::new().width(8),
             refresh_button
         ]
         .align_y(Alignment::Center);
 
         // Scrollable content below header
         let mut scroll_content = column![
-            Space::with_height(12),
+            Space::new().height(12),
             quick_actions,
-            Space::with_height(spacing),
+            Space::new().height(spacing),
             price_widget,
-            Space::with_height(spacing),
+            Space::new().height(spacing),
         ]
         .padding(content_padding)
         .spacing(0);
@@ -227,7 +227,7 @@ impl DashboardView {
                 .padding(12)
                 .width(Length::Fill),
             );
-            scroll_content = scroll_content.push(Space::with_height(16));
+            scroll_content = scroll_content.push(Space::new().height(16));
         }
 
         // Backup reminder banner (before wallet cards)
@@ -236,7 +236,7 @@ impl DashboardView {
                 backup_reminder_banner(self.backup_needed_wallets)
                     .map(DashboardMessage::BackupReminder),
             );
-            scroll_content = scroll_content.push(Space::with_height(spacing));
+            scroll_content = scroll_content.push(Space::new().height(spacing));
         }
 
         if self.wallet_count == 0 {
@@ -253,7 +253,7 @@ impl DashboardView {
                             14
                         )
                         .style(text_secondary_color()),
-                        Space::with_height(12),
+                        Space::new().height(12),
                         button(text_scaled(t("Đi tới Wallets", "Go to Wallets"), 14))
                             .on_press(DashboardMessage::Navigate(NavItem::Wallets))
                             .padding(12)
@@ -275,19 +275,20 @@ impl DashboardView {
             if !self.recent_transactions.is_empty() {
                 scroll_content =
                     scroll_content.push(render_recent_transactions(&self.recent_transactions));
-                scroll_content = scroll_content.push(Space::with_height(spacing));
+                scroll_content = scroll_content.push(Space::new().height(spacing));
             }
 
             scroll_content = scroll_content
                 .push(balance_card)
-                .push(Space::with_height(spacing))
+                .push(Space::new().height(spacing))
                 .push(
-                    row![confirmed_card, Space::with_width(spacing), pending_card]
+                    row![confirmed_card, Space::new().width(spacing), pending_card]
                         .width(Length::Fill),
                 )
-                .push(Space::with_height(spacing))
+                .push(Space::new().height(spacing))
                 .push(
-                    row![wallets_card, Space::with_width(spacing), backup_card].width(Length::Fill),
+                    row![wallets_card, Space::new().width(spacing), backup_card]
+                        .width(Length::Fill),
                 );
         }
 
@@ -319,7 +320,7 @@ fn render_recent_transactions(
     let header = row![
         text_scaled(t("Giao dịch gần đây", "Recent Transactions"), 14)
             .style(text_secondary_color()),
-        Space::with_width(Length::Fill),
+        Space::new().width(Length::Fill),
         if transactions.len() > max_preview {
             button(text_scaled(t("Xem tất cả", "View All"), 12))
                 .on_press(DashboardMessage::Navigate(NavItem::History))
@@ -336,18 +337,16 @@ fn render_recent_transactions(
     .width(Length::Fill);
 
     let mut tx_rows: Vec<Element<'static, DashboardMessage>> = vec![header.into()];
-    tx_rows.push(Space::with_height(8).into());
+    tx_rows.push(Space::new().height(8).into());
 
     for tx in preview {
         let icon = if tx.is_incoming() {
-            text(Bootstrap::ArrowDownRight.to_string())
+            bootstrap::arrow_down_right()
                 .size(14)
-                .font(BOOTSTRAP_FONT)
                 .style(text_success_color())
         } else {
-            text(Bootstrap::ArrowUpRight.to_string())
+            bootstrap::arrow_up_right()
                 .size(14)
-                .font(BOOTSTRAP_FONT)
                 .style(text_error_color())
         };
 
@@ -355,7 +354,7 @@ fn render_recent_transactions(
 
         let left = row![
             icon,
-            Space::with_width(8),
+            Space::new().width(8),
             column![
                 text_scaled(&txid_short, 13).style(text_primary_color()),
                 text_scaled(&tx.wallet_name, 11).style(text_muted_color()),
@@ -375,7 +374,7 @@ fn render_recent_transactions(
         .align_x(Alignment::End);
 
         tx_rows.push(
-            row![left, Space::with_width(Length::Fill), right]
+            row![left, Space::new().width(Length::Fill), right]
                 .align_y(Alignment::Center)
                 .width(Length::Fill)
                 .into(),

@@ -21,6 +21,7 @@ pub fn card_style() -> Box<ContainerStyleFn> {
                 blur_radius: 12.0,
             },
             text_color: Some(colors.text_primary),
+            snap: false,
         }
     })
 }
@@ -38,6 +39,7 @@ pub fn screen_background_style() -> Box<ContainerStyleFn> {
             },
             shadow: Shadow::default(),
             text_color: Some(colors.text_primary),
+            snap: false,
         }
     })
 }
@@ -58,6 +60,7 @@ pub fn popup_overlay_style() -> Box<ContainerStyleFn> {
             },
             shadow: Shadow::default(),
             text_color: Some(colors.text_primary),
+            snap: false,
         }
     })
 }
@@ -79,6 +82,7 @@ pub fn popup_dialog_style() -> Box<ContainerStyleFn> {
                 blur_radius: 48.0,
             },
             text_color: Some(colors.text_primary),
+            snap: false,
         }
     })
 }
@@ -104,6 +108,7 @@ pub fn notice_style(tone: NoticeTone) -> Box<ContainerStyleFn> {
             },
             shadow: Shadow::default(),
             text_color: Some(colors.text_primary),
+            snap: false,
         }
     })
 }
@@ -121,6 +126,7 @@ pub fn sidebar_style() -> Box<ContainerStyleFn> {
             },
             shadow: Shadow::default(),
             text_color: Some(colors.text_primary),
+            snap: false,
         }
     })
 }

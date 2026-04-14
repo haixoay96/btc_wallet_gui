@@ -1,6 +1,6 @@
 use super::palette::get_theme_colors;
-use super::structure::color_with_alpha;
 use super::structure::ButtonStyleFn;
+use super::structure::color_with_alpha;
 use iced::widget::button;
 use iced::{Background, Border, Color, Shadow, Theme, Vector};
 
@@ -34,6 +34,7 @@ pub fn primary_button_style() -> Box<ButtonStyleFn> {
                 offset: Vector::new(0.0, 6.0),
                 blur_radius: shadow_blur,
             },
+            snap: false,
         }
     })
 }
@@ -58,6 +59,7 @@ pub fn selected_button_style() -> Box<ButtonStyleFn> {
                 color: color_with_alpha(colors.accent_purple, 0.55),
             },
             shadow: Shadow::default(),
+            snap: false,
         }
     })
 }
@@ -75,6 +77,7 @@ pub fn muted_button_style() -> Box<ButtonStyleFn> {
                 color: colors.border_subtle,
             },
             shadow: Shadow::default(),
+            snap: false,
         }
     })
 }
@@ -113,6 +116,7 @@ pub fn secondary_button_style() -> Box<ButtonStyleFn> {
                 color: border_color,
             },
             shadow,
+            snap: false,
         }
     })
 }
@@ -145,6 +149,7 @@ pub fn info_style() -> Box<ButtonStyleFn> {
                 offset: Vector::new(0.0, 4.0),
                 blur_radius: 12.0,
             },
+            snap: false,
         }
     })
 }
@@ -177,6 +182,7 @@ pub fn warning_style() -> Box<ButtonStyleFn> {
                 offset: Vector::new(0.0, 4.0),
                 blur_radius: 12.0,
             },
+            snap: false,
         }
     })
 }
@@ -198,6 +204,7 @@ pub fn danger_button_style() -> Box<ButtonStyleFn> {
                 offset: Vector::new(0.0, 4.0),
                 blur_radius: 12.0,
             },
+            snap: false,
         }
     })
 }
@@ -213,5 +220,6 @@ pub fn flat_icon_button_style() -> Box<ButtonStyleFn> {
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
+        snap: false,
     })
 }

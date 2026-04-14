@@ -1,6 +1,6 @@
 use iced::{
-    widget::{button, column, container, row, text_input, Space},
     Alignment, Element, Length, Padding,
+    widget::{Space, button, column, container, row, text_input},
 };
 
 use crate::ui::components::language_selector::LanguageSelector;
@@ -11,7 +11,7 @@ use crate::ui::theme::{
     secondary_button_style, selected_button_style, text_accent_purple_color, text_muted_color,
     text_primary_color, text_scaled, text_secondary_color,
 };
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::bootstrap;
 
 use super::structure::*;
 
@@ -189,7 +189,7 @@ impl LoginView {
         let language_picker = self.language_selector.view(LoginMessage::LanguageChanged);
 
         let header_bar = container(
-            row![Space::with_width(Length::Fill), language_picker,].align_y(Alignment::Center),
+            row![Space::new().width(Length::Fill), language_picker,].align_y(Alignment::Center),
         )
         .width(Length::Fill)
         .padding(Padding::from([16, 24]));
@@ -285,7 +285,7 @@ impl LoginView {
         let nickname_input: Element<'_, LoginMessage> = if self.mode == LoginMode::NewWallet {
             column![
                 text_scaled(t("Tên hiển thị", "Display name"), 12).style(text_secondary_color()),
-                Space::with_height(4),
+                Space::new().height(4),
                 text_input(t("Nhập nickname...", "Enter nickname..."), &self.nickname)
                     .on_input(LoginMessage::NicknameChanged)
                     .padding(12)
@@ -296,12 +296,12 @@ impl LoginView {
             .width(input_width)
             .into()
         } else {
-            Space::with_height(0).into()
+            Space::new().height(0).into()
         };
 
         let passphrase_input = column![
             text_scaled(t("Passphrase", "Passphrase"), 12).style(text_secondary_color()),
-            Space::with_height(4),
+            Space::new().height(4),
             row![
                 text_input(
                     t("Nhập passphrase...", "Enter passphrase..."),
@@ -314,15 +314,12 @@ impl LoginView {
                 .size(16)
                 .style(input_style()),
                 button(
-                    text_scaled(
-                        if self.show_passphrase {
-                            Bootstrap::EyeSlash.to_string()
-                        } else {
-                            Bootstrap::Eye.to_string()
-                        },
-                        16
-                    )
-                    .font(BOOTSTRAP_FONT)
+                    if self.show_passphrase {
+                        bootstrap::eye_slash()
+                    } else {
+                        bootstrap::eye()
+                    }
+                    .size(16)
                     .style(text_muted_color()),
                 )
                 .on_press(LoginMessage::TogglePassphraseVisibility)
@@ -343,7 +340,7 @@ impl LoginView {
             column![
                 text_scaled(t("Xác nhận passphrase", "Confirm passphrase"), 12)
                     .style(text_secondary_color()),
-                Space::with_height(4),
+                Space::new().height(4),
                 row![
                     text_input(
                         t("Xác nhận passphrase...", "Confirm passphrase..."),
@@ -356,15 +353,12 @@ impl LoginView {
                     .size(16)
                     .style(input_style()),
                     button(
-                        text_scaled(
-                            if self.show_confirm_passphrase {
-                                Bootstrap::EyeSlash.to_string()
-                            } else {
-                                Bootstrap::Eye.to_string()
-                            },
-                            16
-                        )
-                        .font(BOOTSTRAP_FONT)
+                        if self.show_confirm_passphrase {
+                            bootstrap::eye_slash()
+                        } else {
+                            bootstrap::eye()
+                        }
+                        .size(16)
                         .style(text_muted_color()),
                     )
                     .on_press(LoginMessage::ToggleConfirmPassphraseVisibility)
@@ -374,21 +368,21 @@ impl LoginView {
                 .spacing(8)
                 .align_y(Alignment::Center)
                 .width(Length::Fill),
-                Space::with_height(8),
+                Space::new().height(8),
                 strength_widget,
             ]
             .spacing(0)
             .width(input_width)
             .into()
         } else {
-            Space::with_height(0).into()
+            Space::new().height(0).into()
         };
 
         let backup_path_input: Element<'_, LoginMessage> = if self.mode == LoginMode::ImportBackup {
             let mut col = column![
                 text_scaled(t("File backup ứng dụng", "App backup file"), 12)
                     .style(text_secondary_color()),
-                Space::with_height(4),
+                Space::new().height(4),
                 button(text_scaled(t("Chọn file backup", "Choose backup file"), 14))
                     .on_press(LoginMessage::BrowseBackupPath)
                     .padding(12)
@@ -404,7 +398,7 @@ impl LoginView {
 
             col.into()
         } else {
-            Space::with_height(0).into()
+            Space::new().height(0).into()
         };
 
         let action_label = match self.mode {
@@ -415,16 +409,16 @@ impl LoginView {
 
         let input_section = column![
             mode_switcher_content,
-            Space::with_height(20),
+            Space::new().height(20),
             nickname_input,
-            Space::with_height(12),
+            Space::new().height(12),
             passphrase_input,
-            Space::with_height(12),
+            Space::new().height(12),
             confirm_input,
-            Space::with_height(12),
+            Space::new().height(12),
             backup_path_input,
-            Space::with_height(16),
-            Space::with_height(20),
+            Space::new().height(16),
+            Space::new().height(20),
             button(
                 container(text_scaled(action_label, 16))
                     .width(Length::Fill)
@@ -441,15 +435,15 @@ impl LoginView {
 
         let login_content = column![
             logo_container,
-            Space::with_height(4),
+            Space::new().height(4),
             title,
-            Space::with_height(8),
+            Space::new().height(8),
             subtitle,
-            Space::with_height(20),
+            Space::new().height(20),
             container(input_section)
                 .width(Length::Fill)
                 .align_x(iced::alignment::Horizontal::Center),
-            Space::with_height(4),
+            Space::new().height(4),
         ]
         .spacing(0)
         .width(Length::Fill);
@@ -461,9 +455,9 @@ impl LoginView {
 
         let main_layout = column![
             header_bar,
-            Space::with_height(Length::Fill),
+            Space::new().height(Length::Fill),
             login_container,
-            Space::with_height(Length::Fill),
+            Space::new().height(Length::Fill),
         ]
         .width(Length::Fill)
         .height(Length::Fill);

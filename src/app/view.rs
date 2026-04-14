@@ -1,6 +1,6 @@
 use iced::{
-    widget::{column, container, row, text, Space},
     Element, Length,
+    widget::{Space, column, container, row, text},
 };
 
 use crate::app::structure::*;
@@ -79,11 +79,11 @@ impl App {
                         ))
                         .size(14)
                         .style(text_secondary_color()),
-                        Space::with_width(Length::Fill),
+                        Space::new().width(Length::Fill),
                         text(self.current_page.title())
                             .size(14)
                             .style(text_muted_color()),
-                        Space::with_width(12),
+                        Space::new().width(12),
                         language_picker,
                     ]
                     .align_y(iced::Alignment::Center),
@@ -117,19 +117,19 @@ impl App {
 
                         // Dùng row với 2 Space ở 2 bên để đẩy toast vào giữa
                         let centered_row = row![
-                            Space::with_width(Length::Fill),
+                            Space::new().width(Length::Fill),
                             column![
-                                Space::with_height(20),
+                                Space::new().height(20),
                                 toast_view.map(|_| AppMessage::DismissStatus),
                             ]
                             .spacing(0),
-                            Space::with_width(Length::Fill),
+                            Space::new().width(Length::Fill),
                         ]
                         .width(Length::Fill)
                         .spacing(0);
 
                         let toast_overlay = container(
-                            column![centered_row, Space::with_height(Length::Fill),]
+                            column![centered_row, Space::new().height(Length::Fill),]
                                 .spacing(0)
                                 .width(Length::Fill),
                         )
@@ -148,7 +148,7 @@ impl App {
                     iced::widget::stack![
                         base_content,
                         // Semi-transparent overlay background
-                        container(Space::with_width(Length::Fill))
+                        container(Space::new().width(Length::Fill))
                             .width(Length::Fill)
                             .height(Length::Fill)
                             .style(|theme: &iced::Theme| {
@@ -162,6 +162,7 @@ impl App {
                                             0.75,
                                         ),
                                     )),
+                                    snap: false,
                                     ..Default::default()
                                 }
                             }),

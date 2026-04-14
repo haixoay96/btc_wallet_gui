@@ -1,7 +1,7 @@
 use super::structure::*;
 use crate::ui::i18n::t;
 use crate::ui::theme::{text_muted_color, text_primary_color, text_secondary_color};
-use iced::widget::{button, column, container, row, scrollable, text, text_input, Space};
+use iced::widget::{Space, button, column, container, row, scrollable, text, text_input};
 use iced::{Alignment, Color, Element, Length};
 
 /// Get color for a specific tag based on index
@@ -15,7 +15,7 @@ fn tag_badge(tag: String, index: usize, can_remove: bool) -> Element<'static, Ta
     let display_tag = tag.clone();
 
     let mut content = row![
-        container(Space::with_width(8))
+        container(Space::new().width(8))
             .width(Length::Fixed(8.0))
             .height(Length::Fixed(16.0))
             .style(move |_theme: &iced::Theme| iced::widget::container::Style {
@@ -25,6 +25,7 @@ fn tag_badge(tag: String, index: usize, can_remove: bool) -> Element<'static, Ta
                     width: 0.0,
                     color: Color::TRANSPARENT,
                 },
+                snap: false,
                 ..Default::default()
             }),
         text(display_tag).size(12).style(text_primary_color()),
@@ -54,6 +55,7 @@ fn tag_badge(tag: String, index: usize, can_remove: bool) -> Element<'static, Ta
                 width: 0.0,
                 color: Color::TRANSPARENT,
             },
+            snap: false,
             ..Default::default()
         })
         .padding(4)

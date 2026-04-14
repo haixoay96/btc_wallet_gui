@@ -3,26 +3,25 @@ use super::structure::{Toast, ToastManager, ToastType};
 use std::time::{Duration, Instant};
 
 use iced::{
-    widget::{column, container, row, text, Space},
     Alignment, Element, Length, Theme,
+    widget::{Space, column, container, row, text},
 };
 
 use crate::ui::theme::{
     popup_dialog_style, text_accent_blue_color, text_error_color, text_primary_color,
     text_success_color,
 };
-use iced_fonts::{Bootstrap, BOOTSTRAP_FONT};
+use iced_fonts::bootstrap::advanced_text;
 
 /// Toast notification types
 
 impl ToastType {
     pub fn icon_char(&self) -> String {
         match self {
-            Self::Success => Bootstrap::CheckCircle,
-            Self::Info => Bootstrap::InfoCircle,
-            Self::Error => Bootstrap::ExclamationCircle,
+            Self::Success => advanced_text::check_circle().0,
+            Self::Info => advanced_text::info_circle().0,
+            Self::Error => advanced_text::exclamation_circle().0,
         }
-        .to_string()
     }
 
     pub fn text_style(&self) -> Box<dyn Fn(&Theme) -> iced::widget::text::Style> {
@@ -105,13 +104,12 @@ impl ToastManager {
             let icon_style = toast.toast_type.text_style();
             let icon = text(toast.toast_type.icon_char())
                 .size(16)
-                .font(BOOTSTRAP_FONT)
                 .style(icon_style);
 
             let message_text = text(&toast.message).size(13).style(text_primary_color());
 
             let toast_element = container(
-                row![icon, Space::with_width(8), message_text,].align_y(Alignment::Center),
+                row![icon, Space::new().width(8), message_text,].align_y(Alignment::Center),
             )
             .style(popup_dialog_style())
             .padding(12)
@@ -119,7 +117,7 @@ impl ToastManager {
             .into();
 
             toast_elements.push(toast_element);
-            toast_elements.push(Space::with_height(6).into());
+            toast_elements.push(Space::new().height(6).into());
         }
 
         Some(

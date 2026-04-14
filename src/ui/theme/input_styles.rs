@@ -10,7 +10,7 @@ pub fn input_style() -> Box<TextInputStyleFn> {
     Box::new(|theme: &Theme, status: text_input::Status| {
         let colors = get_theme_colors(theme);
         let (border_color, border_width, _shadow) = match status {
-            text_input::Status::Focused => (
+            text_input::Status::Focused { .. } => (
                 colors.border_focused,
                 2.0,
                 Shadow {
@@ -51,7 +51,7 @@ pub fn pick_list_style() -> Box<PickListStyleFn> {
         let colors = get_theme_colors(theme);
         let border_color = match status {
             pick_list::Status::Active => colors.border,
-            pick_list::Status::Hovered | pick_list::Status::Opened => colors.border_focused,
+            pick_list::Status::Hovered | pick_list::Status::Opened { .. } => colors.border_focused,
         };
 
         pick_list::Style {
@@ -82,6 +82,7 @@ pub fn pick_list_menu_style() -> Box<MenuStyleFn> {
             text_color: colors.text_primary,
             selected_text_color: colors.text_primary,
             selected_background: Background::Color(color_with_alpha(colors.accent_purple, 0.35)),
+            shadow: Shadow::default(),
         }
     })
 }

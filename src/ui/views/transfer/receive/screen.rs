@@ -100,7 +100,7 @@ impl ReceiveView {
 
         let wallet_selector = column![
             text_scaled(t("Ví", "Wallet"), 14).style(text_secondary_color()),
-            Space::with_height(4),
+            Space::new().height(4),
             pick_list(wallet_options, selected_wallet_option, |choice| {
                 ReceiveMessage::SelectWallet(choice.index)
             })
@@ -138,7 +138,7 @@ impl ReceiveView {
                         text(format!("{}: {:.8} BTC", t("Số dư", "Balance"), balance_btc))
                             .size(14)
                             .style(text_primary_color()),
-                        Space::with_width(Length::Fill),
+                        Space::new().width(Length::Fill),
                         text(format!(
                             "{}: {}",
                             t("Mạng", "Network"),
@@ -191,10 +191,10 @@ impl ReceiveView {
                             column![
                                 text_scaled(t("Địa chỉ nhận hiện tại", "Current receiving address"), 12)
                                     .style(text_secondary_color()),
-                                Space::with_height(8),
+                                Space::new().height(8),
                                 text_scaled(addr.address.clone(), 16)
                                     .style(text_accent_teal_color()),
-                                Space::with_height(10),
+                                Space::new().height(10),
                                 text_scaled(t(
                                     "Chia sẻ địa chỉ này hoặc mở QR để người gửi quét trực tiếp.",
                                     "Share this address or open its QR code for direct scanning.",
@@ -227,7 +227,7 @@ impl ReceiveView {
                             } else {
                                 primary_button_style()
                             }),
-                            Space::with_width(8),
+                            Space::new().width(8),
                             button(text_scaled(
                                 if qr_visible_for_selected {
                                     t("Ẩn QR", "Hide QR")
@@ -252,7 +252,7 @@ impl ReceiveView {
                     }
                 }
 
-                content = content.push(Space::with_height(16));
+                content = content.push(Space::new().height(16));
                 content = content.push(
                     button(text_scaled(
                         if self.show_all_addresses {
@@ -282,9 +282,9 @@ impl ReceiveView {
                         let is_selected = i == selected_index;
                         let row_content = row![
                             text_scaled(format!("#{}", addr.index), 12).style(text_muted_color()),
-                            Space::with_width(8),
+                            Space::new().width(8),
                             text_scaled(addr.address.clone(), 12).style(text_primary_color()),
-                            Space::with_width(Length::Fill),
+                            Space::new().width(Length::Fill),
                             if is_selected {
                                 text_scaled(t("Đang chọn", "Selected"), 11)
                                     .style(text_success_color())
@@ -305,7 +305,7 @@ impl ReceiveView {
                                 })
                                 .width(Length::Fill),
                         );
-                        list = list.push(Space::with_height(6));
+                        list = list.push(Space::new().height(6));
                     }
 
                     content = content.push(scrollable(list).height(Length::Fixed(200.0)));
@@ -331,7 +331,7 @@ impl ReceiveView {
         ) {
             let qr_content = column![
                 text_scaled(address.as_str(), 12).style(text_secondary_color()),
-                Space::with_height(10),
+                Space::new().height(10),
                 container(
                     image::Image::new(handle.clone())
                         .width(Length::Fixed(240.0))
